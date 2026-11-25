@@ -1,3 +1,17 @@
+# mintyrasr 0.3.1
+
+Fixes found by running the validation script with ASReml-R 4.2.0.481:
+
+* The LRT of rg = 0 (and `test_rp`) uses `lrt()`, the name in ASReml-R 4.2,
+  with a fallback to `lrt.asreml()` for older releases. Before, the call
+  failed silently and `rg_p` was always `NA`. LRT failures now give a warning.
+* Fixed-variance CV fits (`cv_vc = "fixed"`, `maxit = 1`) no longer pass on
+  ASReml's expected "Log-likelihood not converged" warnings.
+* `accuracy` gains `cv_converge` and `cv_iter` (iterations of each fold's fit).
+* Confirmed on real ASReml-R: component names for idv, us, idh/diag, corgh,
+  corh and corv, `vparameters` order, coefficient names, and h2 / rg / rp /
+  repeatability identical to hand-written `vpredict()` formulas.
+
 # mintyrasr 0.3.0
 
 * `traits =` names the response column(s) when the nested data do not use

@@ -38,6 +38,7 @@ asreml <- function(fixed, random, residual, dense = NULL, na.action, data, G.par
   if (!is.null(G.param)) {
     if (!all(nm %in% G.param$Component)) stop("G.param does not match the model")
     if (all(G.param$Constraint == "F") && maxit != 1) stop("mock: expected maxit = 1 for fixed")
+    if (all(G.param$Constraint == "F")) warning("Log-likelihood not converged")   # as real ASReml
     comp <- G.param$Value[match(nm, G.param$Component)]
     if (!all(G.param$Constraint == "F")) comp <- comp * 1.05   # re-estimated
   }
@@ -58,7 +59,8 @@ asreml <- function(fixed, random, residual, dense = NULL, na.action, data, G.par
   vp <- setNames(comp, nm)
   if (isTRUE(getOption("mock.shuffle"))) { vc <- vc[rev(seq_len(nrow(vc))), ] }   # varcomp order != vparameters
   if (isTRUE(getOption("mock.boundary")) && mt) vc$bound[grepl("litter", rownames(vc))] <- "B"
-  structure(list(converge = TRUE, vc = vc, cr = cr, vparameters = vp, loglik = -100 - diagG * 3), class = "asreml")
+  structure(list(converge = TRUE, vc = vc, cr = cr, vparameters = vp,
+                 trace = matrix(0, 2, if (!is.null(G.param) && all(G.param$Constraint == "F")) 1 else 5), loglik = -100 - diagG * 3), class = "asreml")
 }
 summary.asreml <- function(object, coef = FALSE, ...) {
   out <- list(varcomp = object$vc)
@@ -72,7 +74,7 @@ vpredict <- function(object, transform) {
   if (!is.finite(est)) stop("mock vpredict: V index out of range")
   data.frame(Estimate = est, SE = 0.05, row.names = as.character(transform[[2]]))
 }
-lrt.asreml <- function(object, ..., boundary = TRUE) {
+lrt <- function(object, ..., boundary = TRUE) {
   if (boundary) stop("mock: rg test must use boundary = FALSE")
   o <- list(...)[[1]]; lr <- 2 * (object$loglik - o$loglik)
   data.frame(df = 1, `LR-statistic` = lr, `Pr(Chisq)` = stats::pchisq(lr, 1, lower.tail = FALSE),

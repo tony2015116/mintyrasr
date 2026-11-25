@@ -100,7 +100,8 @@
 #' @param verbose Print progress.
 #'
 #' @return A list of class `asr_gblup` with `varcomp`, `vc_index`, `param`,
-#'   `accuracy` (one row per fold and trait), `summary` and, if `keep_pred`,
+#'   `accuracy` (one row per fold and trait, with `cv_converge` and the number
+#'   of iterations `cv_iter` of the fold's fit), `summary` and, if `keep_pred`,
 #'   `pred`. Fitted model objects are not kept, which keeps memory use low.
 #'
 #' @seealso [asr_scenarios()] to run several scenarios from
@@ -234,8 +235,7 @@ asr_gblup <- function(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", tr
     if (type == "mt" && test_rg) {
       fit0 <- run(fit1(dat, maxit = maxit, genetic_cov = "idh"), paste(lab, "(idh model)"))
       lr <- if (is.null(fit0)) NULL else
-        tryCatch(as.data.frame(asreml::lrt.asreml(fit, fit0, boundary = FALSE)),
-                 error = function(e) NULL)
+        .lrt(fit, fit0, lab)
       par_rows[[i]][, `:=`(rg_lrt = if (is.null(lr)) NA_real_ else lr[[2L]][1L],
                             rg_p   = if (is.null(lr)) NA_real_ else lr[[ncol(lr)]][1L])]
       rm(fit0)
@@ -244,8 +244,7 @@ asr_gblup <- function(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", tr
       fit00 <- run(fit1(dat, maxit = maxit, genetic_cov = "idh", random_cov = "idh",
                         residual_cov = "idh"), paste(lab, "(all-idh model)"))
       lr <- if (is.null(fit00)) NULL else
-        tryCatch(as.data.frame(asreml::lrt.asreml(fit, fit00, boundary = FALSE)),
-                 error = function(e) NULL)
+        .lrt(fit, fit00, lab)
       par_rows[[i]][, `:=`(cov_df  = if (is.null(lr)) NA_real_ else lr[[1L]][1L],
                             cov_lrt = if (is.null(lr)) NA_real_ else lr[[2L]][1L],
                             cov_p   = if (is.null(lr)) NA_real_ else lr[[ncol(lr)]][1L])]
@@ -276,18 +275,22 @@ asr_gblup <- function(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", tr
     meta <- C[j, c_outer, with = FALSE]
     tn <- tnames[[i]]
     pred <- va <- NULL
+    conv <- NA; iter <- NA_integer_
     if (cv_vc == "estimate" || !is.null(vc_cv[[i]])) {
       fit <- run(fit1(C$train[[j]],
                       maxit = if (cv_vc == "fixed") 1L else maxit,
                       vc = vc_cv[[i]], check_converge = cv_vc != "fixed"), lab)
       if (!is.null(fit)) {
+        conv <- if (cv_vc == "fixed") NA else isTRUE(fit$converge)
+        iter <- .n_iter(fit)
         va <- .va(.vc_index(as.data.frame(summary(fit)$varcomp), type, id, resp,
                             names(fit$vparameters)), resp)
         pred <- .validate(fit, C$validate[[j]], id, resp, va, Ftab, min_rel)
         rm(fit); gc(verbose = FALSE)
       }
     }
-    acc_rows[[j]] <- cbind(meta[rep(1L, length(resp))], .accuracy(pred, resp, tn, h2_list[[i]], va))
+    acc_rows[[j]] <- cbind(meta[rep(1L, length(resp))], .accuracy(pred, resp, tn, h2_list[[i]], va),
+                           cv_converge = conv, cv_iter = iter)
     if (keep_pred && !is.null(pred)) {
       pred[, trait := tn[match(trait, resp)]]
       pred_rows[[j]] <- cbind(meta[rep(1L, nrow(pred))], pred)

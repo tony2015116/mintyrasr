@@ -67,3 +67,18 @@ test_that("warnings for a matrix without INVERSE and for boundary components", {
                                 random_cov = "idh", verbose = FALSE), "boundary")
   expect_match(r$param$boundary, "litter")
 })
+
+test_that("LRT via lrt() gives rg_p; fixed-variance CV fits are quiet", {
+  skip_if_no_mock()
+  s <- sim_data()
+  sc <- mintyr::cv_scenarios(s$pheno, cols = c("adg", "bf"), id = "id", group = "test_herd",
+                             v = 3, seed = 1, scenarios = "mt_mp", out_type = "df")
+  expect_no_warning(r <- asr_gblup(sc$mt_mp$param, sc$mt_mp$cv[1:2, ], s$ginv,
+                                   fixed = ~ hhys, verbose = FALSE))
+  expect_true(is.finite(r$param$rg_p))
+  expect_true(all(c("cv_converge", "cv_iter") %in% names(r$accuracy)))
+  expect_true(all(r$accuracy$cv_iter == 1L))
+  r2 <- asr_gblup(sc$mt_mp$param, sc$mt_mp$cv[1:2, ], s$ginv, fixed = ~ hhys,
+                  cv_vc = "estimate", verbose = FALSE)
+  expect_true(all(r2$accuracy$cv_converge))
+})

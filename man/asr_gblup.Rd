@@ -126,7 +126,8 @@ results, the loop continues. \code{"stop"}: stop at the first failure.}
 }
 \value{
 A list of class \code{asr_gblup} with \code{varcomp}, \code{vc_index}, \code{param},
-\code{accuracy} (one row per fold and trait), \code{summary} and, if \code{keep_pred},
+\code{accuracy} (one row per fold and trait, with \code{cv_converge} and the number
+of iterations \code{cv_iter} of the fold's fit), \code{summary} and, if \code{keep_pred},
 \code{pred}. Fitted model objects are not kept, which keeps memory use low.
 }
 \description{

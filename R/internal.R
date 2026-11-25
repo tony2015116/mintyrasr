@@ -66,8 +66,15 @@ NULL
   if (!is.null(vc)) { cl$G.param <- quote(vc); cl$R.param <- quote(vc) }
   for (nm in names(spec$asreml_args)) cl[[nm]] <- spec$asreml_args[[nm]]
   if (start_values) { cl$start.values <- TRUE; return(eval(cl)) }
+  if (!check_converge) {
+    # all variances fixed, maxit = 1: one iteration solves the mixed model
+    # equations, so ASReml's "not converged" warnings are expected here
+    return(withCallingHandlers(eval(cl), warning = function(w) {
+      if (grepl("not converged|changed by more than", conditionMessage(w)))
+        invokeRestart("muffleWarning")
+    }))
+  }
   fit <- eval(cl)
-  if (!check_converge) return(fit)          # all variances fixed, maxit = 1: BLUP only
   k <- 0L
   while (!isTRUE(fit$converge) && k < spec$max_update) {
     fit <- stats::update(fit); k <- k + 1L
@@ -75,6 +82,32 @@ NULL
   if (!isTRUE(fit$converge))
     warning("ASReml did not converge (", deparse(fx), ").", call. = FALSE)
   fit
+}
+
+# Number of REML iterations of a fit (rows of the iteration history), NA if unknown
+.n_iter <- function(fit) {
+  tr <- fit$trace
+  if (is.null(tr)) return(NA_integer_)
+  n <- if (is.matrix(tr) || is.data.frame(tr)) ncol(tr) else length(tr)
+  as.integer(n)
+}
+
+# Likelihood-ratio test: lrt() in ASReml-R 4.2, lrt.asreml() in some
+# earlier releases. boundary = FALSE: a covariance / correlation of 0 is not
+# on the boundary of the parameter space. A failure is reported, not hidden.
+.lrt <- function(full, reduced, lab) {
+  ns <- asNamespace("asreml")
+  fn <- if (exists("lrt", envir = ns, inherits = FALSE)) get("lrt", envir = ns)
+        else if (exists("lrt.asreml", envir = ns, inherits = FALSE)) get("lrt.asreml", envir = ns)
+        else NULL
+  if (is.null(fn)) {
+    warning(sprintf("[%s] no lrt() / lrt.asreml() in this ASReml-R version.", lab), call. = FALSE)
+    return(NULL)
+  }
+  tryCatch(as.data.frame(fn(full, reduced, boundary = FALSE)), error = function(e) {
+    warning(sprintf("[%s] LRT failed: %s", lab, conditionMessage(e)), call. = FALSE)
+    NULL
+  })
 }
 
 # Start-value table from start.values = TRUE, with Value filled in by

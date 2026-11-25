@@ -1,6 +1,7 @@
 # Run several GBLUP scenarios from `cv_scenarios()`
 
-Run several GBLUP scenarios from `cv_scenarios()`
+Run several GBLUP scenarios from
+[`cv_scenarios()`](https://tony2015116.github.io/mintyr/reference/cv_scenarios.html)
 
 ## Usage
 
@@ -19,7 +20,8 @@ asr_scenarios(
 
 - sc:
 
-  Output of `mintyr::cv_scenarios()`.
+  Output of
+  [`mintyr::cv_scenarios()`](https://tony2015116.github.io/mintyr/reference/cv_scenarios.html).
 
 - ginv:
 

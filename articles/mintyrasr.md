@@ -25,7 +25,7 @@ both tables and, for every row:
 | function | use |
 |----|----|
 | `asr_gblup(param, cv, ginv, ...)` | one scenario (or any nested table + CV table) |
-| `asr_scenarios(sc, ginv, ...)` | all scenarios of `mintyr::cv_scenarios()` in one call |
+| `asr_scenarios(sc, ginv, ...)` | all scenarios of [`mintyr::cv_scenarios()`](https://tony2015116.github.io/mintyr/reference/cv_scenarios.html) in one call |
 
 ## Installation
 
@@ -118,8 +118,12 @@ st <- asr_gblup(sc$st_sp$param, sc$st_sp$cv, ginv = ginv,
 st
 ```
 
-Tables built by hand with `w2l_nest()` / `c2p_nest()` + `nest_cv()` work
-too. When the response columns are not called `value` / `value1` +
+Tables built by hand with
+[`w2l_nest()`](https://tony2015116.github.io/mintyr/reference/w2l_nest.html)
+/
+[`c2p_nest()`](https://tony2015116.github.io/mintyr/reference/c2p_nest.html) +
+[`nest_cv()`](https://tony2015116.github.io/mintyr/reference/nest_cv.html)
+work too. When the response columns are not called `value` / `value1` +
 `value2`, name them in `traits`:
 
 ``` r

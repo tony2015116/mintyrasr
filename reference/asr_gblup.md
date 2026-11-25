@@ -36,7 +36,10 @@ formulas in `vpredict`.
 
 Single-trait or two-trait models are chosen from the nested data: a
 `value` column gives a single-trait model, `value1` + `value2` a
-two-trait model (layout of `mintyr::w2l_nest()` / `mintyr::c2p_nest()`).
+two-trait model (layout of
+[`mintyr::w2l_nest()`](https://tony2015116.github.io/mintyr/reference/w2l_nest.html)
+/
+[`mintyr::c2p_nest()`](https://tony2015116.github.io/mintyr/reference/c2p_nest.html)).
 
 ## Usage
 
@@ -83,7 +86,8 @@ asr_gblup(
 - cv:
 
   Cross-validation table with list-columns `train` and `validate` (e.g.
-  `cv_scenarios(...)$st_sp$cv` or the output of `mintyr::nest_cv()`).
+  `cv_scenarios(...)$st_sp$cv` or the output of
+  [`mintyr::nest_cv()`](https://tony2015116.github.io/mintyr/reference/nest_cv.html)).
   Each row is matched to the row of `param` that shares its outer
   columns.
 
@@ -216,13 +220,17 @@ asr_gblup(
 ## Value
 
 A list of class `asr_gblup` with `varcomp`, `vc_index`, `param`,
-`accuracy` (one row per fold and trait), `summary` and, if `keep_pred`,
-`pred`. Fitted model objects are not kept, which keeps memory use low.
+`accuracy` (one row per fold and trait, with `cv_converge` and the
+number of iterations `cv_iter` of the fold's fit), `summary` and, if
+`keep_pred`, `pred`. Fitted model objects are not kept, which keeps
+memory use low.
 
 ## See also
 
 [`asr_scenarios()`](https://tony2015116.github.io/mintyrasr/reference/asr_scenarios.md)
-to run several scenarios from `mintyr::cv_scenarios()` in one call.
+to run several scenarios from
+[`mintyr::cv_scenarios()`](https://tony2015116.github.io/mintyr/reference/cv_scenarios.html)
+in one call.
 
 ## Examples
 

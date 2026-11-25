@@ -22,7 +22,7 @@ ASReml-R 是商业软件，网站构建时不运行本页代码；在装有 ASRe
 | 函数 | 用途 |
 |----|----|
 | `asr_gblup(param, cv, ginv, ...)` | 跑一个场景（或任意嵌套表 + 交叉验证表） |
-| `asr_scenarios(sc, ginv, ...)` | 一次跑完 `mintyr::cv_scenarios()` 的所有场景 |
+| `asr_scenarios(sc, ginv, ...)` | 一次跑完 [`mintyr::cv_scenarios()`](https://tony2015116.github.io/mintyr/reference/cv_scenarios.html) 的所有场景 |
 
 ## 安装
 
@@ -114,7 +114,11 @@ st <- asr_gblup(sc$st_sp$param, sc$st_sp$cv, ginv = ginv,
 st
 ```
 
-用 `w2l_nest()` / `c2p_nest()` + `nest_cv()`
+用
+[`w2l_nest()`](https://tony2015116.github.io/mintyr/reference/w2l_nest.html)
+/
+[`c2p_nest()`](https://tony2015116.github.io/mintyr/reference/c2p_nest.html) +
+[`nest_cv()`](https://tony2015116.github.io/mintyr/reference/nest_cv.html)
 自己生成的表也可以。响应列不叫 `value` / `value1` + `value2` 时，用
 `traits` 指定：
 

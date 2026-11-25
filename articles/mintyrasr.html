@@ -23,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mintyrasr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -125,7 +125,7 @@ scenario.</li>
 </tr>
 <tr class="even">
 <td><code>asr_scenarios(sc, ginv, ...)</code></td>
-<td>all scenarios of <code>mintyr::cv_scenarios()</code> in one
+<td>all scenarios of <code><a href="https://tony2015116.github.io/mintyr/reference/cv_scenarios.html" class="external-link">mintyr::cv_scenarios()</a></code> in one
 call</td>
 </tr>
 </tbody>
@@ -164,7 +164,7 @@ matrix in a form <code>vm()</code> accepts. It must carry
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tony2015116.github.io/mintyr/" class="external-link">mintyr</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tony2015116.github.io/mintyrasr/">mintyrasr</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">pheno</span> <span class="op">&lt;-</span> <span class="fu">import_xlsx</span><span class="op">(</span><span class="st">"pheno.xlsx"</span><span class="op">)</span>             <span class="co"># id, test_herd, hhys, adg, bf, fcr</span></span>
+<span><span class="va">pheno</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tony2015116.github.io/mintyr/reference/import_xlsx.html" class="external-link">import_xlsx</a></span><span class="op">(</span><span class="st">"pheno.xlsx"</span><span class="op">)</span>             <span class="co"># id, test_herd, hhys, adg, bf, fcr</span></span>
 <span></span>
 <span><span class="va">G</span>    <span class="op">&lt;-</span> <span class="fu">G.matrix</span><span class="op">(</span>M <span class="op">=</span> <span class="va">snp</span>, method <span class="op">=</span> <span class="st">"VanRaden"</span><span class="op">)</span><span class="op">$</span><span class="va">G</span></span>
 <span><span class="va">ginv</span> <span class="op">&lt;-</span> <span class="fu">G.inverse</span><span class="op">(</span>G <span class="op">=</span> <span class="va">G</span>, sparseform <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">Ginv.sparse</span>   <span class="co"># carries INVERSE = TRUE</span></span>
@@ -174,7 +174,7 @@ matrix in a form <code>vm()</code> accepts. It must carry
 <h2 id="build-the-scenarios-with-mintyr">2. Build the scenarios with mintyr<a class="anchor" aria-label="anchor" href="#build-the-scenarios-with-mintyr"></a>
 </h2>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sc</span> <span class="op">&lt;-</span> <span class="fu">cv_scenarios</span><span class="op">(</span><span class="va">pheno</span>, cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"adg"</span>, <span class="st">"bf"</span>, <span class="st">"fcr"</span><span class="op">)</span>, id <span class="op">=</span> <span class="st">"id"</span>,</span>
+<code class="sourceCode R"><span><span class="va">sc</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tony2015116.github.io/mintyr/reference/cv_scenarios.html" class="external-link">cv_scenarios</a></span><span class="op">(</span><span class="va">pheno</span>, cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"adg"</span>, <span class="st">"bf"</span>, <span class="st">"fcr"</span><span class="op">)</span>, id <span class="op">=</span> <span class="st">"id"</span>,</span>
 <span>                   group <span class="op">=</span> <span class="st">"test_herd"</span>, v <span class="op">=</span> <span class="fl">5</span>, repeats <span class="op">=</span> <span class="fl">5</span>, seed <span class="op">=</span> <span class="fl">2026</span>,</span>
 <span>                   out_type <span class="op">=</span> <span class="st">"df"</span><span class="op">)</span>      <span class="co"># ASReml-R needs data.frames</span></span>
 <span><span class="va">sc</span></span></code></pre></div>
@@ -255,13 +255,13 @@ table. They are matched through their shared outer columns
 <span>                fixed <span class="op">=</span> <span class="op">~</span> <span class="va">hhys</span>, inbreeding <span class="op">=</span> <span class="va">inbreeding</span>,</span>
 <span>                path <span class="op">=</span> <span class="st">"results/st_sp_ginv.xlsx"</span><span class="op">)</span></span>
 <span><span class="va">st</span></span></code></pre></div>
-<p>Tables built by hand with <code>w2l_nest()</code> /
-<code>c2p_nest()</code> + <code>nest_cv()</code> work too. When the
+<p>Tables built by hand with <code><a href="https://tony2015116.github.io/mintyr/reference/w2l_nest.html" class="external-link">w2l_nest()</a></code> /
+<code><a href="https://tony2015116.github.io/mintyr/reference/c2p_nest.html" class="external-link">c2p_nest()</a></code> + <code><a href="https://tony2015116.github.io/mintyr/reference/nest_cv.html" class="external-link">nest_cv()</a></code> work too. When the
 response columns are not called <code>value</code> / <code>value1</code>
 + <code>value2</code>, name them in <code>traits</code>:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">nested</span> <span class="op">&lt;-</span> <span class="fu">w2l_nest</span><span class="op">(</span><span class="va">pheno</span>, cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"adg"</span>, <span class="st">"bf"</span><span class="op">)</span>, by <span class="op">=</span> <span class="st">"test_herd"</span>, out_type <span class="op">=</span> <span class="st">"df"</span><span class="op">)</span></span>
-<span><span class="va">cvtab</span>  <span class="op">&lt;-</span> <span class="fu">nest_cv</span><span class="op">(</span><span class="va">nested</span>, v <span class="op">=</span> <span class="fl">5</span>, repeats <span class="op">=</span> <span class="fl">2</span>, seed <span class="op">=</span> <span class="fl">1</span>, out_type <span class="op">=</span> <span class="st">"df"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">nested</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tony2015116.github.io/mintyr/reference/w2l_nest.html" class="external-link">w2l_nest</a></span><span class="op">(</span><span class="va">pheno</span>, cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"adg"</span>, <span class="st">"bf"</span><span class="op">)</span>, by <span class="op">=</span> <span class="st">"test_herd"</span>, out_type <span class="op">=</span> <span class="st">"df"</span><span class="op">)</span></span>
+<span><span class="va">cvtab</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://tony2015116.github.io/mintyr/reference/nest_cv.html" class="external-link">nest_cv</a></span><span class="op">(</span><span class="va">nested</span>, v <span class="op">=</span> <span class="fl">5</span>, repeats <span class="op">=</span> <span class="fl">2</span>, seed <span class="op">=</span> <span class="fl">1</span>, out_type <span class="op">=</span> <span class="st">"df"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/asr_gblup.html">asr_gblup</a></span><span class="op">(</span><span class="va">nested</span>, <span class="va">cvtab</span>, <span class="va">ginv</span>, fixed <span class="op">=</span> <span class="op">~</span> <span class="va">hhys</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/asr_gblup.html">asr_gblup</a></span><span class="op">(</span><span class="va">all_nest5</span>, <span class="va">all_cv5</span>, <span class="va">ginv</span>, fixed <span class="op">=</span> <span class="op">~</span> <span class="va">hhys</span>, traits <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"bfs"</span>, <span class="st">"nls"</span><span class="op">)</span>,</span>

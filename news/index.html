@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mintyrasr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -51,11 +51,20 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.1" id="mintyrasr-031">mintyrasr 0.3.1<a class="anchor" aria-label="anchor" href="#mintyrasr-031"></a></h2>
+<p>Fixes found by running the validation script with ASReml-R 4.2.0.481:</p>
+<ul><li>The LRT of rg = 0 (and <code>test_rp</code>) uses <code>lrt()</code>, the name in ASReml-R 4.2, with a fallback to <code>lrt.asreml()</code> for older releases. Before, the call failed silently and <code>rg_p</code> was always <code>NA</code>. LRT failures now give a warning.</li>
+<li>Fixed-variance CV fits (<code>cv_vc = "fixed"</code>, <code>maxit = 1</code>) no longer pass on ASReml’s expected “Log-likelihood not converged” warnings.</li>
+<li>
+<code>accuracy</code> gains <code>cv_converge</code> and <code>cv_iter</code> (iterations of each fold’s fit).</li>
+<li>Confirmed on real ASReml-R: component names for idv, us, idh/diag, corgh, corh and corv, <code>vparameters</code> order, coefficient names, and h2 / rg / rp / repeatability identical to hand-written <code>vpredict()</code> formulas.</li>
+</ul></div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.0" id="mintyrasr-030">mintyrasr 0.3.0<a class="anchor" aria-label="anchor" href="#mintyrasr-030"></a></h2>
 <ul><li>
 <code>traits =</code> names the response column(s) when the nested data do not use <code>value</code> / <code>value1</code> + <code>value2</code> (e.g. <code>traits = c("bfs", "nls")</code>).</li>
 <li>
-<code><a href="../reference/asr_scenarios.html">asr_scenarios()</a></code> runs the <code>mt_bt</code> scenario of <code>cv_scenarios()</code> (one trait treated as a different trait in each of two groups), with a <code>diag</code> residual and without rp.</li>
+<code><a href="../reference/asr_scenarios.html">asr_scenarios()</a></code> runs the <code>mt_bt</code> scenario of <code><a href="https://tony2015116.github.io/mintyr/reference/cv_scenarios.html" class="external-link">cv_scenarios()</a></code> (one trait treated as a different trait in each of two groups), with a <code>diag</code> residual and without rp.</li>
 <li>
 <code>test_rp = TRUE</code>: joint LRT of all covariances = 0. <code>rp = FALSE</code> drops the phenotypic correlation.</li>
 <li>corgh correlation rows such as <code>...!trait!b:!trait!a.cor</code> are recognised.</li>

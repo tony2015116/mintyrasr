@@ -69,7 +69,7 @@ two-trait model (layout of mintyr::w2l_nest() / mintyr::c2p_nest())."></head><bo
 
     <a class="navbar-brand me-2" href="../index.html">mintyrasr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -142,7 +142,7 @@ several genetic terms (e.g. maternal <code><a href="https://rdrr.io/r/utils/str.
 formulas in <code>vpredict</code>.</p>
 <p>Single-trait or two-trait models are chosen from the nested data:
 a <code>value</code> column gives a single-trait model, <code>value1</code> + <code>value2</code> a
-two-trait model (layout of <code>mintyr::w2l_nest()</code> / <code>mintyr::c2p_nest()</code>).</p>
+two-trait model (layout of <code><a href="https://tony2015116.github.io/mintyr/reference/w2l_nest.html" class="external-link">mintyr::w2l_nest()</a></code> / <code><a href="https://tony2015116.github.io/mintyr/reference/c2p_nest.html" class="external-link">mintyr::c2p_nest()</a></code>).</p>
     </div>
 
     <div class="section level2">
@@ -190,7 +190,7 @@ list-column <code>data</code> (e.g. <code>cv_scenarios(...)$st_sp$param</code>).
 
 <dt id="arg-cv">cv<a class="anchor" aria-label="anchor" href="#arg-cv"></a></dt>
 <dd><p>Cross-validation table with list-columns <code>train</code> and <code>validate</code>
-(e.g. <code>cv_scenarios(...)$st_sp$cv</code> or the output of <code>mintyr::nest_cv()</code>).
+(e.g. <code>cv_scenarios(...)$st_sp$cv</code> or the output of <code><a href="https://tony2015116.github.io/mintyr/reference/nest_cv.html" class="external-link">mintyr::nest_cv()</a></code>).
 Each row is matched to the row of <code>param</code> that shares its outer columns.</p></dd>
 
 
@@ -324,20 +324,21 @@ results, the loop continues. <code>"stop"</code>: stop at the first failure.</p>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A list of class <code>asr_gblup</code> with <code>varcomp</code>, <code>vc_index</code>, <code>param</code>,
-<code>accuracy</code> (one row per fold and trait), <code>summary</code> and, if <code>keep_pred</code>,
+<code>accuracy</code> (one row per fold and trait, with <code>cv_converge</code> and the number
+of iterations <code>cv_iter</code> of the fold's fit), <code>summary</code> and, if <code>keep_pred</code>,
 <code>pred</code>. Fitted model objects are not kept, which keeps memory use low.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="asr_scenarios.html">asr_scenarios()</a></code> to run several scenarios from
-<code>mintyr::cv_scenarios()</code> in one call.</p></div>
+<code><a href="https://tony2015116.github.io/mintyr/reference/cv_scenarios.html" class="external-link">mintyr::cv_scenarios()</a></code> in one call.</p></div>
     </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
 <span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">asreml</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="va">sc</span> <span class="op">&lt;-</span> <span class="fu">mintyr</span><span class="fu">::</span><span class="fu">cv_scenarios</span><span class="op">(</span><span class="va">pheno</span>, cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"adg"</span>, <span class="st">"bf"</span><span class="op">)</span>, id <span class="op">=</span> <span class="st">"id"</span>,</span></span>
+<span class="r-in"><span><span class="va">sc</span> <span class="op">&lt;-</span> <span class="fu">mintyr</span><span class="fu">::</span><span class="fu"><a href="https://tony2015116.github.io/mintyr/reference/cv_scenarios.html" class="external-link">cv_scenarios</a></span><span class="op">(</span><span class="va">pheno</span>, cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"adg"</span>, <span class="st">"bf"</span><span class="op">)</span>, id <span class="op">=</span> <span class="st">"id"</span>,</span></span>
 <span class="r-in"><span>                           group <span class="op">=</span> <span class="st">"test_herd"</span>, v <span class="op">=</span> <span class="fl">5</span>, repeats <span class="op">=</span> <span class="fl">5</span>,</span></span>
 <span class="r-in"><span>                           seed <span class="op">=</span> <span class="fl">2026</span>, out_type <span class="op">=</span> <span class="st">"df"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu">asr_gblup</span><span class="op">(</span><span class="va">sc</span><span class="op">$</span><span class="va">st_sp</span><span class="op">$</span><span class="va">param</span>, <span class="va">sc</span><span class="op">$</span><span class="va">st_sp</span><span class="op">$</span><span class="va">cv</span>, ginv <span class="op">=</span> <span class="va">ginv</span>,</span></span>

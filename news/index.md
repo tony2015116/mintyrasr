@@ -1,13 +1,31 @@
 # Changelog
 
+## mintyrasr 0.3.1
+
+Fixes found by running the validation script with ASReml-R 4.2.0.481:
+
+- The LRT of rg = 0 (and `test_rp`) uses `lrt()`, the name in ASReml-R
+  4.2, with a fallback to `lrt.asreml()` for older releases. Before, the
+  call failed silently and `rg_p` was always `NA`. LRT failures now give
+  a warning.
+- Fixed-variance CV fits (`cv_vc = "fixed"`, `maxit = 1`) no longer pass
+  on ASReml’s expected “Log-likelihood not converged” warnings.
+- `accuracy` gains `cv_converge` and `cv_iter` (iterations of each
+  fold’s fit).
+- Confirmed on real ASReml-R: component names for idv, us, idh/diag,
+  corgh, corh and corv, `vparameters` order, coefficient names, and h2 /
+  rg / rp / repeatability identical to hand-written `vpredict()`
+  formulas.
+
 ## mintyrasr 0.3.0
 
 - `traits =` names the response column(s) when the nested data do not
   use `value` / `value1` + `value2` (e.g. `traits = c("bfs", "nls")`).
 - [`asr_scenarios()`](https://tony2015116.github.io/mintyrasr/reference/asr_scenarios.md)
-  runs the `mt_bt` scenario of `cv_scenarios()` (one trait treated as a
-  different trait in each of two groups), with a `diag` residual and
-  without rp.
+  runs the `mt_bt` scenario of
+  [`cv_scenarios()`](https://tony2015116.github.io/mintyr/reference/cv_scenarios.html)
+  (one trait treated as a different trait in each of two groups), with a
+  `diag` residual and without rp.
 - `test_rp = TRUE`: joint LRT of all covariances = 0. `rp = FALSE` drops
   the phenotypic correlation.
 - corgh correlation rows such as `...!trait!b:!trait!a.cor` are

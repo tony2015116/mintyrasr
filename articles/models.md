@@ -1,0 +1,152 @@
+# Models and genetic parameters
+
+[中文版](https://tony2015116.github.io/mintyrasr/articles/models-zh.md)
+
+## The models
+
+**Single trait** (nested data with a `value` column, or
+`traits = "adg"`):
+
+``` text
+asreml(value ~ <fixed>,
+       random   = ~ vm(id, ginv) + <random>,
+       residual = ~ idv(units), dense = ~ vm(id, ginv), ...)
+```
+
+**Two traits** (`value1` + `value2`, or `traits = c("a", "b")`):
+
+``` text
+asreml(cbind(value1, value2) ~ trait + trait:<fixed>,
+       random   = ~ <genetic_cov>(trait):vm(id, ginv) + <random_cov>(trait):<random>,
+       residual = ~ units:<residual_cov>(trait), dense = ~ <genetic_cov>(trait):vm(id, ginv), ...)
+```
+
+| argument | values | default |
+|----|----|----|
+| `fixed` | one-sided formula, e.g. `~ hhys + sex` | `~ 1` |
+| `random` | further random effects, e.g. `~ ide(id)`, `~ litter + pen` | none |
+| `genetic_cov` | `"us"`, `"idh"` / `"diag"`, `"corv"`, `"corh"`, `"corgh"` | `"us"` |
+| `random_cov` | same, applied to every term of `random` | `"us"` |
+| `residual_cov` | `"us"`, `"idh"` / `"diag"` | `"us"` |
+| `na_x` | `na.method(x = )`: `"include"`, `"fail"`, `"omit"` | `"include"` |
+| `asreml_args` | further `asreml()` arguments | [`list()`](https://rdrr.io/r/base/list.html) |
+
+Some common choices:
+
+``` r
+
+# repeated records: permanent environment, otherwise h2 is inflated
+asr_gblup(param, cv, ginv, fixed = ~ hhys, random = ~ ide(id))
+
+# litter effect, uncorrelated between traits
+asr_gblup(param, cv, ginv, fixed = ~ hhys, random = ~ litter, random_cov = "idh")
+
+# us() is hard to fit: correlation parameterisation
+asr_gblup(param, cv, ginv, fixed = ~ hhys, genetic_cov = "corgh")
+
+# one trait in two herds: nobody has both records -> diag residual, no rp
+asr_gblup(param, cv, ginv, fixed = ~ hhys, traits = c("bfs", "nls"),
+          genetic_cov = "corgh", residual_cov = "diag", rp = FALSE)
+```
+
+## Why not `V1 / (V1 + V2)`?
+
+`vpredict()` refers to the variance parameters as `V1`, `V2`, … in the
+order of the `vparameters` component of the fit. That order depends on
+the model:
+
+| model | V1 | V2 | V3 | V4 | V5 | V6 | V7 |
+|----|----|----|----|----|----|----|----|
+| us G + us R | Va1 | Cov_a | Va2 | `units:trait!R` = 1 | Ve1 | Cov_e | Ve2 |
+| corgh G + diag R | r_a | Va1 | Va2 | `units:trait!R` = 1 | Ve1 | Ve2 | \- |
+| us G + idh litter + us R | Va1 | Cov_a | Va2 | Vc1 | Vc2 | `units:trait!R` | … |
+
+The formula `rg ~ V2 / sqrt(V1 * V3)` is right for the first model,
+wrong for the second (V1 is already the correlation) and `rp` with `V7`
+fails. So mintyrasr reads the **names** of the components and builds the
+formulas itself.
+
+## How components are recognised
+
+Each row of `summary(fit)$varcomp` is matched to
+`names(fit$vparameters)` (the `V` number) and classified:
+
+| name (examples) | term | role | kind |
+|----|----|----|----|
+| `vm(id, ginv)` | `vm(id, ginv)` | genetic | var |
+| `ide(id)`, `litter` | itself | random | var |
+| `units!units` | `units` | residual | var |
+| `units!R` after `units!units` (idv), `units:trait!R` |  |  | scale = 1, not used |
+| `trait:vm(id, ginv)!trait_adg:adg` | `trait:vm(id, ginv)` | genetic | var |
+| `trait:vm(id, ginv)!trait_bf:adg` |  | genetic | cov |
+| `trait:litter!trait_adg` | `trait:litter` | random | var (idh) |
+| `...!trait!bf:!trait!adg.cor`, `...!trait!cor` |  |  | cor (corgh, corh, corv) |
+| `...!trait!var` |  |  | var shared by both traits (corv) |
+| `fa(...)`, `rr(...)` terms |  |  | not interpreted (warning) |
+
+Trait names are found as whole words in the name, so any column name
+works. The `vc_index` table of the result shows the classification -
+look at it after the first run of a new model.
+
+## The formulas
+
+For each trait *i*, with Vp_i = the sum of **all** used variances of
+that trait (genetic + other random + residual):
+
+- **h2_i** = Va_i / Vp_i
+- **rg** = Cov_a / sqrt(Va1 Va2); for `corv` / `corh` / `corgh` the
+  correlation parameter itself
+- **rp** = (sum of all covariances) / sqrt(Vp1 Vp2); the covariance of a
+  correlation-parameterised term is written as r sqrt(V1 V2)
+
+Examples of what is generated (`param$formulas`):
+
+    # single trait, G + e
+    h2 = V1/(V1 + V2)
+    # single trait, G + pe + e
+    h2 = V1/(V1 + V2 + V3)
+    # us G + us R
+    h2_value1 = V1/(V1 + V5); rg = V2/sqrt(V1 * V3); rp = (V2 + V6)/sqrt((V1 + V5) * (V3 + V7))
+    # corgh G + diag R, one trait in two herds
+    h2_nls = V2/(V2 + V5); h2_bfs = V3/(V3 + V6); rg = V1
+
+## Your own formulas
+
+Anything else - repeatability, litter proportion, maternal or total
+heritability - goes into `vpredict`, as a named list. Check the `V`
+numbers in `vc_index` first; they depend on the model.
+
+``` r
+
+res <- asr_gblup(param, cv, ginv, fixed = ~ hhys, random = ~ ide(id),
+                 vpredict = list(rep = rep ~ (V1 + V2) / (V1 + V2 + V3)))
+res$vc_index
+res$param[, c("h2", "h2_se", "rep", "rep_se")]
+```
+
+Models with more than one genetic term (e.g. maternal
+[`str()`](https://rdrr.io/r/utils/str.html) models) and `fa()` / `rr()`
+structures need their own formulas: the automatic ones only use the term
+`vm(<id>, ginv)`.
+
+## Tests
+
+| argument | full model | reduced model | `lrt.asreml()` |
+|----|----|----|----|
+| `test_rg = TRUE` (default) | as specified | genetic structure `idh(trait)`, the rest unchanged | `boundary = FALSE` (0 is not on the boundary of a correlation) |
+| `test_rp = TRUE` | as specified | `idh` for the genetic, extra random and residual terms | `boundary = FALSE`; `cov_df` = number of covariances |
+
+`test_rp` asks whether the two traits are correlated at all; it is not a
+test of rp = 0 on its own. Results: `rg_lrt`, `rg_p`, `cov_df`,
+`cov_lrt`, `cov_p` in `param`.
+
+## Checks and warnings
+
+- `ginv` without `attr(, "INVERSE") = TRUE`: `vm()` would treat it as G.
+- Individuals with phenotypes that are not in `ginv`.
+- Components fixed at the boundary (bound `B`): warning and
+  `param$boundary`.
+- `asreml.options(gammaPar = TRUE)`: the automatic formulas assume the
+  default variance (sigma) parameterisation.
+- Fits that did not converge (`max_update` to call
+  [`update()`](https://rdrr.io/r/stats/update.html)).

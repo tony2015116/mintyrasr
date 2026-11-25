@@ -322,4 +322,4 @@ NULL
 }
 
 utils::globalVariables(c(".pi", "trait", "obs", "gebv", "pev", "inb", "rel", "id",
-                         "value", "pa", "accuracy", "slope", "n_obs", "."))
+                         "value", "pa", "accuracy", "slope", "n_obs", "V", "."))

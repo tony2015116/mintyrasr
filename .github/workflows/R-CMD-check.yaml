@@ -42,7 +42,8 @@ jobs:
             github::tony2015116/mintyr
           needs: check
       - name: Install the CI mock of asreml
-        run: R CMD INSTALL tools/mock-asreml
+        run: install.packages("tools/mock-asreml", repos = NULL, type = "source")
+        shell: Rscript {0}
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true

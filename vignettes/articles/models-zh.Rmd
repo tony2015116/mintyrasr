@@ -122,7 +122,7 @@ res$param[, c("h2", "h2_se", "rep", "rep_se")]
 
 ## 检验
 
-| 参数 | 完整模型 | 简化模型 | `lrt.asreml()` |
+| 参数 | 完整模型 | 简化模型 | `asreml::lrt()` |
 |---|---|---|---|
 | `test_rg = TRUE`（默认） | 按设定 | 遗传结构换成 `idh(trait)`，其余不变 | `boundary = FALSE`（相关为 0 不在参数边界上） |
 | `test_rp = TRUE` | 按设定 | 遗传、其他随机效应和残差都换成 `idh` | `boundary = FALSE`；`cov_df` = 协方差个数 |
@@ -135,4 +135,4 @@ res$param[, c("h2", "h2_se", "rep", "rep_se")]
 - 有表型的个体不在 `ginv` 中。
 - 方差组分被固定在边界上（bound 为 `B`）：给出警告，并记在 `param$boundary`。
 - `asreml.options(gammaPar = TRUE)`：自动公式基于默认的方差（sigma）参数化。
-- 模型未收敛（`max_update` 可调用 `update()`）。
+- 调用 `max_update` 次 `update()` 后仍未收敛的模型及拟合失败的模型：给出警告、记入 `log` 表，`on_nonconverge = "skip"` 时跳过。

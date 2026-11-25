@@ -18,7 +18,7 @@ asr_gblup(
   cv_vc = c("fixed", "warm", "estimate"),
   vpredict = NULL,
   inbreeding = NULL,
-  min_rel = 0.05,
+  min_rel = -Inf,
   neg_to_na = TRUE,
   test_rg = TRUE,
   test_rp = FALSE,
@@ -27,12 +27,14 @@ asr_gblup(
   dense = TRUE,
   maxit = 100L,
   workspace = "30Gb",
-  max_update = 0L,
+  max_update = 3L,
+  on_nonconverge = c("skip", "keep"),
   asreml_args = list(),
   on_error = c("warn", "stop"),
   keep_pred = TRUE,
   path = NULL,
-  verbose = TRUE
+  verbose = TRUE,
+  trace = FALSE
 )
 }
 \arguments{
@@ -83,7 +85,10 @@ is the ID and second column F, or a named numeric vector. \code{NULL} uses
 F = 0. For GBLUP, \code{F = diag(G) - 1} is common.}
 
 \item{min_rel}{GEBVs with reliability below this value are set to \code{NA}
-before computing PA / accuracy. Use \code{-Inf} to keep all.}
+before computing PA / accuracy. Default \code{-Inf}: keep all. Validation
+individuals have no record of their own, so their reliabilities are low
+(often < 0.05 within a small group); filtering them biases PA and can
+leave no GEBV at all. Reliabilities are always reported in \code{pred}.}
 
 \item{neg_to_na}{Set negative PA / accuracy / slope to \code{NA} before the
 summary (the behaviour of the original scripts).}
@@ -110,7 +115,12 @@ matrix - centre numeric covariates first; ASReml's own default is \code{"fail"}.
 ASReml's own defaults are 13 and \code{"128mb"}; two-trait GBLUP usually
 needs more.}
 
-\item{max_update}{Number of \code{update()} calls on a fit that has not converged.}
+\item{max_update}{Number of \code{update()} calls (restart from the current
+estimates) on a fit that has not converged. \code{0} turns this off.}
+
+\item{on_nonconverge}{What to do with a fit that has still not converged
+after \code{max_update} updates: \code{"skip"} (default) warns, records it in \code{log}
+and builds nothing on it (see Details); \code{"keep"} warns and uses it anyway.}
 
 \item{asreml_args}{Named list of further \code{asreml()} arguments, e.g.
 \code{list(ai.sing = TRUE)}.}
@@ -122,12 +132,18 @@ results, the loop continues. \code{"stop"}: stop at the first failure.}
 
 \item{path}{Optional \code{.xlsx} file to write the results to.}
 
-\item{verbose}{Print progress.}
+\item{verbose}{Print progress (stage, count, \%, elapsed time, ETA) and an
+end-of-run summary.}
+
+\item{trace}{Print ASReml's own iteration log (\code{asreml(trace = )}). \code{FALSE}
+keeps the console readable; ASReml warnings are collected in \code{log}.}
 }
 \value{
-A list of class \code{asr_gblup} with \code{varcomp}, \code{vc_index}, \code{param},
-\code{accuracy} (one row per fold and trait), \code{summary} and, if \code{keep_pred},
-\code{pred}. Fitted model objects are not kept, which keeps memory use low.
+A list of class \code{asr_gblup} with \code{varcomp}, \code{vc_index}, \code{param}
+(incl. \code{converge}, \code{n_update}), \code{accuracy} (one row per fold and trait,
+with \code{status}: ok / not_converged / failed / skipped), \code{summary}, \code{log}
+(one row per fit: stage, label, status, n_update, seconds, ASReml
+messages) and, if \code{keep_pred}, \code{pred}. Fitted model objects are not kept, which keeps memory use low.
 }
 \description{
 \code{asr_gblup()} runs the whole GBLUP workflow for one scenario directly in R,
@@ -140,13 +156,20 @@ structure, \code{boundary = FALSE});
 \item refits the model to every training set in \code{cv}, with the variance
 components handled as set by \code{cv_vc};
 \item predicts GEBVs of the validation individuals, computes their
-reliability \code{1 - PEV / ((1 + F) * Va)}, drops GEBVs with reliability
-below \code{min_rel}, and returns per fold the predictive ability
+reliability \code{1 - PEV / ((1 + F) * Va)} (optionally dropping GEBVs with
+reliability below \code{min_rel}), and returns per fold the predictive ability
 \code{pa = r(y, GEBV)}, the accuracy \code{pa / sqrt(h2)} (h2 from the full data,
 Dekkers 2007) and the slope \code{b(y ~ GEBV)};
 \item summarises them over folds (n, mean, sd, se) and, optionally, writes
 everything to one Excel workbook.
 }
+
+Every fit runs safely: an error or a model that has not converged after
+\code{max_update} calls of \code{update()} gives a warning and is recorded in the
+\code{log} table, and (with \code{on_nonconverge = "skip"}) nothing is built on it:
+a full-data fit that did not converge skips the LRTs and all its CV folds,
+a training-set fit that did not converge gives \code{NA} for that fold. Progress
+(count, percentage, elapsed time, ETA) is printed with \code{verbose = TRUE}.
 
 h2, rg and rp are built from the \strong{names} of the variance components,
 not from fixed \code{V} positions, so they stay correct when random effects

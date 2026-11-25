@@ -11,7 +11,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 CSS = (ROOT / "tools" / "cheatsheet.css").read_text(encoding="utf-8")
 
 FNS = ["asr_gblup", "asr_scenarios", "cv_scenarios", "nest_cv", "w2l_nest", "c2p_nest",
-       "asreml", "vpredict", "lrt.asreml", "G.inverse", "G.matrix", "import_xlsx", "vm", "ide"]
+       "asreml", "vpredict", "lrt", "G.inverse", "G.matrix", "import_xlsx", "vm", "ide"]
 
 SCRIPT = r"""
 <script>
@@ -160,7 +160,7 @@ inbreeding &lt;- data.frame(id = rownames(G), F = diag(G) - 1)</code></pre>
     <p>One workbook per scenario: <code>&lt;dir&gt;/&lt;scenario&gt;_&lt;tag&gt;.xlsx</code>. <code>"mt_bt"</code>: diag residual, no rp.</p>
   </div>
   <div class="fn">
-    <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, min_rel = 0.05, neg_to_na = TRUE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = TRUE, maxit = 100, workspace = "30Gb", max_update = 0, asreml_args = list(), on_error = "warn", keep_pred = TRUE, path = NULL, verbose = TRUE)</div>
+    <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, min_rel = -Inf, neg_to_na = TRUE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = TRUE, maxit = 100, workspace = "30Gb", max_update = 3, on_nonconverge = "skip", asreml_args = list(), on_error = "warn", keep_pred = TRUE, path = NULL, verbose = TRUE, trace = FALSE)</div>
     <pre><code>res &lt;- asr_scenarios(sc, ginv, fixed = ~ hhys,
                      inbreeding = inbreeding, dir = "results")
 st &lt;- asr_gblup(sc$st_sp$param, sc$st_sp$cv, ginv,
@@ -214,7 +214,7 @@ asr_gblup(..., random = ~ ide(id),
 </section>
 
 <section class="panel ut">
-  <h2>Tests <small>lrt.asreml(boundary = FALSE)</small></h2>
+  <h2>Tests <small>lrt(boundary = FALSE)</small></h2>
   <div class="fn">
     <table>
       <tr><th>argument</th><th>reduced model</th><th>output</th></tr>
@@ -265,7 +265,7 @@ asr_gblup(..., random = ~ ide(id),
     <ul>
       <li>warnings: no <code>INVERSE</code> attribute; IDs not in <code>ginv</code>; components at the boundary (<code>B</code>, also <code>param$boundary</code>); <code>gammaPar = TRUE</code>; no convergence</li>
       <li>ASReml defaults <code>maxit = 13</code>, <code>workspace = "128mb"</code> are too small for two-trait GBLUP</li>
-      <li><code>max_update = 2</code> &rarr; <code>update()</code> on non-converged fits</li>
+      <li><code>max_update = 3</code> &rarr; <code>update()</code> on non-converged fits</li>
       <li><code>on_error = "warn"</code>: a failing fit gives <code>NA</code>, the loop goes on</li>
       <li>models are not kept &rarr; low memory</li>
       <li><code>asreml_args = list(ai.sing = TRUE)</code> for other <code>asreml()</code> arguments</li>
@@ -336,7 +336,7 @@ inbreeding &lt;- data.frame(id = rownames(G), F = diag(G) - 1)</code></pre>
     <p>每个场景一个工作簿：<code>&lt;dir&gt;/&lt;场景&gt;_&lt;tag&gt;.xlsx</code>。<code>"mt_bt"</code>：diag 残差，不算 rp。</p>
   </div>
   <div class="fn">
-    <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, min_rel = 0.05, neg_to_na = TRUE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = TRUE, maxit = 100, workspace = "30Gb", max_update = 0, asreml_args = list(), on_error = "warn", keep_pred = TRUE, path = NULL, verbose = TRUE)</div>
+    <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, min_rel = -Inf, neg_to_na = TRUE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = TRUE, maxit = 100, workspace = "30Gb", max_update = 3, on_nonconverge = "skip", asreml_args = list(), on_error = "warn", keep_pred = TRUE, path = NULL, verbose = TRUE, trace = FALSE)</div>
     <pre><code>res &lt;- asr_scenarios(sc, ginv, fixed = ~ hhys,
                      inbreeding = inbreeding, dir = "results")
 st &lt;- asr_gblup(sc$st_sp$param, sc$st_sp$cv, ginv,
@@ -390,7 +390,7 @@ asr_gblup(..., random = ~ ide(id),
 </section>
 
 <section class="panel ut">
-  <h2>检验 <small>lrt.asreml(boundary = FALSE)</small></h2>
+  <h2>检验 <small>lrt(boundary = FALSE)</small></h2>
   <div class="fn">
     <table>
       <tr><th>参数</th><th>简化模型</th><th>输出</th></tr>
@@ -441,7 +441,7 @@ asr_gblup(..., random = ~ ide(id),
     <ul>
       <li>警告：ginv 无 <code>INVERSE</code> 属性；个体不在 <code>ginv</code> 中；组分在边界上（<code>B</code>，也记在 <code>param$boundary</code>）；<code>gammaPar = TRUE</code>；未收敛</li>
       <li>ASReml 默认 <code>maxit = 13</code>、<code>workspace = "128mb"</code>，两性状 GBLUP 不够用</li>
-      <li><code>max_update = 2</code> &rarr; 对未收敛模型调用 <code>update()</code></li>
+      <li><code>max_update = 3</code> &rarr; 对未收敛模型调用 <code>update()</code></li>
       <li><code>on_error = "warn"</code>：某次拟合失败结果为 <code>NA</code>，循环继续</li>
       <li>不保存模型对象 &rarr; 内存占用低</li>
       <li>其他 <code>asreml()</code> 参数：<code>asreml_args = list(ai.sing = TRUE)</code></li>

@@ -11,13 +11,102 @@ NULL
         collapse = " ")
 }
 
-.try_fit <- function(expr, what, on_error) {
-  tryCatch(expr, error = function(e) {
-    msg <- sprintf("ASReml fit failed for %s: %s", what, conditionMessage(e))
+# Elapsed time as "1h02m", "3m05s" or "12s"
+.fmt_time <- function(sec) {
+  if (is.null(sec) || !is.finite(sec)) return("--")
+  sec <- round(sec)
+  if (sec >= 3600) sprintf("%dh%02dm", sec %/% 3600, (sec %% 3600) %/% 60)
+  else if (sec >= 60) sprintf("%dm%02ds", sec %/% 60, sec %% 60)
+  else sprintf("%ds", sec)
+}
+
+# Progress line: [cv 12/60  20%] label | elapsed 3m05s | ETA 12m20s
+.progress <- function(stage, k, n, t0, lab) {
+  el  <- proc.time()[["elapsed"]] - t0
+  eta <- if (k > 1L) el / (k - 1L) * (n - k + 1L) else NA_real_
+  message(sprintf("[%s %d/%d %3.0f%%] %s | elapsed %s | ETA %s",
+                  stage, k, n, 100 * (k - 1L) / n, lab, .fmt_time(el), .fmt_time(eta)))
+}
+
+# Run log: one row per fit (or skipped fit) with status and messages
+.new_log <- function() {
+  e <- new.env(parent = emptyenv())
+  e$rows <- list()
+  e$add <- function(stage, label, status, n_update = NA_integer_, seconds = NA_real_, message = "") {
+    e$rows[[length(e$rows) + 1L]] <- data.table::data.table(
+      stage = stage, label = label, status = status, n_update = as.integer(n_update),
+      seconds = round(as.numeric(seconds), 2), message = message)
+    invisible(NULL)
+  }
+  e$table <- function() {
+    if (!length(e$rows)) return(data.table::data.table(stage = character(), label = character(),
+      status = character(), n_update = integer(), seconds = numeric(), message = character()))
+    data.table::rbindlist(e$rows)
+  }
+  e
+}
+
+# Run one fit safely: errors are caught (on_error), ASReml's own warnings are
+# collected into the log instead of being printed one by one (muffle: regex
+# of expected warnings to drop, e.g. "not converged" when all variances are
+# fixed and maxit = 1), and the result carries attr "status":
+# "ok" / "not_converged". Returns NULL on error.
+.safe_fit <- function(expr, stage, lab, log, on_error, expect_converge = TRUE, muffle = NULL) {
+  t1 <- proc.time()[["elapsed"]]
+  warns <- character()
+  fit <- tryCatch(
+    withCallingHandlers(expr, warning = function(w) {
+      m <- conditionMessage(w)
+      if (is.null(muffle) || !grepl(muffle, m, ignore.case = TRUE)) warns <<- c(warns, m)
+      invokeRestart("muffleWarning")
+    }),
+    error = function(e) e)
+  secs <- proc.time()[["elapsed"]] - t1
+  if (inherits(fit, "error")) {
+    msg <- sprintf("ASReml fit failed for %s [%s]: %s", lab, stage, conditionMessage(fit))
+    log$add(stage, lab, "failed", NA_integer_, secs, msg)
     if (on_error == "stop") stop(msg, call. = FALSE)
     warning(msg, call. = FALSE)
-    NULL
-  })
+    return(NULL)
+  }
+  nu <- attr(fit, "n_update"); if (is.null(nu)) nu <- 0L
+  status <- if (!expect_converge || isTRUE(fit$converge)) "ok" else "not_converged"
+  log$add(stage, lab, status, nu, secs, paste(unique(warns), collapse = " | "))
+  attr(fit, "status") <- status
+  fit
+}
+
+# Likelihood-ratio test full vs reduced (REML, same fixed effects).
+# ASReml-R 4.2 exports the generic lrt(); older versions lrt.asreml().
+# If neither works, LR = 2 (logL_full - logL_reduced) with df = difference in
+# the number of non-fixed variance parameters.
+.asr_fun <- function(nms) {
+  for (n in nms) {
+    f <- tryCatch(getExportedValue("asreml", n), error = function(e) NULL)
+    if (is.function(f)) return(f)
+  }
+  NULL
+}
+.n_free <- function(fit) {
+  b <- as.character(summary(fit)$varcomp$bound)
+  sum(!b %in% c("F", "Fixed"))
+}
+.lrt <- function(full, reduced, lab) {
+  f <- .asr_fun(c("lrt", "lrt.asreml"))
+  r <- if (is.null(f)) NULL else
+    tryCatch(as.data.frame(f(full, reduced, boundary = FALSE)), error = function(e) e)
+  if (is.data.frame(r) && nrow(r))
+    return(list(df = r[[1L]][1L], lr = r[[2L]][1L], p = r[[ncol(r)]][1L]))
+  why <- if (inherits(r, "error")) conditionMessage(r) else "asreml::lrt() not found"
+  df <- .n_free(full) - .n_free(reduced)
+  lr <- 2 * (full$loglik - reduced$loglik)
+  if (!is.finite(lr) || df < 1L) {
+    warning(sprintf("[%s] LRT not possible (%s).", lab, why), call. = FALSE)
+    return(list(df = NA_real_, lr = NA_real_, p = NA_real_))
+  }
+  warning(sprintf("[%s] asreml LRT failed (%s); LR computed from the log-likelihoods (df = %d).",
+                  lab, why, df), call. = FALSE)
+  list(df = df, lr = lr, p = stats::pchisq(max(lr, 0), df, lower.tail = FALSE))
 }
 
 # data.frame with factors, as asreml() expects
@@ -31,7 +120,7 @@ NULL
 # One ASReml fit. Formulas are built here so that asreml finds `ginv`, `vc`
 # ... in the formula / calling environment, and update() works.
 # spec: type, fixed, random, id, genetic_cov, random_cov, residual_cov,
-#       dense, na_x, workspace, max_update, asreml_args
+#       dense, na_x, workspace, max_update, asreml_args, trace, verbose
 .asr_fit <- function(d, spec, ginv, maxit, vc = NULL, start_values = FALSE,
                      genetic_cov = spec$genetic_cov, random_cov = spec$random_cov,
                      residual_cov = spec$residual_cov, check_converge = TRUE) {
@@ -64,16 +153,21 @@ NULL
                              data = d, maxit = maxit, workspace = workspace))
   if (spec$dense) cl$dense <- quote(dn)
   if (!is.null(vc)) { cl$G.param <- quote(vc); cl$R.param <- quote(vc) }
+  if (!is.null(spec$trace)) cl$trace <- spec$trace
   for (nm in names(spec$asreml_args)) cl[[nm]] <- spec$asreml_args[[nm]]
   if (start_values) { cl$start.values <- TRUE; return(eval(cl)) }
   fit <- eval(cl)
+  attr(fit, "n_update") <- 0L
   if (!check_converge) return(fit)          # all variances fixed, maxit = 1: BLUP only
+  # not converged: restart from the current estimates with update()
   k <- 0L
   while (!isTRUE(fit$converge) && k < spec$max_update) {
-    fit <- stats::update(fit); k <- k + 1L
+    k <- k + 1L
+    if (isTRUE(spec$verbose))
+      message(sprintf("    not converged: update() %d/%d", k, spec$max_update))
+    fit <- stats::update(fit)
   }
-  if (!isTRUE(fit$converge))
-    warning("ASReml did not converge (", deparse(fx), ").", call. = FALSE)
+  attr(fit, "n_update") <- k
   fit
 }
 
@@ -256,13 +350,23 @@ NULL
   out <- gebv[obs, on = c("id", "trait")]
   out[, inb := if (is.null(Ftab)) 0 else Ftab$F[match(id, Ftab$id)]]
   out[, rel := 1 - pev / ((1 + inb) * va[trait])]
-  out[is.na(rel) | rel < min_rel, gebv := NA_real_]
+  if (is.finite(min_rel)) {
+    had <- out[!is.na(gebv) & !is.na(obs), .N, by = trait]
+    out[is.na(rel) | rel < min_rel, gebv := NA_real_]
+    left <- out[!is.na(gebv) & !is.na(obs), .N, by = trait]
+    gone <- setdiff(had$trait[had$N > 0], left$trait[left$N >= 3L])
+    if (length(gone))
+      warning(sprintf("min_rel = %g leaves fewer than 3 GEBVs for %s in this fold; PA is NA. ",
+                      min_rel, paste(gone, collapse = ", ")),
+              "Validation individuals have no own record, so low reliabilities are normal; ",
+              "consider min_rel = -Inf.", call. = FALSE)
+  }
   out[, c("id", "trait", "obs", "gebv", "pev", "inb", "rel"), with = FALSE]
 }
 
 # Predictive ability PA = r(y, GEBV); accuracy = PA / sqrt(h2) with the
 # full-data h2 (Dekkers 2007); slope b(y ~ GEBV), ideally close to 1.
-.accuracy <- function(pred, resp, tn, h2, va) {
+.accuracy <- function(pred, resp, tn, h2, va, status = "ok") {
   res <- lapply(resp, function(r) {
     na <- list(n = 0L, pa = NA_real_, slope = NA_real_,
                n_obs = if (is.null(pred)) NA_integer_ else sum(pred$trait == r & !is.na(pred$obs)))
@@ -282,7 +386,8 @@ NULL
                          slope = vapply(res, `[[`, numeric(1L), "slope"),
                          va = if (is.null(va)) NA_real_ else unname(va[resp]),
                          h2_full = h,
-                         n_obs = vapply(res, `[[`, integer(1L), "n_obs"))
+                         n_obs = vapply(res, `[[`, integer(1L), "n_obs"),
+                         status = status)
 }
 
 .neg_na <- function(x) { x[!is.na(x) & x < 0] <- NA_real_; x }
@@ -322,4 +427,4 @@ NULL
 }
 
 utils::globalVariables(c(".pi", "trait", "obs", "gebv", "pev", "inb", "rel", "id",
-                         "value", "pa", "accuracy", "slope", "n_obs", "V", "."))
+                         "value", "pa", "accuracy", "slope", "n_obs", "V", ".", "status", "stage"))

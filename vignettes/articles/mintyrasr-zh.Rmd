@@ -130,7 +130,7 @@ asr_gblup(all_nest5, all_cv5, ginv, fixed = ~ hhys, traits = c("bfs", "nls"),
 - `accuracy`（准确性）= pa / sqrt(h2)，h2 用全数据估计值（Dekkers 2007）；
 - `slope` = b(y ~ GEBV)，等于 1 表示 GEBV 既没有膨胀也没有压缩。
 
-可靠性低于 `min_rel`（默认 0.05）的 GEBV 不参与计算；`neg_to_na = TRUE`（默认）时，负值在汇总前设为 `NA`。
+默认使用全部 GEBV（`min_rel = -Inf`）。验证个体自己没有表型，可靠性本来就低，用小群体训练时常低于 0.05，按可靠性过滤会使 PA 有偏，甚至一个 GEBV 都不剩。确需过滤时可设 `min_rel = 0.05`（剩余 GEBV 少于 3 个时会给出警告）。`neg_to_na = TRUE`（默认）时，负值在汇总前设为 `NA`。
 
 ## 6. 交叉验证中的方差组分
 
@@ -145,7 +145,8 @@ asr_gblup(all_nest5, all_cv5, ginv, fixed = ~ hhys, traits = c("bfs", "nls"),
 ## 7. 实用提示
 
 - 不保存模型对象，折数很多时内存也不会爆。
-- 某次拟合失败时给出警告、结果为 `NA`，循环继续（`on_error = "stop"` 则立即停止）。`max_update = 2` 对未收敛的模型调用 `update()`。
+- 运行进度：`[cv 12/60  18%] ... | elapsed 3m05s | ETA 13m50s`，结束时给出汇总。`trace = FALSE`（默认）不显示 ASReml 的迭代过程。
+- 安全运行：未收敛的模型用 `update()` 最多重启 `max_update = 3` 次；仍不收敛或拟合出错时给出警告、记入 `log` 表，循环继续。`on_nonconverge = "skip"`（默认）时不在这样的模型上继续计算：全数据模型不收敛则跳过它的 LRT 和所有 CV 折，训练集模型不收敛则该折结果为 `NA`（见 `accuracy$status`）。`on_nonconverge = "keep"` 照常使用；`on_error = "stop"` 遇到错误立即停止。
 - 两性状 GBLUP 需要比 ASReml 默认（`maxit = 13`、`workspace = "128mb"`）更大的设置；mintyrasr 默认 `maxit = 100`、`workspace = "30Gb"`。
 - `na_x = "include"`（默认，与常见脚本一致）把缺失协变量当作 0，数值协变量请先中心化；ASReml 自身默认是 `"fail"`。
 - 其他 `asreml()` 参数：`asreml_args = list(ai.sing = TRUE)`。

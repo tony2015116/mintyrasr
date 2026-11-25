@@ -22,7 +22,7 @@ na.method <- function(x = "include", y = "include") list(x = x, y = y)
                       ifelse(grepl("_([^:!]+):(?!\\1)[^:!]+$", nm, perl = TRUE), 0.1,
                       ifelse(grepl("units", nm), 0.6, ifelse(grepl("vm", nm), 0.3, 0.2)))))
 asreml <- function(fixed, random, residual, dense = NULL, na.action, data, G.param = NULL,
-                   R.param = NULL, start.values = FALSE, maxit = 30, workspace = NULL) {
+                   R.param = NULL, start.values = FALSE, maxit = 30, workspace = NULL, trace = TRUE, ...) {
   stopifnot(is.data.frame(data), is.factor(data$id))
   for (v in all.vars(fixed)) if (!v %in% c(names(data), "trait")) stop("object '", v, "' not found")
   rtxt <- deparse(random)
@@ -58,20 +58,27 @@ asreml <- function(fixed, random, residual, dense = NULL, na.action, data, G.par
   vp <- setNames(comp, nm)
   if (isTRUE(getOption("mock.shuffle"))) { vc <- vc[rev(seq_len(nrow(vc))), ] }   # varcomp order != vparameters
   if (isTRUE(getOption("mock.boundary")) && mt) vc$bound[grepl("litter", rownames(vc))] <- "B"
-  structure(list(converge = TRUE, vc = vc, cr = cr, vparameters = vp, loglik = -100 - diagG * 3), class = "asreml")
+  if (isTRUE(getOption("mock.fail")) && is.null(G.param)) stop("mock: singular information matrix")
+  if (!is.null(getOption("mock.warn")) && maxit == 1) warning(getOption("mock.warn"))
+  conv <- !isTRUE(getOption("mock.nonconv")) || (!is.null(G.param) && all(G.param$Constraint == "F"))
+  structure(list(converge = conv, vc = vc, cr = cr, vparameters = vp, loglik = -100 - diagG * 3), class = "asreml")
 }
 summary.asreml <- function(object, coef = FALSE, ...) {
   out <- list(varcomp = object$vc)
   if (coef) out$coef.random <- as.matrix(object$cr)
   out
 }
-update.asreml <- function(object, ...) object
+update.asreml <- function(object, ...) {
+  if (isTRUE(getOption("mock.update_fixes"))) object$converge <- TRUE
+  object
+}
 vpredict <- function(object, transform) {
   V <- as.list(unname(object$vparameters)); names(V) <- paste0("V", seq_along(V))
   est <- eval(transform[[3]], V)
   if (!is.finite(est)) stop("mock vpredict: V index out of range")
   data.frame(Estimate = est, SE = 0.05, row.names = as.character(transform[[2]]))
 }
+lrt <- function(object, ..., boundary = TRUE) UseMethod("lrt")
 lrt.asreml <- function(object, ..., boundary = TRUE) {
   if (boundary) stop("mock: rg test must use boundary = FALSE")
   o <- list(...)[[1]]; lr <- 2 * (object$loglik - o$loglik)

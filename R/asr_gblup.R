@@ -11,12 +11,19 @@
 #' 2. refits the model to every training set in `cv`, with the variance
 #'    components handled as set by `cv_vc`;
 #' 3. predicts GEBVs of the validation individuals, computes their
-#'    reliability `1 - PEV / ((1 + F) * Va)`, drops GEBVs with reliability
-#'    below `min_rel`, and returns per fold the predictive ability
+#'    reliability `1 - PEV / ((1 + F) * Va)` (optionally dropping GEBVs with
+#'    reliability below `min_rel`), and returns per fold the predictive ability
 #'    `pa = r(y, GEBV)`, the accuracy `pa / sqrt(h2)` (h2 from the full data,
 #'    Dekkers 2007) and the slope `b(y ~ GEBV)`;
 #' 4. summarises them over folds (n, mean, sd, se) and, optionally, writes
 #'    everything to one Excel workbook.
+#'
+#' Every fit runs safely: an error or a model that has not converged after
+#' `max_update` calls of `update()` gives a warning and is recorded in the
+#' `log` table, and (with `on_nonconverge = "skip"`) nothing is built on it:
+#' a full-data fit that did not converge skips the LRTs and all its CV folds,
+#' a training-set fit that did not converge gives `NA` for that fold. Progress
+#' (count, percentage, elapsed time, ETA) is printed with `verbose = TRUE`.
 #'
 #' h2, rg and rp are built from the **names** of the variance components,
 #' not from fixed `V` positions, so they stay correct when random effects
@@ -71,7 +78,10 @@
 #'   is the ID and second column F, or a named numeric vector. `NULL` uses
 #'   F = 0. For GBLUP, `F = diag(G) - 1` is common.
 #' @param min_rel GEBVs with reliability below this value are set to `NA`
-#'   before computing PA / accuracy. Use `-Inf` to keep all.
+#'   before computing PA / accuracy. Default `-Inf`: keep all. Validation
+#'   individuals have no record of their own, so their reliabilities are low
+#'   (often < 0.05 within a small group); filtering them biases PA and can
+#'   leave no GEBV at all. Reliabilities are always reported in `pred`.
 #' @param neg_to_na Set negative PA / accuracy / slope to `NA` before the
 #'   summary (the behaviour of the original scripts).
 #' @param test_rg Two-trait models only: LRT of rg = 0 (`idh(trait)` genetic
@@ -90,18 +100,27 @@
 #' @param maxit,workspace Passed to `asreml()` (maxit is 1 for `cv_vc = "fixed"`).
 #'   ASReml's own defaults are 13 and `"128mb"`; two-trait GBLUP usually
 #'   needs more.
-#' @param max_update Number of `update()` calls on a fit that has not converged.
+#' @param max_update Number of `update()` calls (restart from the current
+#'   estimates) on a fit that has not converged. `0` turns this off.
+#' @param on_nonconverge What to do with a fit that has still not converged
+#'   after `max_update` updates: `"skip"` (default) warns, records it in `log`
+#'   and builds nothing on it (see Details); `"keep"` warns and uses it anyway.
 #' @param asreml_args Named list of further `asreml()` arguments, e.g.
 #'   `list(ai.sing = TRUE)`.
 #' @param on_error `"warn"` (default): a failing fit gives a warning and `NA`
 #'   results, the loop continues. `"stop"`: stop at the first failure.
 #' @param keep_pred Return the validation predictions (`pred`).
 #' @param path Optional `.xlsx` file to write the results to.
-#' @param verbose Print progress.
+#' @param verbose Print progress (stage, count, %, elapsed time, ETA) and an
+#'   end-of-run summary.
+#' @param trace Print ASReml's own iteration log (`asreml(trace = )`). `FALSE`
+#'   keeps the console readable; ASReml warnings are collected in `log`.
 #'
-#' @return A list of class `asr_gblup` with `varcomp`, `vc_index`, `param`,
-#'   `accuracy` (one row per fold and trait), `summary` and, if `keep_pred`,
-#'   `pred`. Fitted model objects are not kept, which keeps memory use low.
+#' @return A list of class `asr_gblup` with `varcomp`, `vc_index`, `param`
+#'   (incl. `converge`, `n_update`), `accuracy` (one row per fold and trait,
+#'   with `status`: ok / not_converged / failed / skipped), `summary`, `log`
+#'   (one row per fit: stage, label, status, n_update, seconds, ASReml
+#'   messages) and, if `keep_pred`, `pred`. Fitted model objects are not kept, which keeps memory use low.
 #'
 #' @seealso [asr_scenarios()] to run several scenarios from
 #'   [mintyr::cv_scenarios()] in one call.
@@ -121,12 +140,14 @@
 asr_gblup <- function(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL,
                       genetic_cov = "us", random_cov = "us", residual_cov = "us",
                       cv_vc = c("fixed", "warm", "estimate"), vpredict = NULL,
-                      inbreeding = NULL, min_rel = 0.05, neg_to_na = TRUE,
+                      inbreeding = NULL, min_rel = -Inf, neg_to_na = TRUE,
                       test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = c("include", "fail", "omit"),
-                      dense = TRUE, maxit = 100L, workspace = "30Gb", max_update = 0L,
+                      dense = TRUE, maxit = 100L, workspace = "30Gb", max_update = 3L,
+                      on_nonconverge = c("skip", "keep"),
                       asreml_args = list(), on_error = c("warn", "stop"),
-                      keep_pred = TRUE, path = NULL, verbose = TRUE) {
+                      keep_pred = TRUE, path = NULL, verbose = TRUE, trace = FALSE) {
   on_error <- match.arg(on_error)
+  on_nonconverge <- match.arg(on_nonconverge)
   cv_vc    <- match.arg(cv_vc)
   na_x     <- match.arg(na_x)
   covs <- c("us", "idh", "diag", "corv", "corh", "corgh")
@@ -143,6 +164,8 @@ asr_gblup <- function(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", tr
     stop("`vpredict` must be a named list of formulas.", call. = FALSE)
   if (!is.list(asreml_args) || (length(asreml_args) && is.null(names(asreml_args))))
     stop("`asreml_args` must be a named list.", call. = FALSE)
+  if (!is.numeric(max_update) || length(max_update) != 1L || max_update < 0)
+    stop("`max_update` must be a single number >= 0.", call. = FALSE)
 
   P <- data.table::as.data.table(param)
   C <- data.table::as.data.table(cv)
@@ -195,26 +218,43 @@ asr_gblup <- function(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", tr
 
   Ftab <- .prep_F(inbreeding)
   if (is.null(Ftab) && verbose) message("`inbreeding` is NULL: F = 0 is used for all individuals.")
-  run <- function(expr, what) .try_fit(expr, what, on_error)
+  log <- .new_log()
+  t_start <- proc.time()[["elapsed"]]
   spec <- list(type = type, resp = resp, fixed = fixed, random = random, id = id,
                genetic_cov = genetic_cov, random_cov = random_cov, residual_cov = residual_cov,
-               dense = dense, na_x = na_x, workspace = workspace, max_update = max_update,
-               asreml_args = asreml_args)
+               dense = dense, na_x = na_x, workspace = workspace, max_update = as.integer(max_update),
+               asreml_args = asreml_args, trace = trace, verbose = verbose)
   fit1 <- function(d, ...) .asr_fit(d, spec = spec, ginv = ginv, ...)
+  run  <- function(expr, stage, lab, ...) .safe_fit(expr, stage, lab, log, on_error, ...)
+  # a fit that has not converged (after max_update update() calls)
+  nonconv <- function(fit, lab, what) {
+    if (is.null(fit) || attr(fit, "status") != "not_converged") return(FALSE)
+    warning(sprintf("[%s] %s did not converge after %d update() call(s)%s.", lab, what,
+                    attr(fit, "n_update"),
+                    if (on_nonconverge == "skip") "; skipped (on_nonconverge = \"skip\")"
+                    else "; results kept (on_nonconverge = \"keep\")"), call. = FALSE)
+    on_nonconverge == "skip"
+  }
 
   # ---- 1. parameter estimation (full data) -----------------------------------
   np <- nrow(P)
+  if (verbose) message(sprintf("Parameter estimation: %d data set(s), %s model, max_update = %d",
+                               np, if (type == "st") "single-trait" else "two-trait", max_update))
   vc_rows <- par_rows <- idx_rows <- vc_cv <- h2_list <- vector("list", np)
+  skip_p <- logical(np)                 # TRUE: no usable full-data fit -> CV skipped
+  t0 <- proc.time()[["elapsed"]]
   for (i in seq_len(np)) {
     lab <- .label(P[i], p_outer)
-    if (verbose) message(sprintf("[param %d/%d] %s", i, np, lab))
+    if (verbose) .progress("param", i, np, t0, lab)
     dat  <- P$data[[i]]
     meta <- P[i, p_outer, with = FALSE]
-    fit  <- run(fit1(dat, maxit = maxit), lab)
+    fit  <- run(fit1(dat, maxit = maxit), "param", lab)
     if (is.null(fit)) {
       par_rows[[i]] <- cbind(meta, converge = NA)
+      skip_p[i] <- TRUE
       next
     }
+    skip_p[i] <- nonconv(fit, lab, "full-data model")
     vc  <- as.data.frame(summary(fit)$varcomp)
     idx <- .vc_index(vc, type, id, resp, names(fit$vparameters))
     bnd <- idx$item[idx$bound == "B"]
@@ -229,31 +269,37 @@ asr_gblup <- function(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", tr
         if (nm %in% names(gp)) gp[[nm]] else NA_real_
       }, numeric(1L)), resp)
     par_rows[[i]] <- cbind(meta, gp, converge = isTRUE(fit$converge),
+                           n_update = attr(fit, "n_update"),
                            loglik = if (is.null(fit$loglik)) NA_real_ else fit$loglik,
                            boundary = paste(unique(bnd), collapse = "; "))
+    if (skip_p[i]) {                    # estimates kept for inspection, nothing built on them
+      log$add("lrt/cv", lab, "skipped", message = "full-data model not converged")
+      rm(fit); gc(verbose = FALSE)
+      next
+    }
     if (type == "mt" && test_rg) {
-      fit0 <- run(fit1(dat, maxit = maxit, genetic_cov = "idh"), paste(lab, "(idh model)"))
-      lr <- if (is.null(fit0)) NULL else
-        tryCatch(as.data.frame(asreml::lrt.asreml(fit, fit0, boundary = FALSE)),
-                 error = function(e) NULL)
-      par_rows[[i]][, `:=`(rg_lrt = if (is.null(lr)) NA_real_ else lr[[2L]][1L],
-                            rg_p   = if (is.null(lr)) NA_real_ else lr[[ncol(lr)]][1L])]
+      fit0 <- run(fit1(dat, maxit = maxit, genetic_cov = "idh"), "lrt_rg", paste(lab, "(idh model)"))
+      lr <- if (is.null(fit0) || nonconv(fit0, lab, "reduced idh model for the rg LRT")) NULL
+            else .lrt(fit, fit0, lab)
+      par_rows[[i]][, `:=`(rg_lrt = if (is.null(lr)) NA_real_ else lr$lr,
+                            rg_p   = if (is.null(lr)) NA_real_ else lr$p)]
       rm(fit0)
     }
     if (type == "mt" && test_rp) {   # all covariances = 0: idh genetic, random and residual
       fit00 <- run(fit1(dat, maxit = maxit, genetic_cov = "idh", random_cov = "idh",
-                        residual_cov = "idh"), paste(lab, "(all-idh model)"))
-      lr <- if (is.null(fit00)) NULL else
-        tryCatch(as.data.frame(asreml::lrt.asreml(fit, fit00, boundary = FALSE)),
-                 error = function(e) NULL)
-      par_rows[[i]][, `:=`(cov_df  = if (is.null(lr)) NA_real_ else lr[[1L]][1L],
-                            cov_lrt = if (is.null(lr)) NA_real_ else lr[[2L]][1L],
-                            cov_p   = if (is.null(lr)) NA_real_ else lr[[ncol(lr)]][1L])]
+                        residual_cov = "idh"), "lrt_cov", paste(lab, "(all-idh model)"))
+      lr <- if (is.null(fit00) || nonconv(fit00, lab, "reduced all-idh model for the covariance LRT")) NULL
+            else .lrt(fit, fit00, lab)
+      par_rows[[i]][, `:=`(cov_df  = if (is.null(lr)) NA_real_ else lr$df,
+                            cov_lrt = if (is.null(lr)) NA_real_ else lr$lr,
+                            cov_p   = if (is.null(lr)) NA_real_ else lr$p)]
       rm(fit00)
     }
     if (cv_vc != "estimate") {   # start-value table filled by Component name
-      init <- run(fit1(dat, maxit = maxit, start_values = TRUE), paste(lab, "(start values)"))
+      init <- run(fit1(dat, maxit = maxit, start_values = TRUE), "start_values",
+                  paste(lab, "(start values)"), expect_converge = FALSE)
       if (!is.null(init)) vc_cv[[i]] <- .vc_table(init, vc, lab, fix = cv_vc == "fixed")
+      else skip_p[i] <- TRUE
       rm(init)
     }
     rm(fit); gc(verbose = FALSE)
@@ -268,26 +314,43 @@ asr_gblup <- function(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", tr
 
   tnames <- .trait_names(P, keys, type, resp, given = !is.null(traits))
   nc <- nrow(C)
+  if (verbose) message(sprintf("Cross-validation: %d fold(s), variance components: %s%s",
+                               nc, cv_vc,
+                               if (any(skip_p)) sprintf(" (%d fold(s) skipped: no usable full-data fit)",
+                                                        sum(skip_p[pidx])) else ""))
   acc_rows <- pred_rows <- vector("list", nc)
+  t0 <- proc.time()[["elapsed"]]
   for (j in seq_len(nc)) {
     i <- pidx[j]
     lab <- .label(C[j], c_outer)
-    if (verbose) message(sprintf("[cv %d/%d] %s", j, nc, lab))
+    if (verbose) .progress("cv", j, nc, t0, lab)
     meta <- C[j, c_outer, with = FALSE]
     tn <- tnames[[i]]
     pred <- va <- NULL
-    if (cv_vc == "estimate" || !is.null(vc_cv[[i]])) {
+    status <- "ok"
+    if (skip_p[i]) {
+      status <- "skipped"
+      log$add("cv", lab, "skipped", message = "no usable full-data fit")
+    } else {
       fit <- run(fit1(C$train[[j]],
                       maxit = if (cv_vc == "fixed") 1L else maxit,
-                      vc = vc_cv[[i]], check_converge = cv_vc != "fixed"), lab)
-      if (!is.null(fit)) {
-        va <- .va(.vc_index(as.data.frame(summary(fit)$varcomp), type, id, resp,
-                            names(fit$vparameters)), resp)
-        pred <- .validate(fit, C$validate[[j]], id, resp, va, Ftab, min_rel)
+                      vc = vc_cv[[i]], check_converge = cv_vc != "fixed"),
+                 "cv", lab, expect_converge = cv_vc != "fixed",
+                 muffle = if (cv_vc == "fixed") "not converged|changed by more than" else NULL)
+      if (is.null(fit)) {
+        status <- "failed"
+      } else {
+        status <- attr(fit, "status")
+        if (!nonconv(fit, lab, "training-set model")) {
+          va <- .va(.vc_index(as.data.frame(summary(fit)$varcomp), type, id, resp,
+                              names(fit$vparameters)), resp)
+          pred <- .validate(fit, C$validate[[j]], id, resp, va, Ftab, min_rel)
+        }
         rm(fit); gc(verbose = FALSE)
       }
     }
-    acc_rows[[j]] <- cbind(meta[rep(1L, length(resp))], .accuracy(pred, resp, tn, h2_list[[i]], va))
+    acc_rows[[j]] <- cbind(meta[rep(1L, length(resp))],
+                           .accuracy(pred, resp, tn, h2_list[[i]], va, status))
     if (keep_pred && !is.null(pred)) {
       pred[, trait := tn[match(trait, resp)]]
       pred_rows[[j]] <- cbind(meta[rep(1L, nrow(pred))], pred)
@@ -300,15 +363,18 @@ asr_gblup <- function(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", tr
   accuracy <- accuracy[is.na(n_obs) | n_obs > 0]
   if (neg_to_na)
     accuracy[, `:=`(pa = .neg_na(pa), accuracy = .neg_na(accuracy), slope = .neg_na(slope))]
+  logt <- log$table()
   out <- list(
     varcomp  = data.table::rbindlist(vc_rows, use.names = TRUE, fill = TRUE),
     vc_index = data.table::rbindlist(idx_rows, use.names = TRUE, fill = TRUE),
     param    = data.table::rbindlist(par_rows, use.names = TRUE, fill = TRUE),
     accuracy = accuracy,
     summary  = .summarise(accuracy, c(keys, grp_cols, "trait")),
-    pred     = if (keep_pred) data.table::rbindlist(pred_rows, use.names = TRUE, fill = TRUE)
+    pred     = if (keep_pred) data.table::rbindlist(pred_rows, use.names = TRUE, fill = TRUE),
+    log      = logt
   )
   out <- Filter(Negate(is.null), out)
+  .report(logt, proc.time()[["elapsed"]] - t_start, verbose)
   if (!is.null(path)) {
     if (!requireNamespace("writexl", quietly = TRUE))
       stop("Package 'writexl' is needed to write `path`.", call. = FALSE)
@@ -317,6 +383,23 @@ asr_gblup <- function(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", tr
     if (verbose) message("Written: ", path)
   }
   structure(out, class = c("asr_gblup", "list"), type = type, cv_vc = cv_vc, n_cv = nc)
+}
+
+# End-of-run report: counts by stage / status, one warning if anything went wrong
+.report <- function(logt, secs, verbose) {
+  bad <- logt[status != "ok"]
+  asr_w <- logt[status == "ok" & nzchar(message)]
+  if (verbose) {
+    cnt <- logt[, .N, by = c("stage", "status")]
+    message(sprintf("Done in %s. %s", .fmt_time(secs),
+                    paste(sprintf("%s %s: %d", cnt$stage, cnt$status, cnt$N), collapse = "; ")))
+  }
+  if (nrow(bad))
+    warning(sprintf("%d fit(s) failed, did not converge or were skipped; see the `log` table.",
+                    nrow(bad)), call. = FALSE)
+  if (nrow(asr_w) && verbose)
+    message(sprintf("%d fit(s) gave ASReml warnings (kept in the `log` table).", nrow(asr_w)))
+  invisible(NULL)
 }
 
 #' Run several GBLUP scenarios from `cv_scenarios()`
@@ -341,8 +424,11 @@ asr_scenarios <- function(sc, ginv, scenarios = c("st_sp", "st_mp", "mt_sp", "mt
   miss <- setdiff(scenarios, names(sc))
   if (length(miss)) stop("Not in `sc`: ", paste(miss, collapse = ", "), call. = FALSE)
   dots <- list(...)
-  res <- lapply(scenarios, function(s) {
-    message("==== ", s, " ====")
+  ns <- length(scenarios); t0 <- proc.time()[["elapsed"]]
+  res <- lapply(seq_along(scenarios), function(k) {
+    s <- scenarios[k]
+    message(sprintf("==== %s (%d/%d) | elapsed %s ====", s, k, ns,
+                      .fmt_time(proc.time()[["elapsed"]] - t0)))
     args <- c(list(param = sc[[s]]$param, cv = sc[[s]]$cv, ginv = ginv,
                    path = if (is.null(dir)) NULL else file.path(dir, paste0(s, "_", tag, ".xlsx"))),
               dots)
@@ -359,7 +445,12 @@ asr_scenarios <- function(sc, ginv, scenarios = c("st_sp", "st_mp", "mt_sp", "mt
     }
     do.call(asr_gblup, args)
   })
-  stats::setNames(res, scenarios)
+  res <- stats::setNames(res, scenarios)
+  st <- vapply(res, function(r) sum(r$log$status != "ok"), integer(1L))
+  message(sprintf("==== all %d scenario(s) done in %s | fits not ok: %s ====", ns,
+                  .fmt_time(proc.time()[["elapsed"]] - t0),
+                  paste(sprintf("%s %d", names(st), st), collapse = ", ")))
+  res
 }
 
 #' @export
@@ -367,6 +458,13 @@ print.asr_gblup <- function(x, ...) {
   cat(sprintf("<asr_gblup> %s model | %d parameter fits | %d CV fits | CV variances: %s\n",
               if (identical(attr(x, "type"), "mt")) "two-trait" else "single-trait",
               nrow(x$param), as.integer(attr(x, "n_cv")), attr(x, "cv_vc")))
+  if (!is.null(x$log)) {
+    bad <- x$log[x$log$status != "ok"]
+    if (nrow(bad)) {
+      cat(sprintf("%d fit(s) not ok (see $log):\n", nrow(bad)))
+      print(bad[, c("stage", "label", "status", "n_update")])
+    }
+  }
   print(x$summary)
   invisible(x)
 }

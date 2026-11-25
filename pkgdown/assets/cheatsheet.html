@@ -285,7 +285,7 @@ inbreeding &lt;- data.frame(id = rownames(G), F = diag(G) - 1)</code></pre>
     <p>One workbook per scenario: <code>&lt;dir&gt;/&lt;scenario&gt;_&lt;tag&gt;.xlsx</code>. <code>"mt_bt"</code>: diag residual, no rp.</p>
   </div>
   <div class="fn">
-    <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, min_rel = 0.05, neg_to_na = TRUE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = TRUE, maxit = 100, workspace = "30Gb", max_update = 0, asreml_args = list(), on_error = "warn", keep_pred = TRUE, path = NULL, verbose = TRUE)</div>
+    <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, min_rel = -Inf, neg_to_na = TRUE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = TRUE, maxit = 100, workspace = "30Gb", max_update = 3, on_nonconverge = "skip", asreml_args = list(), on_error = "warn", keep_pred = TRUE, path = NULL, verbose = TRUE, trace = FALSE)</div>
     <pre><code>res &lt;- asr_scenarios(sc, ginv, fixed = ~ hhys,
                      inbreeding = inbreeding, dir = "results")
 st &lt;- asr_gblup(sc$st_sp$param, sc$st_sp$cv, ginv,
@@ -339,7 +339,7 @@ asr_gblup(..., random = ~ ide(id),
 </section>
 
 <section class="panel ut">
-  <h2>Tests <small>lrt.asreml(boundary = FALSE)</small></h2>
+  <h2>Tests <small>lrt(boundary = FALSE)</small></h2>
   <div class="fn">
     <table>
       <tr><th>argument</th><th>reduced model</th><th>output</th></tr>
@@ -390,7 +390,7 @@ asr_gblup(..., random = ~ ide(id),
     <ul>
       <li>warnings: no <code>INVERSE</code> attribute; IDs not in <code>ginv</code>; components at the boundary (<code>B</code>, also <code>param$boundary</code>); <code>gammaPar = TRUE</code>; no convergence</li>
       <li>ASReml defaults <code>maxit = 13</code>, <code>workspace = "128mb"</code> are too small for two-trait GBLUP</li>
-      <li><code>max_update = 2</code> &rarr; <code>update()</code> on non-converged fits</li>
+      <li><code>max_update = 3</code> &rarr; <code>update()</code> on non-converged fits</li>
       <li><code>on_error = "warn"</code>: a failing fit gives <code>NA</code>, the loop goes on</li>
       <li>models are not kept &rarr; low memory</li>
       <li><code>asreml_args = list(ai.sing = TRUE)</code> for other <code>asreml()</code> arguments</li>
@@ -408,7 +408,7 @@ asr_gblup(..., random = ~ ide(id),
 
 <script>
 (function () {
-  var fns = ["asr_gblup","asr_scenarios","cv_scenarios","nest_cv","w2l_nest","c2p_nest","asreml","vpredict","lrt.asreml","G.inverse","G.matrix","import_xlsx","vm","ide"];
+  var fns = ["asr_gblup","asr_scenarios","cv_scenarios","nest_cv","w2l_nest","c2p_nest","asreml","vpredict","lrt","G.inverse","G.matrix","import_xlsx","vm","ide"];
   var fnRe = new RegExp("^(" + fns.map(function (f) { return f.replace(".", "\\."); }).join("|") + ")\\b");
   function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
   function hl(src) {

@@ -137,7 +137,7 @@ use the term `vm(<id>, ginv)`.
 
 ## Tests
 
-| argument | full model | reduced model | `lrt.asreml()` |
+| argument | full model | reduced model | `asreml::lrt()` |
 |---|---|---|---|
 | `test_rg = TRUE` (default) | as specified | genetic structure `idh(trait)`, the rest unchanged | `boundary = FALSE` (0 is not on the boundary of a correlation) |
 | `test_rp = TRUE` | as specified | `idh` for the genetic, extra random and residual terms | `boundary = FALSE`; `cov_df` = number of covariances |
@@ -153,4 +153,4 @@ in `param`.
 - Components fixed at the boundary (bound `B`): warning and `param$boundary`.
 - `asreml.options(gammaPar = TRUE)`: the automatic formulas assume the
   default variance (sigma) parameterisation.
-- Fits that did not converge (`max_update` to call `update()`).
+- Fits that did not converge after `max_update` calls of `update()`, and failed fits: warning, `log` table, skipped with `on_nonconverge = "skip"`.

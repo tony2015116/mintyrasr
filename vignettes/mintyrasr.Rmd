@@ -154,9 +154,12 @@ Each result is a list; every element becomes one sheet of the workbook.
 - `accuracy` = pa / sqrt(h2), with h2 from the full data (Dekkers 2007);
 - `slope` = b(y ~ GEBV); 1 means no inflation or deflation of the GEBVs.
 
-GEBVs with reliability below `min_rel` (default 0.05) are left out, and with
-`neg_to_na = TRUE` (default) negative values are set to `NA` before the
-summary.
+All GEBVs are used by default (`min_rel = -Inf`). Validation individuals
+have no record of their own, so their reliabilities are low - often below
+0.05 when a small group is used for training - and filtering on them biases
+PA or leaves no GEBV at all. Set e.g. `min_rel = 0.05` to filter anyway (a
+warning is given when fewer than 3 GEBVs are left). With `neg_to_na = TRUE`
+(default) negative values are set to `NA` before the summary.
 
 ## 6. Variance components in cross-validation
 
@@ -172,9 +175,15 @@ fold.
 ## 7. Practical notes
 
 - Fitted models are not kept: memory stays low even with many folds.
-- A failing fit gives a warning and `NA` results; the loop carries on
-  (`on_error = "stop"` to stop instead). `max_update = 2` calls `update()` on
-  fits that have not converged.
+- Progress: `[cv 12/60  18%] ... | elapsed 3m05s | ETA 13m50s`, and a
+  summary at the end. `trace = FALSE` (default) hides ASReml's iteration log.
+- Safe run: a fit that has not converged is restarted with `update()` up to
+  `max_update = 3` times. If it still has not converged, or fails, a warning
+  is given, the fit is recorded in the `log` table and the loop carries on.
+  With `on_nonconverge = "skip"` (default) nothing is built on such a fit: a
+  full-data fit skips its LRTs and CV folds, a training-set fit gives `NA` for
+  that fold (`accuracy$status`). `on_nonconverge = "keep"` uses it anyway;
+  `on_error = "stop"` stops at the first error.
 - Two-trait GBLUP needs more than ASReml's defaults (`maxit = 13`,
   `workspace = "128mb"`); mintyrasr uses `maxit = 100`, `workspace = "30Gb"`.
 - `na_x = "include"` (default, as in many scripts) treats missing covariates

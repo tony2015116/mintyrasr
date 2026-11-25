@@ -1,3 +1,23 @@
+# mintyrasr 0.4.0
+
+* The LRTs of rg = 0 and of all covariances use `asreml::lrt()`: ASReml-R 4.2
+  no longer exports `lrt.asreml()`, so `rg_lrt` / `rg_p` were silently `NA`.
+  If the asreml LRT fails, LR is computed from the log-likelihoods (warning).
+* `min_rel` now defaults to `-Inf` (keep all GEBVs). With 0.05, validation
+  individuals of small single-group scenarios (`st_sp`, `mt_sp`, `mt_bt`)
+  were almost all dropped and PA was `NA`. A warning is given when the filter
+  leaves fewer than 3 GEBVs.
+* Progress with count, %, elapsed time and ETA; summary at the end;
+  `asr_scenarios()` shows scenario k/n. `trace = FALSE` (default) hides
+  ASReml's iteration log.
+* Safe run: `max_update` now defaults to 3 (`update()` on fits that have not
+  converged). New `on_nonconverge = "skip"` (default) / `"keep"`: a fit that
+  still has not converged is warned about, recorded and nothing is built on
+  it. New `log` table (also in the workbook) with stage, label, status,
+  `n_update`, seconds and the ASReml warnings of every fit; new columns
+  `param$n_update` and `accuracy$status`. The expected "not converged"
+  warnings of `cv_vc = "fixed"` fits (`maxit = 1`) are no longer shown.
+
 # mintyrasr 0.3.0
 
 * `traits =` names the response column(s) when the nested data do not use

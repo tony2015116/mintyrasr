@@ -1,0 +1,5 @@
+S3method(print,asr_gblup)
+export(asr_gblup)
+export(asr_scenarios)
+import(data.table)
+importFrom(utils,globalVariables)

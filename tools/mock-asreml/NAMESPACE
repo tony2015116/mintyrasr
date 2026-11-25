@@ -1,0 +1,3 @@
+export(asreml, asreml.options, na.method, vpredict, lrt.asreml)
+S3method(summary, asreml)
+S3method(update, asreml)

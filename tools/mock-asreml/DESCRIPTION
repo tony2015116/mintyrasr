@@ -1,0 +1,6 @@
+Package: asreml
+Title: Mock of ASReml-R for testing
+Version: 4.2.0
+Description: Test double of ASReml-R used only by the mintyrasr test suite in CI. It returns fake numbers with the same object layout and component names. Never install it next to the real ASReml-R.
+License: MIT
+Imports: stats

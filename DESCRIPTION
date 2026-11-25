@@ -1,0 +1,24 @@
+Package: mintyrasr
+Title: Run 'mintyr' GBLUP Cross-Validation Scenarios Directly in 'ASReml-R'
+Version: 0.3.0
+Authors@R: person("Guo Meng", email = "tony2015116@163.com", role = c("aut", "cre", "cph"))
+Description: Fits single- and two-trait GBLUP models with 'ASReml-R' to the
+    nested parameter-estimation and cross-validation data built by
+    'mintyr' (cv_scenarios(), nest_cv()). Heritabilities, genetic and
+    phenotypic correlations are built from the names of the variance
+    components, so they follow the model (extra random effects, us / idh /
+    corv / corh / corgh structures). Variance components can be fixed,
+    warm-started or re-estimated in every fold, and the package reports GEBV
+    reliabilities, predictive ability, accuracy and regression slope, so no
+    input files have to be exported.
+License: MIT + file LICENSE
+URL: https://tony2015116.github.io/mintyrasr/, https://github.com/tony2015116/mintyrasr
+BugReports: https://github.com/tony2015116/mintyrasr/issues
+Depends: R (>= 4.1.0)
+Imports: data.table, stats, utils
+Suggests: asreml (>= 4.1), mintyr (>= 0.2.3), writexl, knitr, rmarkdown, testthat (>= 3.0.0)
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1

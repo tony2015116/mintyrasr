@@ -1,0 +1,64 @@
+url: https://tony2015116.github.io/mintyrasr/
+
+template:
+  bootstrap: 5
+  bootswatch: flatly
+  theme: a11y-light
+
+home:
+  title: "mintyrasr: mintyr GBLUP scenarios directly in ASReml-R"
+  description: >
+    GBLUP parameter estimation and cross-validation with ASReml-R on the
+    nested data built by mintyr: genetic parameters that follow the model,
+    correct LRTs, and PA / accuracy / slope per fold.
+
+navbar:
+  structure:
+    left:  [intro, reference, articles, zh, cheatsheet, news]
+    right: [search, github]
+  components:
+    zh:
+      text: 中文
+      menu:
+      - text: 入门
+        href: articles/mintyrasr-zh.html
+      - text: 模型与遗传参数
+        href: articles/models-zh.html
+      - text: 速查表
+        href: cheatsheet-zh.html
+    cheatsheet:
+      text: Cheatsheet
+      icon: fas fa-file-alt
+      aria-label: Cheatsheet
+      menu:
+      - text: English
+        href: cheatsheet.html
+      - text: 中文
+        href: cheatsheet-zh.html
+    github:
+      icon: fab fa-github fa-lg
+      href: https://github.com/tony2015116/mintyrasr
+      aria-label: GitHub
+
+articles:
+- title: English
+  navbar: ~
+  contents:
+  - mintyrasr
+  - articles/models
+- title: 中文
+  contents:
+  - articles/mintyrasr-zh
+  - articles/models-zh
+
+reference:
+- title: GBLUP with ASReml-R
+  desc: >
+    Parameter estimation and cross-validation for one scenario, or for all
+    scenarios of mintyr::cv_scenarios() in one call.
+  contents:
+  - asr_gblup
+  - asr_scenarios
+
+news:
+  cran_dates: false

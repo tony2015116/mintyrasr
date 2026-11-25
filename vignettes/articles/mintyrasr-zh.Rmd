@@ -1,0 +1,153 @@
+---
+title: "mintyrasr 入门"
+description: >
+  从表型表到每个 GBLUP 场景的方差组分、遗传参数和交叉验证准确性，全部在 ASReml-R 中直接完成。
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+[English version](mintyrasr.html)
+
+ASReml-R 是商业软件，网站构建时不运行本页代码；在装有 ASReml-R 4 的电脑上，每段代码都可以照原样运行。
+
+## 这个包做什么
+
+比较基因组预测模型时，mintyr 为每个场景准备两张表：**参数估计数据**（全部记录）和**训练集 / 验证集**（每个“重复 × 折”一行），所有场景在同一批个体上验证。mintyrasr 接过这两张表，对每一行：
+
+1. 用全部数据拟合模型：方差组分、h2；两性状再加 rg、rp 和 rg = 0 的似然比检验；
+2. 用每个训练集重新拟合（方差组分固定、以全数据为初值重估，或完全重估）；
+3. 预测验证个体的 GEBV，计算可靠性、预测能力、准确性和回归系数；
+4. 按折汇总，每个场景写一个 Excel 工作簿。
+
+| 函数 | 用途 |
+|---|---|
+| `asr_gblup(param, cv, ginv, ...)` | 跑一个场景（或任意嵌套表 + 交叉验证表） |
+| `asr_scenarios(sc, ginv, ...)` | 一次跑完 `mintyr::cv_scenarios()` 的所有场景 |
+
+## 安装
+
+```{r}
+# 先安装并激活 ASReml-R 4（https://vsni.co.uk/）
+install.packages("mintyr")
+pak::pak("tony2015116/mintyrasr")
+```
+
+## 1. 准备输入
+
+需要三样东西：
+
+- **表型**：每个个体一行，包括 ID、分组列（场、品系……）、固定效应和性状；
+- **`ginv`**：`vm()` 能用的基因组关系逆矩阵。必须带 `attr(ginv, "INVERSE") <- TRUE`，否则 `vm()` 会把它当成 G 本身（mintyrasr 会警告）；
+- **近交系数**（可选）：数据框 `(id, F)`，用于可靠性 `1 - PEV / ((1 + F) Va)`。GBLUP 常用 `F = diag(G) - 1`；不提供时 F = 0。
+
+```{r}
+library(asreml)
+library(ASRgenomics)
+library(mintyr)
+library(mintyrasr)
+
+pheno <- import_xlsx("pheno.xlsx")             # id, test_herd, hhys, adg, bf, fcr
+
+G    <- G.matrix(M = snp, method = "VanRaden")$G
+ginv <- G.inverse(G = G, sparseform = TRUE)$Ginv.sparse   # 自带 INVERSE = TRUE
+inbreeding <- data.frame(id = rownames(G), F = diag(G) - 1)
+```
+
+## 2. 用 mintyr 生成场景
+
+```{r}
+sc <- cv_scenarios(pheno, cols = c("adg", "bf", "fcr"), id = "id",
+                   group = "test_herd", v = 5, repeats = 5, seed = 2026,
+                   out_type = "df")      # ASReml-R 需要 data.frame
+sc
+```
+
+| 场景 | 模型 | 参数估计数据 | 训练集 |
+|---|---|---|---|
+| `st_sp` | 单性状、单群体 | 性状 × 群体 | 目标群体 |
+| `st_mp` | 单性状、多群体合并 | 性状 | 目标群体 + 其他所有群体 |
+| `mt_sp` | 两性状、单群体 | 性状对 × 群体 | 目标群体 |
+| `mt_mp` | 两性状、多群体合并 | 性状对 | 目标群体 + 其他所有群体 |
+| `mt_bt` | 同一性状在不同群体当作不同性状 | 性状 | 目标群体 + 其他所有群体 |
+
+## 3. 一次跑完所有场景
+
+```{r}
+res <- asr_scenarios(sc, ginv, fixed = ~ hhys, inbreeding = inbreeding,
+                     dir = "results")
+# results/st_sp_ginv.xlsx、st_mp_ginv.xlsx、mt_sp_ginv.xlsx、mt_mp_ginv.xlsx
+
+res$st_sp$summary
+res$mt_sp$param
+```
+
+在 `scenarios` 中加入 `"mt_bt"`，就是把同一性状在两个群体当作两个性状（G×E）。没有个体同时有两个群体的记录，所以自动用 `diag` 残差，不算 rp：
+
+```{r}
+res_bt <- asr_scenarios(sc, ginv, scenarios = "mt_bt", fixed = ~ hhys,
+                        genetic_cov = "corgh", inbreeding = inbreeding)
+res_bt$mt_bt$param        # 各群体 h2、群体间 rg（含 SE）、rg_p
+```
+
+## 4. 单独跑一个场景
+
+`asr_gblup()` 接收一张嵌套参数表和一张交叉验证表，二者通过共同的外层列（`name`、`pairs`、`test_herd`……）对应。
+
+```{r}
+st <- asr_gblup(sc$st_sp$param, sc$st_sp$cv, ginv = ginv,
+                fixed = ~ hhys, inbreeding = inbreeding,
+                path = "results/st_sp_ginv.xlsx")
+st
+```
+
+用 `w2l_nest()` / `c2p_nest()` + `nest_cv()` 自己生成的表也可以。响应列不叫 `value` / `value1` + `value2` 时，用 `traits` 指定：
+
+```{r}
+nested <- w2l_nest(pheno, cols = c("adg", "bf"), by = "test_herd", out_type = "df")
+cvtab  <- nest_cv(nested, v = 5, repeats = 2, seed = 1, out_type = "df")
+asr_gblup(nested, cvtab, ginv, fixed = ~ hhys)
+
+asr_gblup(all_nest5, all_cv5, ginv, fixed = ~ hhys, traits = c("bfs", "nls"),
+          genetic_cov = "corgh", residual_cov = "diag", rp = FALSE)
+```
+
+## 5. 输出内容
+
+每个结果是一个列表，每个元素是工作簿中的一张表。
+
+| 元素 | 内容 |
+|---|---|
+| `varcomp` | 每个参数估计模型的 `summary(fit)$varcomp`，附 `V` 编号 |
+| `vc_index` | 每个 `V` 是哪个组分：所属项、角色（genetic / random / residual）、类型（var / cov / cor）、性状、是否使用 |
+| `param` | h2（两性状分性状）、rg、rp 及 SE；实际用的 `formulas`；`converge`、`loglik`、`boundary`；`rg_lrt`、`rg_p`（`test_rp = TRUE` 时还有 `cov_*`） |
+| `accuracy` | 每个重复 × 折 × 性状：`n`、`pa`、`accuracy`、`slope`、`va`、`h2_full`、`n_obs` |
+| `summary` | `pa`、`accuracy`、`slope` 按折汇总的 n、mean、sd、se |
+| `pred` | 验证个体的 `obs`、`gebv`、`pev`、`inb`（F）、`rel` |
+
+- `pa`（预测能力）= 验证个体的 r(y, GEBV)；
+- `accuracy`（准确性）= pa / sqrt(h2)，h2 用全数据估计值（Dekkers 2007）；
+- `slope` = b(y ~ GEBV)，等于 1 表示 GEBV 既没有膨胀也没有压缩。
+
+可靠性低于 `min_rel`（默认 0.05）的 GEBV 不参与计算；`neg_to_na = TRUE`（默认）时，负值在汇总前设为 `NA`。
+
+## 6. 交叉验证中的方差组分
+
+| `cv_vc` | 每折的处理 | 说明 |
+|---|---|---|
+| `"fixed"`（默认） | 固定为全数据估计值（`Constraint = "F"`，`maxit = 1`） | 最快；验证个体的表型参与了方差估计，有轻微信息泄漏 |
+| `"warm"` | 用训练集重新估计，以全数据值为初值 | |
+| `"estimate"` | 从默认初值重新估计 | 无泄漏，最慢 |
+
+计算可靠性用的 `va` 总是取当折模型的值。
+
+## 7. 实用提示
+
+- 不保存模型对象，折数很多时内存也不会爆。
+- 某次拟合失败时给出警告、结果为 `NA`，循环继续（`on_error = "stop"` 则立即停止）。`max_update = 2` 对未收敛的模型调用 `update()`。
+- 两性状 GBLUP 需要比 ASReml 默认（`maxit = 13`、`workspace = "128mb"`）更大的设置；mintyrasr 默认 `maxit = 100`、`workspace = "30Gb"`。
+- `na_x = "include"`（默认，与常见脚本一致）把缺失协变量当作 0，数值协变量请先中心化；ASReml 自身默认是 `"fail"`。
+- 其他 `asreml()` 参数：`asreml_args = list(ai.sing = TRUE)`。
+
+下一步：[模型与遗传参数](models-zh.html)——随机效应、方差结构、V 编号如何确定、检验以及自定义 `vpredict()` 公式。

@@ -39,7 +39,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">mintyrasr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.2</span>
       </span>
     </div>
 
@@ -215,8 +215,8 @@ environment effect; without it h2 is inflated:</p>
 <code class="sourceCode R"><span><span class="va">nest</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tony2015116.github.io/mintyr/reference/w2l_nest.html" class="external-link">w2l_nest</a></span><span class="op">(</span><span class="va">pheno_rep</span>, cols <span class="op">=</span> <span class="st">"litter_size"</span>, out_type <span class="op">=</span> <span class="st">"df"</span><span class="op">)</span></span>
 <span><span class="va">res</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/asr_gblup.html">asr_gblup</a></span><span class="op">(</span><span class="va">nest</span>, ginv <span class="op">=</span> <span class="va">ginv</span>, fixed <span class="op">=</span> <span class="op">~</span> <span class="va">parity</span> <span class="op">+</span> <span class="va">hys</span>, random <span class="op">=</span> <span class="op">~</span> <span class="fu">ide</span><span class="op">(</span><span class="va">id</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">res</span><span class="op">$</span><span class="va">param</span><span class="op">[</span>, <span class="fu">.</span><span class="op">(</span><span class="va">h2</span>, <span class="va">h2_se</span>, <span class="va">prop_ide_id</span>, <span class="va">rep</span>, <span class="va">rep_se</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
-<p><code>ide(id)</code> uses the same levels as
-<code>vm(id, ginv)</code> but without relationships.</p>
+<p><code>ide(id)</code> uses the same levels as the genetic term but
+without relationships.</p>
 <p><strong>Cross-validation with repeated records</strong>: all records
 of one animal must be in the same fold.
 <code>cv_scenarios(..., id = "id")</code> does this;
@@ -276,8 +276,9 @@ the dams are genotyped. The data need a <code>dam</code> column.</p>
 <p>Inside <code>random</code> the relationship matrix is always called
 <code>ginv</code>, whatever object you pass (<code>ainv</code> above).
 <code>vm(dam, ginv)</code> is not taken as the direct genetic term:
-<code>h2</code>, the GEBVs and the reliabilities use
-<code>vm(id, ginv)</code> only.</p>
+<code>h2</code>, the GEBVs and the reliabilities use the direct genetic
+term <code>vm(id, relmat)</code> only (inside the model the matrix is
+called <code>relmat</code>).</p>
 <p><strong>M4 - covariance between direct and maternal effects</strong>
 needs
 <code>str(~ vm(id, ainv) + vm(dam, ainv), ~ us(2):vm(id, ainv))</code>,

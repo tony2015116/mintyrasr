@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">mintyrasr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.2</span>
       </span>
     </div>
 
@@ -123,6 +123,16 @@
       <small>Source: <a href="https://github.com/tony2015116/mintyrasr/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="page-header" data-toc-text="0.5.2" id="mintyrasr-052">mintyrasr 0.5.2<a class="anchor" aria-label="anchor" href="#mintyrasr-052"></a></h2>
+<p>Found with real ASReml-R 4.2.0.481 (pedigree BLUP crashed R):</p>
+<ul><li>
+<strong>Crash fixed.</strong> ASReml-R 4.2 aborts R (exit code 1033) when an <code>ainverse()</code> matrix (class <code>ginv</code>) is the <code>vm()</code> source under the name <code>ginv</code> in a formula built inside a function. Inside the model the matrix is now called <code>relmat</code>: components read <code>vm(id, relmat)</code>. In <code>random</code> you can still write <code>vm(dam, ginv)</code>; output names such as <code>prop_vm_dam_ginv</code> are unchanged.</li>
+<li>
+<code>workspace = "auto"</code> (new default, was <code>"30Gb"</code>): sized from individuals x traits. ASReml reserves the whole workspace for every fit: with 30Gb one fit took 31 s instead of 3-6 s, and it can exhaust the memory of a 32 GB computer.</li>
+<li>
+<code>ainverse()</code> results (class <code>ginv</code>, no <code>INVERSE</code> attribute) are recognised as inverses without a warning.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="page-header" data-toc-text="0.5.1" id="mintyrasr-051">mintyrasr 0.5.1<a class="anchor" aria-label="anchor" href="#mintyrasr-051"></a></h2>
 <ul><li>

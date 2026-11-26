@@ -39,7 +39,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">mintyrasr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.2</span>
       </span>
     </div>
 
@@ -166,8 +166,9 @@ H</h1>
 <p><a href="relationship-matrices-zh.html">中文版</a></p>
 <p>Every function of mintyrasr takes the inverse relationship matrix in
 the argument <code>ginv</code> and puts it into
-<code>vm(id, ginv)</code>. Which information the model uses is decided
-only by the matrix you pass:</p>
+<code>vm(id, relmat)</code> (inside the model it is called
+<code>relmat</code>). Which information the model uses is decided only
+by the matrix you pass:</p>
 <table class="table">
 <colgroup>
 <col width="25%">

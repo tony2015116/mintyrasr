@@ -39,7 +39,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">mintyrasr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.2</span>
       </span>
     </div>
 
@@ -169,13 +169,13 @@
 <p><strong>Single trait</strong> (nested data with a <code>value</code>
 column, or <code>traits = "adg"</code>):</p>
 <pre class="text"><code>asreml(value ~ &lt;fixed&gt;,
-       random   = ~ vm(id, ginv) + &lt;random&gt;,
-       residual = ~ idv(units), dense = ~ vm(id, ginv), ...)</code></pre>
+       random   = ~ vm(id, relmat) + &lt;random&gt;,
+       residual = ~ idv(units), dense = ~ vm(id, relmat), ...)</code></pre>
 <p><strong>Two traits</strong> (<code>value1</code> +
 <code>value2</code>, or <code>traits = c("a", "b")</code>):</p>
 <pre class="text"><code>asreml(cbind(value1, value2) ~ trait + trait:&lt;fixed&gt;,
-       random   = ~ &lt;genetic_cov&gt;(trait):vm(id, ginv) + &lt;random_cov&gt;(trait):&lt;random&gt;,
-       residual = ~ units:&lt;residual_cov&gt;(trait), dense = ~ &lt;genetic_cov&gt;(trait):vm(id, ginv), ...)</code></pre>
+       random   = ~ &lt;genetic_cov&gt;(trait):vm(id, relmat) + &lt;random_cov&gt;(trait):&lt;random&gt;,
+       residual = ~ units:&lt;residual_cov&gt;(trait), dense = ~ &lt;genetic_cov&gt;(trait):vm(id, relmat), ...)</code></pre>
 <table class="table">
 <colgroup>
 <col width="33%">
@@ -342,8 +342,8 @@ classified:</p>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td><code>vm(id, ginv)</code></td>
-<td><code>vm(id, ginv)</code></td>
+<td><code>vm(id, relmat)</code></td>
+<td><code>vm(id, relmat)</code></td>
 <td>genetic</td>
 <td>var</td>
 </tr>
@@ -371,13 +371,13 @@ classified:</p>
 <td>scale = 1, not used</td>
 </tr>
 <tr class="odd">
-<td><code>trait:vm(id, ginv)!trait_adg:adg</code></td>
-<td><code>trait:vm(id, ginv)</code></td>
+<td><code>trait:vm(id, relmat)!trait_adg:adg</code></td>
+<td><code>trait:vm(id, relmat)</code></td>
 <td>genetic</td>
 <td>var</td>
 </tr>
 <tr class="even">
-<td><code>trait:vm(id, ginv)!trait_bf:adg</code></td>
+<td><code>trait:vm(id, relmat)!trait_bf:adg</code></td>
 <td></td>
 <td>genetic</td>
 <td>cov</td>
@@ -412,6 +412,13 @@ classified:</p>
 </tr>
 </tbody>
 </table>
+<p>Inside the model the relationship matrix is called
+<code>relmat</code>, so components read <code>vm(id, relmat)</code>.
+(With the name <code>ginv</code>, ASReml-R 4.2 crashes for an
+<code>ainverse()</code> matrix in a formula built inside a function.) In
+<code>random</code> you can still write <code>vm(dam, ginv)</code>;
+output names such as <code>prop_vm_dam_ginv</code> keep
+<code>ginv</code>.</p>
 <p>Trait names are found as whole words in the name, so any column name
 works. The <code>vc_index</code> table of the result shows the
 classification - look at it after the first run of a new model.</p>
@@ -459,7 +466,7 @@ on the model.</p>
 <p>Models with more than one genetic term (e.g. maternal
 <code><a href="https://rdrr.io/r/utils/str.html" class="external-link">str()</a></code> models) and <code>fa()</code> / <code>rr()</code>
 structures need their own formulas: the automatic ones only use the term
-<code>vm(&lt;id&gt;, ginv)</code>.</p>
+<code>vm(&lt;id&gt;, relmat)</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="tests">Tests<a class="anchor" aria-label="anchor" href="#tests"></a>

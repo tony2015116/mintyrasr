@@ -39,7 +39,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">mintyrasr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.2</span>
       </span>
     </div>
 
@@ -212,8 +212,7 @@
 <code class="sourceCode R"><span><span class="va">nest</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tony2015116.github.io/mintyr/reference/w2l_nest.html" class="external-link">w2l_nest</a></span><span class="op">(</span><span class="va">pheno_rep</span>, cols <span class="op">=</span> <span class="st">"litter_size"</span>, out_type <span class="op">=</span> <span class="st">"df"</span><span class="op">)</span></span>
 <span><span class="va">res</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/asr_gblup.html">asr_gblup</a></span><span class="op">(</span><span class="va">nest</span>, ginv <span class="op">=</span> <span class="va">ginv</span>, fixed <span class="op">=</span> <span class="op">~</span> <span class="va">parity</span> <span class="op">+</span> <span class="va">hys</span>, random <span class="op">=</span> <span class="op">~</span> <span class="fu">ide</span><span class="op">(</span><span class="va">id</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">res</span><span class="op">$</span><span class="va">param</span><span class="op">[</span>, <span class="fu">.</span><span class="op">(</span><span class="va">h2</span>, <span class="va">h2_se</span>, <span class="va">prop_ide_id</span>, <span class="va">rep</span>, <span class="va">rep_se</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
-<p><code>ide(id)</code> 与 <code>vm(id, ginv)</code>
-用同样的水平，但不带亲缘关系。</p>
+<p><code>ide(id)</code> 与遗传项用同样的水平，但不带亲缘关系。</p>
 <p><strong>有重复记录时的交叉验证</strong>：同一个体的所有记录必须在同一折。<code>cv_scenarios(..., id = "id")</code>
 会这样分；<code><a href="https://tony2015116.github.io/mintyr/reference/nest_cv.html" class="external-link">nest_cv()</a></code>
 按行分折，验证个体的其他记录会留在训练集里。</p>
@@ -270,8 +269,9 @@
 <p>在 <code>random</code> 中，关系矩阵始终写作
 <code>ginv</code>，不论传入的对象叫什么（上例为
 <code>ainv</code>）。<code>vm(dam, ginv)</code>
-不会被当作直接遗传项：<code>h2</code>、GEBV 和可靠性只使用
-<code>vm(id, ginv)</code>。</p>
+不会被当作直接遗传项：<code>h2</code>、GEBV 和可靠性只使用直接遗传项
+<code>vm(id, relmat)</code>（模型内部矩阵称为
+<code>relmat</code>）。</p>
 <p><strong>M4——直接效应与母体效应的协方差</strong>需要
 <code>str(~ vm(id, ainv) + vm(dam, ainv), ~ us(2):vm(id, ainv))</code>，它会取代直接遗传项。mintyrasr
 不构建这个模型；请直接用 <code>asreml()</code> 拟合，并使用 ASReml-R

@@ -39,7 +39,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">mintyrasr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.2</span>
       </span>
     </div>
 
@@ -483,9 +483,12 @@ Done in 31.2 min | param: 4 ok, 0 not converged, 0 failed | cv: ok 60 | 1 log en
 <p>其他提示：</p>
 <ul>
 <li>不保存模型对象，折数很多时内存也不会爆。</li>
-<li>两性状 GBLUP 需要比 ASReml
-默认（<code>maxit = 13</code>、<code>workspace = "128mb"</code>）更大的设置；mintyrasr
-默认 <code>maxit = 100</code>、<code>workspace = "30Gb"</code>。</li>
+<li>
+<code>workspace = "auto"</code> 按个体数和性状数估算 ASReml
+的工作空间。ASReml 每次拟合都会预留整个工作空间，固定的大值（如
+<code>"30Gb"</code>）会拖慢每次拟合，在 32 GB
+内存的电脑上还可能耗尽内存。<code>maxit = 100</code>（ASReml 默认
+13）。</li>
 <li>
 <code>na_x = "include"</code>（默认，与常见脚本一致）把缺失协变量当作
 0，数值协变量请先中心化；ASReml 自身默认是 <code>"fail"</code>。</li>

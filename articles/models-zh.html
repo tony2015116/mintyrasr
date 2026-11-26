@@ -39,7 +39,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">mintyrasr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.2</span>
       </span>
     </div>
 
@@ -169,13 +169,13 @@
 <p><strong>单性状</strong>（嵌套数据有 <code>value</code> 列，或
 <code>traits = "adg"</code>）：</p>
 <pre class="text"><code>asreml(value ~ &lt;fixed&gt;,
-       random   = ~ vm(id, ginv) + &lt;random&gt;,
-       residual = ~ idv(units), dense = ~ vm(id, ginv), ...)</code></pre>
+       random   = ~ vm(id, relmat) + &lt;random&gt;,
+       residual = ~ idv(units), dense = ~ vm(id, relmat), ...)</code></pre>
 <p><strong>两性状</strong>（<code>value1</code> +
 <code>value2</code>，或 <code>traits = c("a", "b")</code>）：</p>
 <pre class="text"><code>asreml(cbind(value1, value2) ~ trait + trait:&lt;fixed&gt;,
-       random   = ~ &lt;genetic_cov&gt;(trait):vm(id, ginv) + &lt;random_cov&gt;(trait):&lt;random&gt;,
-       residual = ~ units:&lt;residual_cov&gt;(trait), dense = ~ &lt;genetic_cov&gt;(trait):vm(id, ginv), ...)</code></pre>
+       random   = ~ &lt;genetic_cov&gt;(trait):vm(id, relmat) + &lt;random_cov&gt;(trait):&lt;random&gt;,
+       residual = ~ units:&lt;residual_cov&gt;(trait), dense = ~ &lt;genetic_cov&gt;(trait):vm(id, relmat), ...)</code></pre>
 <table class="table">
 <colgroup>
 <col width="33%">
@@ -337,8 +337,8 @@
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td><code>vm(id, ginv)</code></td>
-<td><code>vm(id, ginv)</code></td>
+<td><code>vm(id, relmat)</code></td>
+<td><code>vm(id, relmat)</code></td>
 <td>genetic</td>
 <td>var</td>
 </tr>
@@ -365,13 +365,13 @@
 <td>固定为 1 的尺度参数，不使用</td>
 </tr>
 <tr class="odd">
-<td><code>trait:vm(id, ginv)!trait_adg:adg</code></td>
-<td><code>trait:vm(id, ginv)</code></td>
+<td><code>trait:vm(id, relmat)!trait_adg:adg</code></td>
+<td><code>trait:vm(id, relmat)</code></td>
 <td>genetic</td>
 <td>var</td>
 </tr>
 <tr class="even">
-<td><code>trait:vm(id, ginv)!trait_bf:adg</code></td>
+<td><code>trait:vm(id, relmat)!trait_bf:adg</code></td>
 <td></td>
 <td>genetic</td>
 <td>cov</td>
@@ -405,6 +405,12 @@
 </tr>
 </tbody>
 </table>
+<p>模型内部关系矩阵叫 <code>relmat</code>，所以组分名是
+<code>vm(id, relmat)</code>。（叫 <code>ginv</code> 时，ASReml-R 4.2
+在函数内构建的公式中使用 <code>ainverse()</code> 矩阵会崩溃。）在
+<code>random</code> 中仍可写
+<code>vm(dam, ginv)</code>；<code>prop_vm_dam_ginv</code> 等输出名保留
+<code>ginv</code>。</p>
 <p>性状名在组分名中按完整单词匹配，任何列名都可以。结果中的
 <code>vc_index</code> 表列出了分类，新模型第一次运行后请看一眼。</p>
 </div>
@@ -446,7 +452,7 @@ Vp2)；相关参数化的项按 r sqrt(V1 V2) 换算成协方差</li>
 <span><span class="va">res</span><span class="op">$</span><span class="va">param</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"h2"</span>, <span class="st">"h2_se"</span>, <span class="st">"rep"</span>, <span class="st">"rep_se"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <p>有多个遗传项的模型（如母体效应的 <code><a href="https://rdrr.io/r/utils/str.html" class="external-link">str()</a></code> 模型）以及
 <code>fa()</code> / <code>rr()</code> 结构需要自己写公式：自动公式只使用
-<code>vm(&lt;id&gt;, ginv)</code> 这一项。</p>
+<code>vm(&lt;id&gt;, relmat)</code> 这一项。</p>
 </div>
 <div class="section level2">
 <h2 id="检验">检验<a class="anchor" aria-label="anchor" href="#%E6%A3%80%E9%AA%8C"></a>

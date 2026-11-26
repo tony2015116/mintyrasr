@@ -40,7 +40,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">mintyrasr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.2</span>
       </span>
     </div>
 
@@ -515,9 +515,12 @@ left out of <code>summary</code>.</li>
 <ul>
 <li>Fitted models are not kept: memory stays low even with many
 folds.</li>
-<li>Two-trait GBLUP needs more than ASReml’s defaults
-(<code>maxit = 13</code>, <code>workspace = "128mb"</code>); mintyrasr
-uses <code>maxit = 100</code>, <code>workspace = "30Gb"</code>.</li>
+<li>
+<code>workspace = "auto"</code> sizes ASReml’s workspace from the
+number of individuals and traits. ASReml reserves the whole workspace
+for every fit, so a large fixed value (e.g. <code>"30Gb"</code>) slows
+every fit down - and on a 32 GB computer can run out of memory.
+<code>maxit = 100</code> (ASReml’s default is 13).</li>
 <li>
 <code>na_x = "include"</code> (default, as in many scripts) treats
 missing covariates as 0 - centre numeric covariates first. ASReml’s own

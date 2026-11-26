@@ -144,19 +144,27 @@ Each result is a list; every element becomes one sheet of the workbook.
 |----|----|
 | `varcomp` | `summary(fit)$varcomp` of every parameter fit, with its `V` number |
 | `vc_index` | which `V` is which component: term, role (genetic / random / residual), kind (var / cov / cor), traits, used |
-| `param` | h2 (two traits: per trait), rg, rp with SE; `formulas` used; `converge`, `loglik`, `boundary`; `rg_lrt`, `rg_p` (and `cov_*` with `test_rp = TRUE`) |
-| `accuracy` | per repeat x fold x trait: `n`, `pa`, `accuracy`, `slope`, `va`, `h2_full`, `n_obs` |
-| `summary` | `pa`, `accuracy`, `slope`: n, mean, sd, se over folds |
+| `param` | h2 (two traits: per trait), rg, rp with SE; `formulas` used; `status`, `converge`, `updates`, `iterations`, `loglik`, `boundary`; `rg_lrt`, `rg_p` (and `cov_*` with `test_rp = TRUE`) |
+| `accuracy` | per repeat x fold x trait: `status`, `n`, `pa`, `accuracy`, `slope`, `va`, `h2_full`, `cv_converge`, `cv_updates`, `cv_iter` |
+| `summary` | `pa`, `accuracy`, `slope`: n, mean, sd, se over the folds with `status == "ok"` |
 | `pred` | validation individuals: `obs`, `gebv`, `pev`, `inb` (F), `rel` |
+| `gebv` | all individuals of the full-data fit: `gebv`, `pev`, `inb`, `rel`, `reliable` |
+| `log` | every error, non-convergence, boundary estimate and invalid LRT, with time and label |
 
 - `pa` (predictive ability) = r(y, GEBV) on the validation individuals;
 - `accuracy` = pa / sqrt(h2), with h2 from the full data (Dekkers 2007);
 - `slope` = b(y ~ GEBV); 1 means no inflation or deflation of the GEBVs.
 
-GEBVs with reliability below `min_rel` (default 0.05) are left out; a
-fold needs at least `min_n` (default 10) remaining individuals,
-otherwise its PA, accuracy and slope are `NA`. With `neg_to_na = TRUE`
-(default) negative values are set to `NA` before the summary.
+**Reliability in cross-validation is not filtered**
+(`cv_min_rel = -Inf`). Validation individuals have no record of their
+own in the training set, so a low reliability is expected; keeping only
+the high-reliability ones would bias PA towards well-connected
+individuals and shrink the sample. The threshold `min_rel` (default
+0.05) is applied to the final GEBVs of the full-data fit instead, as the
+flag `gebv$reliable`. A fold needs at least `min_n` (default 10)
+validation individuals, otherwise its PA, accuracy and slope are `NA`.
+Negative values are kept (`neg_to_na = FALSE`): dropping them would bias
+the mean upwards.
 
 ## 6. Variance components in cross-validation
 
@@ -169,13 +177,35 @@ otherwise its PA, accuracy and slope are `NA`. With `neg_to_na = TRUE`
 The `va` used for the reliability is always taken from the model of that
 fold.
 
-## 7. Practical notes
+## 7. Long runs: progress, update() and safe running
+
+One line per fit shows the status, iterations, time and the estimated
+time left; ASReml’s own iteration monitor is switched off while
+mintyrasr runs (`asreml_trace = TRUE` to see it):
+
+    asr_gblup: two-trait model | 4 parameter fit(s) + 60 CV fit(s) | cv_vc = "fixed"
+    [param 1/4] pairs=adg-bf test_herd=nls | ok | 9 it, 21s
+    [param 2/4] pairs=adg-bf test_herd=bfs | ok after 1 update() | 31 it, 48s
+    [cv 12/60  20%] pairs=adg-bf test_herd=nls rep=Repeat2 fold=Fold2 | ok | 2 it, 4s | 6.1 min elapsed, ~19.5 min left
+    Done in 31.2 min | param: 4 ok, 0 not converged, 0 failed | cv: ok 60 | 1 log entry
+
+- **[`update()`](https://rdrr.io/r/stats/update.html)**: a fit that has
+  not converged is continued from its current estimates up to
+  `max_update = 2` times (`param$updates`, `accuracy$cv_updates`).
+- **Not converged after that** (`nonconv = "skip"`, default): a
+  parameter fit is reported with `status = "not_converged"` and its CV
+  rows are skipped (`status = "param_not_converged"`); a CV fit gives
+  `NA` for its fold. `nonconv = "keep"` uses such fits anyway.
+- **Errors**: a failing fit gets `status = "failed"`, the loop carries
+  on (`on_error = "stop"` to stop at once).
+- **`$log`** records every error, non-convergence, boundary estimate and
+  invalid LRT with time, stage and label; one warning at the end says
+  how many fits failed or did not converge.
+- Rows with a `status` other than `"ok"` are left out of `summary`.
+
+Other notes:
 
 - Fitted models are not kept: memory stays low even with many folds.
-- A failing fit gives a warning and `NA` results; the loop carries on
-  (`on_error = "stop"` to stop instead). `max_update = 2` calls
-  [`update()`](https://rdrr.io/r/stats/update.html) on fits that have
-  not converged.
 - Two-trait GBLUP needs more than ASReml’s defaults (`maxit = 13`,
   `workspace = "128mb"`); mintyrasr uses `maxit = 100`,
   `workspace = "30Gb"`.
@@ -183,6 +213,8 @@ fold.
   covariates as 0 - centre numeric covariates first. ASReml’s own
   default is `"fail"`.
 - Further `asreml()` arguments: `asreml_args = list(ai.sing = TRUE)`.
+- Keep the computer awake during long runs: a sleeping computer (or an
+  online licence waiting) shows up as a long pause, not as slow fitting.
 
 Next: [Models and genetic
 parameters](https://tony2015116.github.io/mintyrasr/articles/models.html) -

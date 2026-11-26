@@ -23,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="index.html">mintyrasr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -92,7 +92,9 @@
 <li>
 <strong>Three ways to treat variance components in cross-validation</strong>: fixed at the full-data estimates (fast), warm-started, or re-estimated per fold (no leakage).</li>
 <li>
-<strong>Per fold</strong>: GEBV reliability <code>1 - PEV / ((1 + F) Va)</code>, predictive ability <code>r(y, GEBV)</code>, accuracy <code>PA / sqrt(h2)</code>, slope <code>b(y ~ GEBV)</code>.</li>
+<strong>Per fold</strong>: predictive ability <code>r(y, GEBV)</code>, accuracy <code>PA / sqrt(h2)</code>, slope <code>b(y ~ GEBV)</code> on all validation individuals (no reliability filter); final GEBVs with reliability <code>1 - PEV / ((1 + F) Va)</code>.</li>
+<li>
+<strong>Safe long runs</strong>: progress and time left, <code><a href="https://rdrr.io/r/stats/update.html" class="external-link">update()</a></code> for fits that have not converged, non-converged fits skipped and every problem recorded in <code>$log</code> without stopping the loop.</li>
 </ul>
 </div>
 <div class="section level2">
@@ -134,7 +136,8 @@
 <li><p><strong>遗传参数跟着模型走</strong>：h2、rg、rp 按方差组分的<em>名字</em>自动生成 vpredict 公式，不再写死 <code>V1</code>、<code>V2</code>……； 加随机效应（<code>~ ide(id) + litter</code>）或换结构（<code>us</code>、<code>idh</code>、<code>corv</code>、<code>corh</code>、<code>corgh</code>）都不会算错，<code>vc_index</code> 表列出每个 V 对应的组分。</p></li>
 <li><p><strong>检验正确</strong>：rg = 0 用 <code>idh(trait)</code> 对照、<code>boundary = FALSE</code>；可选所有协方差的联合检验。</p></li>
 <li><p><strong>交叉验证中方差组分三种处理</strong>：固定为全数据估计值（快）、以全数据为初值重估、每折完全重估（无信息泄漏）。</p></li>
-<li><p><strong>每折输出</strong>：GEBV 可靠性 <code>1 - PEV / ((1 + F) Va)</code>、预测能力 <code>r(y, GEBV)</code>、准确性 <code>PA / sqrt(h2)</code>、回归系数 <code>b(y ~ GEBV)</code>。</p></li>
+<li><p><strong>每折输出</strong>：在全部验证个体上（不按可靠性过滤）计算预测能力 <code>r(y, GEBV)</code>、准确性 <code>PA / sqrt(h2)</code>、回归系数 <code>b(y ~ GEBV)</code>；最终 GEBV 附可靠性 <code>1 - PEV / ((1 + F) Va)</code>。</p></li>
+<li><p><strong>安全的长时间运行</strong>：显示进度和剩余时间；未收敛模型自动 <code><a href="https://rdrr.io/r/stats/update.html" class="external-link">update()</a></code>；仍不收敛则跳过，所有问题记入 <code>$log</code>，循环不中断。</p></li>
 <li><p><a href="https://tony2015116.github.io/mintyrasr/articles/mintyrasr-zh.html">入门</a></p></li>
 <li><p><a href="https://tony2015116.github.io/mintyrasr/articles/models-zh.html">模型与遗传参数</a></p></li>
 <li><p><a href="https://tony2015116.github.io/mintyrasr/cheatsheet-zh.html">速查表</a></p></li>

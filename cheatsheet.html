@@ -219,7 +219,7 @@ footer { margin-top: 8px; color: var(--muted); font-size: 12.5px; display: flex;
 <header class="top">
   <div></div>
   <div>
-    <h1>mintyrasr cheatsheet <span class="ver">v0.3.2</span></h1>
+    <h1>mintyrasr cheatsheet <span class="ver">v0.4.0</span></h1>
     <p>GBLUP parameter estimation and cross-validation with <code>ASReml-R</code>, directly on the nested data built by <code>mintyr</code>: genetic parameters that follow the model, correct LRTs, PA / accuracy / slope per fold.</p>
   </div>
   <nav class="links">
@@ -285,7 +285,7 @@ inbreeding &lt;- data.frame(id = rownames(G), F = diag(G) - 1)</code></pre>
     <p>One workbook per scenario: <code>&lt;dir&gt;/&lt;scenario&gt;_&lt;tag&gt;.xlsx</code>. <code>"mt_bt"</code>: diag residual, no rp.</p>
   </div>
   <div class="fn">
-    <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, min_rel = 0.05, min_n = 10, neg_to_na = TRUE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = TRUE, maxit = 100, workspace = "30Gb", max_update = 0, asreml_args = list(), on_error = "warn", keep_pred = TRUE, path = NULL, verbose = TRUE)</div>
+    <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, cv_min_rel = -Inf, min_rel = 0.05, min_n = 10, neg_to_na = FALSE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = TRUE, maxit = 100, workspace = "30Gb", max_update = 2, nonconv = "skip", asreml_args = list(), asreml_trace = FALSE, on_error = "warn", keep_pred = TRUE, keep_gebv = TRUE, path = NULL, verbose = TRUE)</div>
     <pre><code>res &lt;- asr_scenarios(sc, ginv, fixed = ~ hhys,
                      inbreeding = inbreeding, dir = "results")
 st &lt;- asr_gblup(sc$st_sp$param, sc$st_sp$cv, ginv,
@@ -361,7 +361,7 @@ asr_gblup(..., random = ~ ide(id),
     </table>
     <table>
       <tr><th>measure</th><th>definition</th></tr>
-      <tr><td><code>rel</code></td><td>1 &minus; PEV / ((1 + F) Va), Va of the fold; &lt; <code>min_rel</code> dropped; fold needs &ge; <code>min_n</code> = 10 left</td></tr>
+      <tr><td><code>rel</code></td><td>1 &minus; PEV / ((1 + F) Va), Va of the fold; <b>not filtered</b> in CV (<code>cv_min_rel = -Inf</code>); fold needs &ge; <code>min_n</code> = 10</td></tr>
       <tr><td><code>pa</code></td><td>r(y, GEBV)</td></tr>
       <tr><td><code>accuracy</code></td><td>pa / &radic;h2, full-data h2</td></tr>
       <tr><td><code>slope</code></td><td>b(y ~ GEBV), ideally 1</td></tr>
@@ -377,9 +377,11 @@ asr_gblup(..., random = ~ ide(id),
       <tr><td><code>varcomp</code></td><td>summary(fit)$varcomp + <code>V</code></td></tr>
       <tr><td><code>vc_index</code></td><td>V &rarr; term, role, kind, traits, used</td></tr>
       <tr><td><code>param</code></td><td>h2, rg, rp (+ SE), <code>formulas</code>, converge, loglik, boundary, tests</td></tr>
-      <tr><td><code>accuracy</code></td><td>rep &times; fold &times; trait: n, pa, accuracy, slope, va, h2_full</td></tr>
+      <tr><td><code>accuracy</code></td><td>rep &times; fold &times; trait: status, n, pa, accuracy, slope, va, cv_iter</td></tr>
       <tr><td><code>summary</code></td><td>pa / accuracy / slope: n, mean, sd, se</td></tr>
       <tr><td><code>pred</code></td><td>validation: obs, gebv, pev, inb, rel</td></tr>
+      <tr><td><code>gebv</code></td><td>all individuals (full data): gebv, pev, rel, <code>reliable</code> = rel &ge; <code>min_rel</code></td></tr>
+      <tr><td><code>log</code></td><td>errors, non-convergence, boundary, invalid LRT</td></tr>
     </table>
   </div>
 </section>
@@ -390,8 +392,10 @@ asr_gblup(..., random = ~ ide(id),
     <ul>
       <li>warnings: no <code>INVERSE</code> attribute; IDs not in <code>ginv</code>; components at the boundary (<code>B</code>, also <code>param$boundary</code>); <code>gammaPar = TRUE</code>; no convergence</li>
       <li>ASReml defaults <code>maxit = 13</code>, <code>workspace = "128mb"</code> are too small for two-trait GBLUP</li>
-      <li><code>max_update = 2</code> &rarr; <code>update()</code> on non-converged fits</li>
-      <li><code>on_error = "warn"</code>: a failing fit gives <code>NA</code>, the loop goes on</li>
+      <li>one progress line per fit: status, iterations, time, ~time left (ASReml monitor off: <code>asreml_trace = FALSE</code>)</li>
+      <li><code>max_update = 2</code> &rarr; <code>update()</code>; still not converged: <code>nonconv = "skip"</code> (CV rows skipped) or <code>"keep"</code></li>
+      <li>errors &amp; non-convergence &rarr; <code>status</code> + <code>$log</code>, the loop goes on; rows with status &ne; ok are not in <code>summary</code></li>
+      <li>keep the computer awake: sleep shows up as a long pause</li>
       <li>models are not kept &rarr; low memory</li>
       <li><code>asreml_args = list(ai.sing = TRUE)</code> for other <code>asreml()</code> arguments</li>
     </ul>
@@ -401,7 +405,7 @@ asr_gblup(..., random = ~ ide(id),
 </main>
 
 <footer>
-  <span>mintyrasr 0.3.2 &middot; MIT &middot; Guo Meng</span>
+  <span>mintyrasr 0.4.0 &middot; MIT &middot; Guo Meng</span>
   <span><a href="https://tony2015116.github.io/mintyrasr/">tony2015116.github.io/mintyrasr</a> &middot; <a href="https://tony2015116.github.io/mintyr/">mintyr</a> &middot; <a href="https://github.com/tony2015116/mintyrasr/issues">Issues</a></span>
 </footer>
 </div>

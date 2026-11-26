@@ -25,8 +25,14 @@ files have to be exported.
 - **Three ways to treat variance components in cross-validation**: fixed
   at the full-data estimates (fast), warm-started, or re-estimated per
   fold (no leakage).
-- **Per fold**: GEBV reliability `1 - PEV / ((1 + F) Va)`, predictive
-  ability `r(y, GEBV)`, accuracy `PA / sqrt(h2)`, slope `b(y ~ GEBV)`.
+- **Per fold**: predictive ability `r(y, GEBV)`, accuracy
+  `PA / sqrt(h2)`, slope `b(y ~ GEBV)` on all validation individuals (no
+  reliability filter); final GEBVs with reliability
+  `1 - PEV / ((1 + F) Va)`.
+- **Safe long runs**: progress and time left,
+  [`update()`](https://rdrr.io/r/stats/update.html) for fits that have
+  not converged, non-converged fits skipped and every problem recorded
+  in `$log` without stopping the loop.
 
 ## Installation
 
@@ -82,8 +88,13 @@ res$mt_sp$summary    # PA, accuracy, slope: n, mean, sd, se
 
 - **交叉验证中方差组分三种处理**：固定为全数据估计值（快）、以全数据为初值重估、每折完全重估（无信息泄漏）。
 
-- **每折输出**：GEBV 可靠性 `1 - PEV / ((1 + F) Va)`、预测能力
-  `r(y, GEBV)`、准确性 `PA / sqrt(h2)`、回归系数 `b(y ~ GEBV)`。
+- **每折输出**：在全部验证个体上（不按可靠性过滤）计算预测能力
+  `r(y, GEBV)`、准确性 `PA / sqrt(h2)`、回归系数 `b(y ~ GEBV)`；最终
+  GEBV 附可靠性 `1 - PEV / ((1 + F) Va)`。
+
+- **安全的长时间运行**：显示进度和剩余时间；未收敛模型自动
+  [`update()`](https://rdrr.io/r/stats/update.html)；仍不收敛则跳过，所有问题记入
+  `$log`，循环不中断。
 
 - [入门](https://tony2015116.github.io/mintyrasr/articles/mintyrasr-zh.html)
 

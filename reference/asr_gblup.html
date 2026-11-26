@@ -7,15 +7,23 @@ correlations plus an LRT of rg = 0 (idh(trait) vs the full genetic
 structure, boundary = FALSE);
 refits the model to every training set in cv, with the variance
 components handled as set by cv_vc;
-predicts GEBVs of the validation individuals, computes their
-reliability 1 - PEV / ((1 + F) * Va), drops GEBVs with reliability
-below min_rel, and returns per fold the predictive ability
+predicts GEBVs of the validation individuals (all of them: they have
+no own record, so a low reliability is expected and not filtered by
+default) and returns per fold the predictive ability
 pa = r(y, GEBV), the accuracy pa / sqrt(h2) (h2 from the full data,
 Dekkers 2007) and the slope b(y ~ GEBV);
-summarises them over folds (n, mean, sd, se) and, optionally, writes
-everything to one Excel workbook.
+summarises them over folds (n, mean, sd, se), returns the GEBVs of all
+individuals from the full-data fit with their reliability (flag
+reliable = rel &amp;gt;= min_rel) and, optionally, writes everything to one
+Excel workbook.
 
 
+Long runs are safe: every error, non-convergence, boundary estimate and
+invalid LRT is recorded in $log (with time, stage and label) instead of
+stopping the loop; fits that do not converge are first continued with
+update() (max_update), and are then skipped (nonconv = &quot;skip&quot;) or
+kept. A progress line per fit shows status, iterations, time and the
+estimated time left.
 h2, rg and rp are built from the names of the variance components,
 not from fixed V positions, so they stay correct when random effects
 are added (random = ~ ide(id) + litter) or covariance structures change
@@ -38,15 +46,23 @@ correlations plus an LRT of rg = 0 (idh(trait) vs the full genetic
 structure, boundary = FALSE);
 refits the model to every training set in cv, with the variance
 components handled as set by cv_vc;
-predicts GEBVs of the validation individuals, computes their
-reliability 1 - PEV / ((1 + F) * Va), drops GEBVs with reliability
-below min_rel, and returns per fold the predictive ability
+predicts GEBVs of the validation individuals (all of them: they have
+no own record, so a low reliability is expected and not filtered by
+default) and returns per fold the predictive ability
 pa = r(y, GEBV), the accuracy pa / sqrt(h2) (h2 from the full data,
 Dekkers 2007) and the slope b(y ~ GEBV);
-summarises them over folds (n, mean, sd, se) and, optionally, writes
-everything to one Excel workbook.
+summarises them over folds (n, mean, sd, se), returns the GEBVs of all
+individuals from the full-data fit with their reliability (flag
+reliable = rel &amp;gt;= min_rel) and, optionally, writes everything to one
+Excel workbook.
 
 
+Long runs are safe: every error, non-convergence, boundary estimate and
+invalid LRT is recorded in $log (with time, stage and label) instead of
+stopping the loop; fits that do not converge are first continued with
+update() (max_update), and are then skipped (nonconv = &quot;skip&quot;) or
+kept. A progress line per fit shows status, iterations, time and the
+estimated time left.
 h2, rg and rp are built from the names of the variance components,
 not from fixed V positions, so they stay correct when random effects
 are added (random = ~ ide(id) + litter) or covariance structures change
@@ -69,7 +85,7 @@ two-trait model (layout of mintyr::w2l_nest() / mintyr::c2p_nest())."></head><bo
 
     <a class="navbar-brand me-2" href="../index.html">mintyrasr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -121,14 +137,22 @@ correlations plus an LRT of rg = 0 (<code>idh(trait)</code> vs the full genetic
 structure, <code>boundary = FALSE</code>);</p></li>
 <li><p>refits the model to every training set in <code>cv</code>, with the variance
 components handled as set by <code>cv_vc</code>;</p></li>
-<li><p>predicts GEBVs of the validation individuals, computes their
-reliability <code>1 - PEV / ((1 + F) * Va)</code>, drops GEBVs with reliability
-below <code>min_rel</code>, and returns per fold the predictive ability
+<li><p>predicts GEBVs of the validation individuals (all of them: they have
+no own record, so a low reliability is expected and not filtered by
+default) and returns per fold the predictive ability
 <code>pa = r(y, GEBV)</code>, the accuracy <code>pa / sqrt(h2)</code> (h2 from the full data,
 Dekkers 2007) and the slope <code>b(y ~ GEBV)</code>;</p></li>
-<li><p>summarises them over folds (n, mean, sd, se) and, optionally, writes
-everything to one Excel workbook.</p></li>
-</ol><p>h2, rg and rp are built from the <strong>names</strong> of the variance components,
+<li><p>summarises them over folds (n, mean, sd, se), returns the GEBVs of all
+individuals from the full-data fit with their reliability (flag
+<code>reliable = rel &gt;= min_rel</code>) and, optionally, writes everything to one
+Excel workbook.</p></li>
+</ol><p>Long runs are safe: every error, non-convergence, boundary estimate and
+invalid LRT is recorded in <code>$log</code> (with time, stage and label) instead of
+stopping the loop; fits that do not converge are first continued with
+<code><a href="https://rdrr.io/r/stats/update.html" class="external-link">update()</a></code> (<code>max_update</code>), and are then skipped (<code>nonconv = "skip"</code>) or
+kept. A progress line per fit shows status, iterations, time and the
+estimated time left.</p>
+<p>h2, rg and rp are built from the <strong>names</strong> of the variance components,
 not from fixed <code>V</code> positions, so they stay correct when random effects
 are added (<code>random = ~ ide(id) + litter</code>) or covariance structures change
 (<code>us</code>, <code>idh</code>/<code>diag</code>, <code>corh</code>, <code>corgh</code>):
@@ -161,9 +185,10 @@ two-trait model (layout of <code><a href="https://tony2015116.github.io/mintyr/r
 <span>  cv_vc <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"fixed"</span>, <span class="st">"warm"</span>, <span class="st">"estimate"</span><span class="op">)</span>,</span>
 <span>  vpredict <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  inbreeding <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cv_min_rel <span class="op">=</span> <span class="op">-</span><span class="cn">Inf</span>,</span>
 <span>  min_rel <span class="op">=</span> <span class="fl">0.05</span>,</span>
 <span>  min_n <span class="op">=</span> <span class="fl">10L</span>,</span>
-<span>  neg_to_na <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  neg_to_na <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  test_rg <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  test_rp <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  rp <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -171,10 +196,13 @@ two-trait model (layout of <code><a href="https://tony2015116.github.io/mintyr/r
 <span>  dense <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  maxit <span class="op">=</span> <span class="fl">100L</span>,</span>
 <span>  workspace <span class="op">=</span> <span class="st">"30Gb"</span>,</span>
-<span>  max_update <span class="op">=</span> <span class="fl">0L</span>,</span>
+<span>  max_update <span class="op">=</span> <span class="fl">2L</span>,</span>
+<span>  nonconv <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"skip"</span>, <span class="st">"keep"</span><span class="op">)</span>,</span>
 <span>  asreml_args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  asreml_trace <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  on_error <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"warn"</span>, <span class="st">"stop"</span><span class="op">)</span>,</span>
 <span>  keep_pred <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  keep_gebv <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  path <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -252,21 +280,29 @@ is the ID and second column F, or a named numeric vector. <code>NULL</code> uses
 F = 0. For GBLUP, <code>F = diag(G) - 1</code> is common.</p></dd>
 
 
+<dt id="arg-cv-min-rel">cv_min_rel<a class="anchor" aria-label="anchor" href="#arg-cv-min-rel"></a></dt>
+<dd><p>Reliability filter for the validation individuals in
+cross-validation. Default <code>-Inf</code>: none. Validation individuals have no
+own record, so low reliabilities are expected; a filter keeps only the
+best-connected individuals, biases PA and shrinks the sample.</p></dd>
+
+
 <dt id="arg-min-rel">min_rel<a class="anchor" aria-label="anchor" href="#arg-min-rel"></a></dt>
-<dd><p>GEBVs with reliability below this value are set to <code>NA</code>
-before computing PA / accuracy. Use <code>-Inf</code> to keep all.</p></dd>
+<dd><p>Reliability threshold for the final GEBVs of the full-data
+fit (<code>$gebv</code>): sets <code>reliable = rel &gt;= min_rel</code>; no rows are dropped.</p></dd>
 
 
 <dt id="arg-min-n">min_n<a class="anchor" aria-label="anchor" href="#arg-min-n"></a></dt>
-<dd><p>Minimum number of validation individuals with a usable GEBV
-(after <code>min_rel</code>) for PA, accuracy and slope of a fold; fewer gives <code>NA</code>
+<dd><p>Minimum number of validation individuals with a GEBV and a
+record for PA, accuracy and slope of a fold; fewer gives <code>NA</code>
 (<code>n</code> still shows the number). With a low h2 the reliability filter can
 leave only a handful of individuals, whose PA and slope are noise.</p></dd>
 
 
 <dt id="arg-neg-to-na">neg_to_na<a class="anchor" aria-label="anchor" href="#arg-neg-to-na"></a></dt>
 <dd><p>Set negative PA / accuracy / slope to <code>NA</code> before the
-summary (the behaviour of the original scripts).</p></dd>
+summary. Default <code>FALSE</code>: dropping negative values biases the mean
+upwards; <code>TRUE</code> reproduces the original scripts.</p></dd>
 
 
 <dt id="arg-test-rg">test_rg<a class="anchor" aria-label="anchor" href="#arg-test-rg"></a></dt>
@@ -306,7 +342,16 @@ needs more.</p></dd>
 
 
 <dt id="arg-max-update">max_update<a class="anchor" aria-label="anchor" href="#arg-max-update"></a></dt>
-<dd><p>Number of <code><a href="https://rdrr.io/r/stats/update.html" class="external-link">update()</a></code> calls on a fit that has not converged.</p></dd>
+<dd><p>Number of <code><a href="https://rdrr.io/r/stats/update.html" class="external-link">update()</a></code> calls (continue iterating from the
+current estimates) on a fit that has not converged; recorded in
+<code>param$updates</code> and <code>accuracy$cv_updates</code>.</p></dd>
+
+
+<dt id="arg-nonconv">nonconv<a class="anchor" aria-label="anchor" href="#arg-nonconv"></a></dt>
+<dd><p>What to do with a fit that has still not converged:
+<code>"skip"</code> (default) - a parameter fit is reported with
+<code>status = "not_converged"</code> and its CV rows are skipped, a CV fit gives <code>NA</code>
+for that fold; <code>"keep"</code> - use it anyway. Always recorded in <code>$log</code>.</p></dd>
 
 
 <dt id="arg-asreml-args">asreml_args<a class="anchor" aria-label="anchor" href="#arg-asreml-args"></a></dt>
@@ -314,13 +359,24 @@ needs more.</p></dd>
 <code>list(ai.sing = TRUE)</code>.</p></dd>
 
 
+<dt id="arg-asreml-trace">asreml_trace<a class="anchor" aria-label="anchor" href="#arg-asreml-trace"></a></dt>
+<dd><p>Show ASReml's iteration monitor. Default <code>FALSE</code>: the
+progress lines of mintyrasr are shown instead.</p></dd>
+
+
 <dt id="arg-on-error">on_error<a class="anchor" aria-label="anchor" href="#arg-on-error"></a></dt>
-<dd><p><code>"warn"</code> (default): a failing fit gives a warning and <code>NA</code>
-results, the loop continues. <code>"stop"</code>: stop at the first failure.</p></dd>
+<dd><p><code>"warn"</code> (default): a failing fit is recorded in <code>$log</code>,
+gives <code>NA</code> results and the loop continues (one warning at the end).
+<code>"stop"</code>: stop at the first failure.</p></dd>
 
 
 <dt id="arg-keep-pred">keep_pred<a class="anchor" aria-label="anchor" href="#arg-keep-pred"></a></dt>
 <dd><p>Return the validation predictions (<code>pred</code>).</p></dd>
+
+
+<dt id="arg-keep-gebv">keep_gebv<a class="anchor" aria-label="anchor" href="#arg-keep-gebv"></a></dt>
+<dd><p>Return the GEBVs of all individuals from the full-data
+fits (<code>gebv</code>: gebv, pev, inb (F), rel, reliable).</p></dd>
 
 
 <dt id="arg-path">path<a class="anchor" aria-label="anchor" href="#arg-path"></a></dt>
@@ -333,11 +389,20 @@ results, the loop continues. <code>"stop"</code>: stop at the first failure.</p>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A list of class <code>asr_gblup</code> with <code>varcomp</code>, <code>vc_index</code>, <code>param</code>,
-<code>accuracy</code> (one row per fold and trait, with <code>cv_converge</code> and <code>cv_iter</code>,
-the length of the fold fit's iteration history: about the number of
-REML iterations; 2 for fixed variances), <code>summary</code> and, if <code>keep_pred</code>,
-<code>pred</code>. Fitted model objects are not kept, which keeps memory use low.</p>
+    <p>A list of class <code>asr_gblup</code>:</p><ul><li><p><code>varcomp</code>, <code>vc_index</code>: variance components and which <code>V</code> is which;</p></li>
+<li><p><code>param</code>: h2, rg, rp (+ SE), <code>formulas</code>, <code>status</code>, <code>converge</code>, <code>updates</code>,
+<code>iterations</code>, <code>loglik</code>, <code>boundary</code>, tests;</p></li>
+<li><p><code>accuracy</code>: one row per fold and trait: <code>status</code>, <code>n</code>, <code>pa</code>, <code>accuracy</code>,
+<code>slope</code>, <code>va</code>, <code>h2_full</code>, <code>cv_converge</code>, <code>cv_updates</code>, <code>cv_iter</code> (length
+of the iteration history: about the number of REML iterations, 2 for
+fixed variances);</p></li>
+<li><p><code>summary</code>: n, mean, sd, se over the folds with <code>status == "ok"</code>;</p></li>
+<li><p><code>pred</code> (if <code>keep_pred</code>): validation individuals;</p></li>
+<li><p><code>gebv</code> (if <code>keep_gebv</code>): all individuals of the full-data fits;</p></li>
+<li><p><code>log</code>: every error, non-convergence, boundary estimate and invalid LRT.</p></li>
+</ul><p>A <code>status</code> other than <code>"ok"</code> (<code>failed</code>, <code>not_converged</code>, <code>param_failed</code>,
+<code>param_not_converged</code>, <code>no_start_values</code>) marks rows left out of
+<code>summary</code>. Fitted model objects are not kept, which keeps memory use low.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

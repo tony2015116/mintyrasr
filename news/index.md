@@ -1,5 +1,39 @@
 # Changelog
 
+## mintyrasr 0.4.0
+
+### Cross-validation without a reliability filter
+
+- `cv_min_rel = -Inf` (new, default): validation individuals are **not**
+  filtered by reliability. They have no own record in the training set,
+  so a low reliability is expected; a filter kept only well-connected
+  individuals, biased PA and shrank the sample. `min_rel` (default 0.05)
+  now applies to the final GEBVs of the full-data fit.
+- New output `gebv`: GEBV, PEV, F, reliability and
+  `reliable = rel >= min_rel` for every individual of each full-data fit
+  (`keep_gebv = TRUE`). Tables over Excel’s row limit are written to
+  `<path>_<name>.csv`.
+- `neg_to_na` now defaults to `FALSE`: dropping negative PA / slopes
+  biased the mean upwards. `neg_to_na = TRUE` gives the old behaviour.
+
+### Long runs
+
+- Progress: one line per fit with status, iterations, time and estimated
+  time left; a summary line at the end. ASReml’s iteration monitor is
+  off while mintyrasr runs (`asreml_trace = TRUE` to keep it).
+- `max_update` now defaults to 2: a fit that has not converged is
+  continued with [`update()`](https://rdrr.io/r/stats/update.html); the
+  number used is in `param$updates` / `accuracy$cv_updates`.
+- `nonconv = "skip"` (default): a parameter fit that still has not
+  converged is reported with `status = "not_converged"` and its CV rows
+  are skipped; a CV fit gives `NA` for its fold. `nonconv = "keep"` uses
+  such fits.
+- Safe running: errors, non-convergence, boundary estimates and invalid
+  LRTs are recorded in the new `$log` (time, stage, label, type,
+  message) instead of interrupting the loop; one warning at the end.
+  `param` and `accuracy` gain `status`; `summary` uses only rows with
+  `status == "ok"`.
+
 ## mintyrasr 0.3.2
 
 From the second validation run with ASReml-R 4.2.0.481:

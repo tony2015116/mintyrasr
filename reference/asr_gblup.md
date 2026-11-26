@@ -11,14 +11,23 @@ R, so no input files have to be exported for ASReml:
 2.  refits the model to every training set in `cv`, with the variance
     components handled as set by `cv_vc`;
 
-3.  predicts GEBVs of the validation individuals, computes their
-    reliability `1 - PEV / ((1 + F) * Va)`, drops GEBVs with reliability
-    below `min_rel`, and returns per fold the predictive ability
+3.  predicts GEBVs of the validation individuals (all of them: they have
+    no own record, so a low reliability is expected and not filtered by
+    default) and returns per fold the predictive ability
     `pa = r(y, GEBV)`, the accuracy `pa / sqrt(h2)` (h2 from the full
     data, Dekkers 2007) and the slope `b(y ~ GEBV)`;
 
-4.  summarises them over folds (n, mean, sd, se) and, optionally, writes
-    everything to one Excel workbook.
+4.  summarises them over folds (n, mean, sd, se), returns the GEBVs of
+    all individuals from the full-data fit with their reliability (flag
+    `reliable = rel >= min_rel`) and, optionally, writes everything to
+    one Excel workbook.
+
+Long runs are safe: every error, non-convergence, boundary estimate and
+invalid LRT is recorded in `$log` (with time, stage and label) instead
+of stopping the loop; fits that do not converge are first continued with
+[`update()`](https://rdrr.io/r/stats/update.html) (`max_update`), and
+are then skipped (`nonconv = "skip"`) or kept. A progress line per fit
+shows status, iterations, time and the estimated time left.
 
 h2, rg and rp are built from the **names** of the variance components,
 not from fixed `V` positions, so they stay correct when random effects
@@ -58,9 +67,10 @@ asr_gblup(
   cv_vc = c("fixed", "warm", "estimate"),
   vpredict = NULL,
   inbreeding = NULL,
+  cv_min_rel = -Inf,
   min_rel = 0.05,
   min_n = 10L,
-  neg_to_na = TRUE,
+  neg_to_na = FALSE,
   test_rg = TRUE,
   test_rp = FALSE,
   rp = TRUE,
@@ -68,10 +78,13 @@ asr_gblup(
   dense = TRUE,
   maxit = 100L,
   workspace = "30Gb",
-  max_update = 0L,
+  max_update = 2L,
+  nonconv = c("skip", "keep"),
   asreml_args = list(),
+  asreml_trace = FALSE,
   on_error = c("warn", "stop"),
   keep_pred = TRUE,
+  keep_gebv = TRUE,
   path = NULL,
   verbose = TRUE
 )
@@ -148,22 +161,30 @@ asr_gblup(
   second column F, or a named numeric vector. `NULL` uses F = 0. For
   GBLUP, `F = diag(G) - 1` is common.
 
+- cv_min_rel:
+
+  Reliability filter for the validation individuals in cross-validation.
+  Default `-Inf`: none. Validation individuals have no own record, so
+  low reliabilities are expected; a filter keeps only the best-connected
+  individuals, biases PA and shrinks the sample.
+
 - min_rel:
 
-  GEBVs with reliability below this value are set to `NA` before
-  computing PA / accuracy. Use `-Inf` to keep all.
+  Reliability threshold for the final GEBVs of the full-data fit
+  (`$gebv`): sets `reliable = rel >= min_rel`; no rows are dropped.
 
 - min_n:
 
-  Minimum number of validation individuals with a usable GEBV (after
-  `min_rel`) for PA, accuracy and slope of a fold; fewer gives `NA` (`n`
-  still shows the number). With a low h2 the reliability filter can
-  leave only a handful of individuals, whose PA and slope are noise.
+  Minimum number of validation individuals with a GEBV and a record for
+  PA, accuracy and slope of a fold; fewer gives `NA` (`n` still shows
+  the number). With a low h2 the reliability filter can leave only a
+  handful of individuals, whose PA and slope are noise.
 
 - neg_to_na:
 
-  Set negative PA / accuracy / slope to `NA` before the summary (the
-  behaviour of the original scripts).
+  Set negative PA / accuracy / slope to `NA` before the summary. Default
+  `FALSE`: dropping negative values biases the mean upwards; `TRUE`
+  reproduces the original scripts.
 
 - test_rg:
 
@@ -202,22 +223,42 @@ asr_gblup(
 
 - max_update:
 
-  Number of [`update()`](https://rdrr.io/r/stats/update.html) calls on a
-  fit that has not converged.
+  Number of [`update()`](https://rdrr.io/r/stats/update.html) calls
+  (continue iterating from the current estimates) on a fit that has not
+  converged; recorded in `param$updates` and `accuracy$cv_updates`.
+
+- nonconv:
+
+  What to do with a fit that has still not converged: `"skip"`
+  (default) - a parameter fit is reported with
+  `status = "not_converged"` and its CV rows are skipped, a CV fit gives
+  `NA` for that fold; `"keep"` - use it anyway. Always recorded in
+  `$log`.
 
 - asreml_args:
 
   Named list of further `asreml()` arguments, e.g.
   `list(ai.sing = TRUE)`.
 
+- asreml_trace:
+
+  Show ASReml's iteration monitor. Default `FALSE`: the progress lines
+  of mintyrasr are shown instead.
+
 - on_error:
 
-  `"warn"` (default): a failing fit gives a warning and `NA` results,
-  the loop continues. `"stop"`: stop at the first failure.
+  `"warn"` (default): a failing fit is recorded in `$log`, gives `NA`
+  results and the loop continues (one warning at the end). `"stop"`:
+  stop at the first failure.
 
 - keep_pred:
 
   Return the validation predictions (`pred`).
+
+- keep_gebv:
+
+  Return the GEBVs of all individuals from the full-data fits (`gebv`:
+  gebv, pev, inb (F), rel, reliable).
 
 - path:
 
@@ -229,12 +270,31 @@ asr_gblup(
 
 ## Value
 
-A list of class `asr_gblup` with `varcomp`, `vc_index`, `param`,
-`accuracy` (one row per fold and trait, with `cv_converge` and
-`cv_iter`, the length of the fold fit's iteration history: about the
-number of REML iterations; 2 for fixed variances), `summary` and, if
-`keep_pred`, `pred`. Fitted model objects are not kept, which keeps
-memory use low.
+A list of class `asr_gblup`:
+
+- `varcomp`, `vc_index`: variance components and which `V` is which;
+
+- `param`: h2, rg, rp (+ SE), `formulas`, `status`, `converge`,
+  `updates`, `iterations`, `loglik`, `boundary`, tests;
+
+- `accuracy`: one row per fold and trait: `status`, `n`, `pa`,
+  `accuracy`, `slope`, `va`, `h2_full`, `cv_converge`, `cv_updates`,
+  `cv_iter` (length of the iteration history: about the number of REML
+  iterations, 2 for fixed variances);
+
+- `summary`: n, mean, sd, se over the folds with `status == "ok"`;
+
+- `pred` (if `keep_pred`): validation individuals;
+
+- `gebv` (if `keep_gebv`): all individuals of the full-data fits;
+
+- `log`: every error, non-convergence, boundary estimate and invalid
+  LRT.
+
+A `status` other than `"ok"` (`failed`, `not_converged`, `param_failed`,
+`param_not_converged`, `no_start_values`) marks rows left out of
+`summary`. Fitted model objects are not kept, which keeps memory use
+low.
 
 ## See also
 

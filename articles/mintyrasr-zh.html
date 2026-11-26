@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mintyrasr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -284,26 +284,37 @@ residual）、类型（var / cov / cor）、性状、是否使用</td>
 <tr class="odd">
 <td><code>param</code></td>
 <td>h2（两性状分性状）、rg、rp 及 SE；实际用的
-<code>formulas</code>；<code>converge</code>、<code>loglik</code>、<code>boundary</code>；<code>rg_lrt</code>、<code>rg_p</code>（<code>test_rp = TRUE</code>
+<code>formulas</code>；<code>status</code>、<code>converge</code>、<code>updates</code>、<code>iterations</code>、<code>loglik</code>、<code>boundary</code>；<code>rg_lrt</code>、<code>rg_p</code>（<code>test_rp = TRUE</code>
 时还有 <code>cov_*</code>）</td>
 </tr>
 <tr class="even">
 <td><code>accuracy</code></td>
 <td>每个重复 × 折 ×
-性状：<code>n</code>、<code>pa</code>、<code>accuracy</code>、<code>slope</code>、<code>va</code>、<code>h2_full</code>、<code>n_obs</code>
+性状：<code>status</code>、<code>n</code>、<code>pa</code>、<code>accuracy</code>、<code>slope</code>、<code>va</code>、<code>h2_full</code>、<code>cv_converge</code>、<code>cv_updates</code>、<code>cv_iter</code>
 </td>
 </tr>
 <tr class="odd">
 <td><code>summary</code></td>
 <td>
-<code>pa</code>、<code>accuracy</code>、<code>slope</code>
-按折汇总的 n、mean、sd、se</td>
+<code>status == "ok"</code> 的折上
+<code>pa</code>、<code>accuracy</code>、<code>slope</code> 的
+n、mean、sd、se</td>
 </tr>
 <tr class="even">
 <td><code>pred</code></td>
 <td>验证个体的
 <code>obs</code>、<code>gebv</code>、<code>pev</code>、<code>inb</code>（F）、<code>rel</code>
 </td>
+</tr>
+<tr class="odd">
+<td><code>gebv</code></td>
+<td>全数据模型中所有个体的
+<code>gebv</code>、<code>pev</code>、<code>inb</code>、<code>rel</code>、<code>reliable</code>
+</td>
+</tr>
+<tr class="even">
+<td><code>log</code></td>
+<td>每一次出错、未收敛、组分在边界上、LRT 无效的记录，含时间和标签</td>
 </tr>
 </tbody>
 </table>
@@ -317,11 +328,12 @@ residual）、类型（var / cov / cor）、性状、是否使用</td>
 <code>slope</code> = b(y ~ GEBV)，等于 1 表示 GEBV
 既没有膨胀也没有压缩。</li>
 </ul>
-<p>可靠性低于 <code>min_rel</code>（默认 0.05）的 GEBV
-不参与计算；剩下的个体少于 <code>min_n</code>（默认 10）时，该折的
+<p><strong>交叉验证中不按可靠性过滤</strong>（<code>cv_min_rel = -Inf</code>）。验证个体在训练集中没有自己的表型，可靠性偏低是正常的；只留下可靠性高的个体会让
+PA 偏向亲缘联系强的个体，样本也会变少。阈值 <code>min_rel</code>（默认
+0.05）改为用于全数据模型的最终 GEBV，即 <code>gebv$reliable</code>
+标记。每折至少要有 <code>min_n</code>（默认 10）个验证个体，否则该折的
 PA、准确性和回归系数为
-<code>NA</code>；<code>neg_to_na = TRUE</code>（默认）时，负值在汇总前设为
-<code>NA</code>。</p>
+<code>NA</code>。负值保留（<code>neg_to_na = FALSE</code>）：去掉负值会让均值偏高。</p>
 </div>
 <div class="section level2">
 <h2 id="交叉验证中的方差组分">6. 交叉验证中的方差组分<a class="anchor" aria-label="anchor" href="#%E4%BA%A4%E5%8F%89%E9%AA%8C%E8%AF%81%E4%B8%AD%E7%9A%84%E6%96%B9%E5%B7%AE%E7%BB%84%E5%88%86"></a>
@@ -359,14 +371,40 @@ PA、准确性和回归系数为
 <p>计算可靠性用的 <code>va</code> 总是取当折模型的值。</p>
 </div>
 <div class="section level2">
-<h2 id="实用提示">7. 实用提示<a class="anchor" aria-label="anchor" href="#%E5%AE%9E%E7%94%A8%E6%8F%90%E7%A4%BA"></a>
+<h2 id="长时间运行进度update-与安全运行">7. 长时间运行：进度、update() 与安全运行<a class="anchor" aria-label="anchor" href="#%E9%95%BF%E6%97%B6%E9%97%B4%E8%BF%90%E8%A1%8C%E8%BF%9B%E5%BA%A6update-%E4%B8%8E%E5%AE%89%E5%85%A8%E8%BF%90%E8%A1%8C"></a>
 </h2>
+<p>每个模型一行进度：状态、迭代次数、用时和预计剩余时间；mintyrasr
+运行期间关闭 ASReml 自己的迭代输出（<code>asreml_trace = TRUE</code>
+可打开）：</p>
+<pre><code>asr_gblup: two-trait model | 4 parameter fit(s) + 60 CV fit(s) | cv_vc = "fixed"
+[param 1/4] pairs=adg-bf test_herd=nls | ok | 9 it, 21s
+[param 2/4] pairs=adg-bf test_herd=bfs | ok after 1 update() | 31 it, 48s
+[cv 12/60  20%] pairs=adg-bf test_herd=nls rep=Repeat2 fold=Fold2 | ok | 2 it, 4s | 6.1 min elapsed, ~19.5 min left
+Done in 31.2 min | param: 4 ok, 0 not converged, 0 failed | cv: ok 60 | 1 log entry</code></pre>
+<ul>
+<li>
+<strong><code><a href="https://rdrr.io/r/stats/update.html" class="external-link">update()</a></code></strong>：未收敛的模型从当前估计值继续迭代，最多
+<code>max_update = 2</code> 次（记在
+<code>param$updates</code>、<code>accuracy$cv_updates</code>）。</li>
+<li>
+<strong>仍不收敛</strong>（<code>nonconv = "skip"</code>，默认）：参数估计模型标为
+<code>status = "not_converged"</code>，其交叉验证行跳过（<code>status = "param_not_converged"</code>）；交叉验证模型则该折为
+<code>NA</code>。<code>nonconv = "keep"</code> 照常使用这些模型。</li>
+<li>
+<strong>出错</strong>：该次拟合标为
+<code>status = "failed"</code>，循环继续（<code>on_error = "stop"</code>
+立即停止）。</li>
+<li>
+<strong><code>$log</code></strong>
+记录每一次出错、未收敛、组分在边界上、LRT
+无效，含时间、阶段和标签；结束时给出一条警告，说明有多少模型失败或未收敛。</li>
+<li>
+<code>status</code> 不是 <code>"ok"</code> 的行不进入
+<code>summary</code>。</li>
+</ul>
+<p>其他提示：</p>
 <ul>
 <li>不保存模型对象，折数很多时内存也不会爆。</li>
-<li>某次拟合失败时给出警告、结果为
-<code>NA</code>，循环继续（<code>on_error = "stop"</code>
-则立即停止）。<code>max_update = 2</code> 对未收敛的模型调用
-<code><a href="https://rdrr.io/r/stats/update.html" class="external-link">update()</a></code>。</li>
 <li>两性状 GBLUP 需要比 ASReml
 默认（<code>maxit = 13</code>、<code>workspace = "128mb"</code>）更大的设置；mintyrasr
 默认 <code>maxit = 100</code>、<code>workspace = "30Gb"</code>。</li>
@@ -375,6 +413,7 @@ PA、准确性和回归系数为
 0，数值协变量请先中心化；ASReml 自身默认是 <code>"fail"</code>。</li>
 <li>其他 <code>asreml()</code>
 参数：<code>asreml_args = list(ai.sing = TRUE)</code>。</li>
+<li>长时间运行时让电脑保持唤醒：电脑休眠（或在线许可证等待）表现为长时间停顿，而不是拟合慢。</li>
 </ul>
 <p>下一步：<a href="models-zh.html">模型与遗传参数</a>——随机效应、方差结构、V
 编号如何确定、检验以及自定义 <code>vpredict()</code> 公式。</p>

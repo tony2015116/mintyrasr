@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mintyrasr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -50,6 +50,26 @@
       <small>Source: <a href="https://github.com/tony2015116/mintyrasr/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.4.0" id="mintyrasr-040">mintyrasr 0.4.0<a class="anchor" aria-label="anchor" href="#mintyrasr-040"></a></h2>
+<div class="section level3">
+<h3 id="cross-validation-without-a-reliability-filter-0-4-0">Cross-validation without a reliability filter<a class="anchor" aria-label="anchor" href="#cross-validation-without-a-reliability-filter-0-4-0"></a></h3>
+<ul><li>
+<code>cv_min_rel = -Inf</code> (new, default): validation individuals are <strong>not</strong> filtered by reliability. They have no own record in the training set, so a low reliability is expected; a filter kept only well-connected individuals, biased PA and shrank the sample. <code>min_rel</code> (default 0.05) now applies to the final GEBVs of the full-data fit.</li>
+<li>New output <code>gebv</code>: GEBV, PEV, F, reliability and <code>reliable = rel &gt;= min_rel</code> for every individual of each full-data fit (<code>keep_gebv = TRUE</code>). Tables over Excel’s row limit are written to <code>&lt;path&gt;_&lt;name&gt;.csv</code>.</li>
+<li>
+<code>neg_to_na</code> now defaults to <code>FALSE</code>: dropping negative PA / slopes biased the mean upwards. <code>neg_to_na = TRUE</code> gives the old behaviour.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="long-runs-0-4-0">Long runs<a class="anchor" aria-label="anchor" href="#long-runs-0-4-0"></a></h3>
+<ul><li>Progress: one line per fit with status, iterations, time and estimated time left; a summary line at the end. ASReml’s iteration monitor is off while mintyrasr runs (<code>asreml_trace = TRUE</code> to keep it).</li>
+<li>
+<code>max_update</code> now defaults to 2: a fit that has not converged is continued with <code><a href="https://rdrr.io/r/stats/update.html" class="external-link">update()</a></code>; the number used is in <code>param$updates</code> / <code>accuracy$cv_updates</code>.</li>
+<li>
+<code>nonconv = "skip"</code> (default): a parameter fit that still has not converged is reported with <code>status = "not_converged"</code> and its CV rows are skipped; a CV fit gives <code>NA</code> for its fold. <code>nonconv = "keep"</code> uses such fits.</li>
+<li>Safe running: errors, non-convergence, boundary estimates and invalid LRTs are recorded in the new <code>$log</code> (time, stage, label, type, message) instead of interrupting the loop; one warning at the end. <code>param</code> and <code>accuracy</code> gain <code>status</code>; <code>summary</code> uses only rows with <code>status == "ok"</code>.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.2" id="mintyrasr-032">mintyrasr 0.3.2<a class="anchor" aria-label="anchor" href="#mintyrasr-032"></a></h2>
 <p>From the second validation run with ASReml-R 4.2.0.481:</p>

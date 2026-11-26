@@ -38,11 +38,12 @@ ginv, scenarios = c("st_sp", "st_mp", "mt_sp", "mt_mp"), dir = ".", tag
 **[asr_gblup](https://tony2015116.github.io/mintyrasr/reference/asr_gblup.md)**(param,
 cv, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL,
 genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc =
-"fixed", vpredict = NULL, inbreeding = NULL, min_rel = 0.05, min_n = 10,
-neg_to_na = TRUE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x =
-"include", dense = TRUE, maxit = 100, workspace = "30Gb", max_update =
-0, asreml_args = list(), on_error = "warn", keep_pred = TRUE, path =
-NULL, verbose = TRUE)
+"fixed", vpredict = NULL, inbreeding = NULL, cv_min_rel = -Inf, min_rel
+= 0.05, min_n = 10, neg_to_na = FALSE, test_rg = TRUE, test_rp = FALSE,
+rp = TRUE, na_x = "include", dense = TRUE, maxit = 100, workspace =
+"30Gb", max_update = 2, nonconv = "skip", asreml_args = list(),
+asreml_trace = FALSE, on_error = "warn", keep_pred = TRUE, keep_gebv =
+TRUE, path = NULL, verbose = TRUE)
 
     res <- asr_scenarios(sc, ginv, fixed = ~ hhys,
                          inbreeding = inbreeding, dir = "results")
@@ -115,7 +116,7 @@ fa() / rr() 以及多个遗传项（母体效应 `str()`）：在 `vpredict`
 
 | 指标 | 定义 |
 |----|----|
-| `rel` | 1 − PEV / ((1 + F) Va)，Va 取当折；低于 `min_rel` 的不用；每折至少剩 `min_n` = 10 个 |
+| `rel` | 1 − PEV / ((1 + F) Va)，Va 取当折；交叉验证中**不过滤**（`cv_min_rel = -Inf`）；每折至少 `min_n` = 10 个 |
 | `pa` | r(y, GEBV)，预测能力 |
 | `accuracy` | pa / √h2，h2 用全数据估计值 |
 | `slope` | b(y ~ GEBV)，理想值 1 |
@@ -127,9 +128,11 @@ fa() / rr() 以及多个遗传项（母体效应 `str()`）：在 `vpredict`
 | `varcomp` | summary(fit)\$varcomp + `V` |
 | `vc_index` | V → 所属项、角色、类型、性状、是否使用 |
 | `param` | h2、rg、rp（含 SE）、`formulas`、converge、loglik、boundary、检验 |
-| `accuracy` | 重复 × 折 × 性状：n、pa、accuracy、slope、va、h2_full |
+| `accuracy` | 重复 × 折 × 性状：status、n、pa、accuracy、slope、va、cv_iter |
 | `summary` | pa / accuracy / slope：n、mean、sd、se |
 | `pred` | 验证个体：obs、gebv、pev、inb、rel |
+| `gebv` | 全数据所有个体：gebv、pev、rel、`reliable` = rel ≥ `min_rel` |
+| `log` | 出错、未收敛、边界、LRT 无效 |
 
 ## 检查与提示
 
@@ -137,7 +140,12 @@ fa() / rr() 以及多个遗传项（母体效应 `str()`）：在 `vpredict`
   中；组分在边界上（`B`，也记在
   `param$boundary`）；`gammaPar = TRUE`；未收敛
 - ASReml 默认 `maxit = 13`、`workspace = "128mb"`，两性状 GBLUP 不够用
-- `max_update = 2` → 对未收敛模型调用 `update()`
-- `on_error = "warn"`：某次拟合失败结果为 `NA`，循环继续
+- 每个模型一行进度：状态、迭代、用时、预计剩余（关闭 ASReml
+  迭代输出：`asreml_trace = FALSE`）
+- `max_update = 2` →
+  `update()`；仍不收敛：`nonconv = "skip"`（跳过其交叉验证）或 `"keep"`
+- 出错、未收敛 → 记 `status` 和 `$log`，循环继续；status ≠ ok 的行不进
+  `summary`
+- 长时间运行请保持电脑唤醒：休眠表现为长时间停顿
 - 不保存模型对象 → 内存占用低
 - 其他 `asreml()` 参数：`asreml_args = list(ai.sing = TRUE)`

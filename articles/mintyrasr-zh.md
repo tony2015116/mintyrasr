@@ -140,19 +140,24 @@ asr_gblup(all_nest5, all_cv5, ginv, fixed = ~ hhys, traits = c("bfs", "nls"),
 |----|----|
 | `varcomp` | 每个参数估计模型的 `summary(fit)$varcomp`，附 `V` 编号 |
 | `vc_index` | 每个 `V` 是哪个组分：所属项、角色（genetic / random / residual）、类型（var / cov / cor）、性状、是否使用 |
-| `param` | h2（两性状分性状）、rg、rp 及 SE；实际用的 `formulas`；`converge`、`loglik`、`boundary`；`rg_lrt`、`rg_p`（`test_rp = TRUE` 时还有 `cov_*`） |
-| `accuracy` | 每个重复 × 折 × 性状：`n`、`pa`、`accuracy`、`slope`、`va`、`h2_full`、`n_obs` |
-| `summary` | `pa`、`accuracy`、`slope` 按折汇总的 n、mean、sd、se |
+| `param` | h2（两性状分性状）、rg、rp 及 SE；实际用的 `formulas`；`status`、`converge`、`updates`、`iterations`、`loglik`、`boundary`；`rg_lrt`、`rg_p`（`test_rp = TRUE` 时还有 `cov_*`） |
+| `accuracy` | 每个重复 × 折 × 性状：`status`、`n`、`pa`、`accuracy`、`slope`、`va`、`h2_full`、`cv_converge`、`cv_updates`、`cv_iter` |
+| `summary` | `status == "ok"` 的折上 `pa`、`accuracy`、`slope` 的 n、mean、sd、se |
 | `pred` | 验证个体的 `obs`、`gebv`、`pev`、`inb`（F）、`rel` |
+| `gebv` | 全数据模型中所有个体的 `gebv`、`pev`、`inb`、`rel`、`reliable` |
+| `log` | 每一次出错、未收敛、组分在边界上、LRT 无效的记录，含时间和标签 |
 
 - `pa`（预测能力）= 验证个体的 r(y, GEBV)；
 - `accuracy`（准确性）= pa / sqrt(h2)，h2 用全数据估计值（Dekkers
   2007）；
 - `slope` = b(y ~ GEBV)，等于 1 表示 GEBV 既没有膨胀也没有压缩。
 
-可靠性低于 `min_rel`（默认 0.05）的 GEBV 不参与计算；剩下的个体少于
-`min_n`（默认 10）时，该折的 PA、准确性和回归系数为
-`NA`；`neg_to_na = TRUE`（默认）时，负值在汇总前设为 `NA`。
+**交叉验证中不按可靠性过滤**（`cv_min_rel = -Inf`）。验证个体在训练集中没有自己的表型，可靠性偏低是正常的；只留下可靠性高的个体会让
+PA 偏向亲缘联系强的个体，样本也会变少。阈值 `min_rel`（默认
+0.05）改为用于全数据模型的最终 GEBV，即 `gebv$reliable`
+标记。每折至少要有 `min_n`（默认 10）个验证个体，否则该折的
+PA、准确性和回归系数为
+`NA`。负值保留（`neg_to_na = FALSE`）：去掉负值会让均值偏高。
 
 ## 6. 交叉验证中的方差组分
 
@@ -164,18 +169,38 @@ asr_gblup(all_nest5, all_cv5, ginv, fixed = ~ hhys, traits = c("bfs", "nls"),
 
 计算可靠性用的 `va` 总是取当折模型的值。
 
-## 7. 实用提示
+## 7. 长时间运行：进度、update() 与安全运行
+
+每个模型一行进度：状态、迭代次数、用时和预计剩余时间；mintyrasr
+运行期间关闭 ASReml 自己的迭代输出（`asreml_trace = TRUE` 可打开）：
+
+    asr_gblup: two-trait model | 4 parameter fit(s) + 60 CV fit(s) | cv_vc = "fixed"
+    [param 1/4] pairs=adg-bf test_herd=nls | ok | 9 it, 21s
+    [param 2/4] pairs=adg-bf test_herd=bfs | ok after 1 update() | 31 it, 48s
+    [cv 12/60  20%] pairs=adg-bf test_herd=nls rep=Repeat2 fold=Fold2 | ok | 2 it, 4s | 6.1 min elapsed, ~19.5 min left
+    Done in 31.2 min | param: 4 ok, 0 not converged, 0 failed | cv: ok 60 | 1 log entry
+
+- **[`update()`](https://rdrr.io/r/stats/update.html)**：未收敛的模型从当前估计值继续迭代，最多
+  `max_update = 2` 次（记在 `param$updates`、`accuracy$cv_updates`）。
+- **仍不收敛**（`nonconv = "skip"`，默认）：参数估计模型标为
+  `status = "not_converged"`，其交叉验证行跳过（`status = "param_not_converged"`）；交叉验证模型则该折为
+  `NA`。`nonconv = "keep"` 照常使用这些模型。
+- **出错**：该次拟合标为
+  `status = "failed"`，循环继续（`on_error = "stop"` 立即停止）。
+- **`$log`** 记录每一次出错、未收敛、组分在边界上、LRT
+  无效，含时间、阶段和标签；结束时给出一条警告，说明有多少模型失败或未收敛。
+- `status` 不是 `"ok"` 的行不进入 `summary`。
+
+其他提示：
 
 - 不保存模型对象，折数很多时内存也不会爆。
-- 某次拟合失败时给出警告、结果为 `NA`，循环继续（`on_error = "stop"`
-  则立即停止）。`max_update = 2` 对未收敛的模型调用
-  [`update()`](https://rdrr.io/r/stats/update.html)。
 - 两性状 GBLUP 需要比 ASReml
   默认（`maxit = 13`、`workspace = "128mb"`）更大的设置；mintyrasr 默认
   `maxit = 100`、`workspace = "30Gb"`。
 - `na_x = "include"`（默认，与常见脚本一致）把缺失协变量当作
   0，数值协变量请先中心化；ASReml 自身默认是 `"fail"`。
 - 其他 `asreml()` 参数：`asreml_args = list(ai.sing = TRUE)`。
+- 长时间运行时让电脑保持唤醒：电脑休眠（或在线许可证等待）表现为长时间停顿，而不是拟合慢。
 
 下一步：[模型与遗传参数](https://tony2015116.github.io/mintyrasr/articles/models-zh.md)——随机效应、方差结构、V
 编号如何确定、检验以及自定义 `vpredict()` 公式。

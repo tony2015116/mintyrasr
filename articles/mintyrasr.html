@@ -23,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mintyrasr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -296,28 +296,43 @@ random / residual), kind (var / cov / cor), traits, used</td>
 <tr class="odd">
 <td><code>param</code></td>
 <td>h2 (two traits: per trait), rg, rp with SE; <code>formulas</code>
-used; <code>converge</code>, <code>loglik</code>, <code>boundary</code>;
+used; <code>status</code>, <code>converge</code>, <code>updates</code>,
+<code>iterations</code>, <code>loglik</code>, <code>boundary</code>;
 <code>rg_lrt</code>, <code>rg_p</code> (and <code>cov_*</code> with
 <code>test_rp = TRUE</code>)</td>
 </tr>
 <tr class="even">
 <td><code>accuracy</code></td>
-<td>per repeat x fold x trait: <code>n</code>, <code>pa</code>,
-<code>accuracy</code>, <code>slope</code>, <code>va</code>,
-<code>h2_full</code>, <code>n_obs</code>
+<td>per repeat x fold x trait: <code>status</code>, <code>n</code>,
+<code>pa</code>, <code>accuracy</code>, <code>slope</code>,
+<code>va</code>, <code>h2_full</code>, <code>cv_converge</code>,
+<code>cv_updates</code>, <code>cv_iter</code>
 </td>
 </tr>
 <tr class="odd">
 <td><code>summary</code></td>
 <td>
 <code>pa</code>, <code>accuracy</code>, <code>slope</code>: n, mean,
-sd, se over folds</td>
+sd, se over the folds with <code>status == "ok"</code>
+</td>
 </tr>
 <tr class="even">
 <td><code>pred</code></td>
 <td>validation individuals: <code>obs</code>, <code>gebv</code>,
 <code>pev</code>, <code>inb</code> (F), <code>rel</code>
 </td>
+</tr>
+<tr class="odd">
+<td><code>gebv</code></td>
+<td>all individuals of the full-data fit: <code>gebv</code>,
+<code>pev</code>, <code>inb</code>, <code>rel</code>,
+<code>reliable</code>
+</td>
+</tr>
+<tr class="even">
+<td><code>log</code></td>
+<td>every error, non-convergence, boundary estimate and invalid LRT,
+with time and label</td>
 </tr>
 </tbody>
 </table>
@@ -332,11 +347,17 @@ individuals;</li>
 <code>slope</code> = b(y ~ GEBV); 1 means no inflation or deflation
 of the GEBVs.</li>
 </ul>
-<p>GEBVs with reliability below <code>min_rel</code> (default 0.05) are
-left out; a fold needs at least <code>min_n</code> (default 10)
-remaining individuals, otherwise its PA, accuracy and slope are
-<code>NA</code>. With <code>neg_to_na = TRUE</code> (default) negative
-values are set to <code>NA</code> before the summary.</p>
+<p><strong>Reliability in cross-validation is not filtered</strong>
+(<code>cv_min_rel = -Inf</code>). Validation individuals have no record
+of their own in the training set, so a low reliability is expected;
+keeping only the high-reliability ones would bias PA towards
+well-connected individuals and shrink the sample. The threshold
+<code>min_rel</code> (default 0.05) is applied to the final GEBVs of the
+full-data fit instead, as the flag <code>gebv$reliable</code>. A fold
+needs at least <code>min_n</code> (default 10) validation individuals,
+otherwise its PA, accuracy and slope are <code>NA</code>. Negative
+values are kept (<code>neg_to_na = FALSE</code>): dropping them would
+bias the mean upwards.</p>
 </div>
 <div class="section level2">
 <h2 id="variance-components-in-cross-validation">6. Variance components in cross-validation<a class="anchor" aria-label="anchor" href="#variance-components-in-cross-validation"></a>
@@ -378,15 +399,45 @@ values</td>
 model of that fold.</p>
 </div>
 <div class="section level2">
-<h2 id="practical-notes">7. Practical notes<a class="anchor" aria-label="anchor" href="#practical-notes"></a>
+<h2 id="long-runs-progress-update-and-safe-running">7. Long runs: progress, update() and safe running<a class="anchor" aria-label="anchor" href="#long-runs-progress-update-and-safe-running"></a>
 </h2>
+<p>One line per fit shows the status, iterations, time and the estimated
+time left; ASReml’s own iteration monitor is switched off while
+mintyrasr runs (<code>asreml_trace = TRUE</code> to see it):</p>
+<pre><code>asr_gblup: two-trait model | 4 parameter fit(s) + 60 CV fit(s) | cv_vc = "fixed"
+[param 1/4] pairs=adg-bf test_herd=nls | ok | 9 it, 21s
+[param 2/4] pairs=adg-bf test_herd=bfs | ok after 1 update() | 31 it, 48s
+[cv 12/60  20%] pairs=adg-bf test_herd=nls rep=Repeat2 fold=Fold2 | ok | 2 it, 4s | 6.1 min elapsed, ~19.5 min left
+Done in 31.2 min | param: 4 ok, 0 not converged, 0 failed | cv: ok 60 | 1 log entry</code></pre>
+<ul>
+<li>
+<strong><code><a href="https://rdrr.io/r/stats/update.html" class="external-link">update()</a></code></strong>: a fit that has not converged
+is continued from its current estimates up to
+<code>max_update = 2</code> times (<code>param$updates</code>,
+<code>accuracy$cv_updates</code>).</li>
+<li>
+<strong>Not converged after that</strong>
+(<code>nonconv = "skip"</code>, default): a parameter fit is reported
+with <code>status = "not_converged"</code> and its CV rows are skipped
+(<code>status = "param_not_converged"</code>); a CV fit gives
+<code>NA</code> for its fold. <code>nonconv = "keep"</code> uses such
+fits anyway.</li>
+<li>
+<strong>Errors</strong>: a failing fit gets
+<code>status = "failed"</code>, the loop carries on
+(<code>on_error = "stop"</code> to stop at once).</li>
+<li>
+<strong><code>$log</code></strong> records every error,
+non-convergence, boundary estimate and invalid LRT with time, stage and
+label; one warning at the end says how many fits failed or did not
+converge.</li>
+<li>Rows with a <code>status</code> other than <code>"ok"</code> are
+left out of <code>summary</code>.</li>
+</ul>
+<p>Other notes:</p>
 <ul>
 <li>Fitted models are not kept: memory stays low even with many
 folds.</li>
-<li>A failing fit gives a warning and <code>NA</code> results; the loop
-carries on (<code>on_error = "stop"</code> to stop instead).
-<code>max_update = 2</code> calls <code><a href="https://rdrr.io/r/stats/update.html" class="external-link">update()</a></code> on fits that
-have not converged.</li>
 <li>Two-trait GBLUP needs more than ASReml’s defaults
 (<code>maxit = 13</code>, <code>workspace = "128mb"</code>); mintyrasr
 uses <code>maxit = 100</code>, <code>workspace = "30Gb"</code>.</li>
@@ -396,6 +447,9 @@ missing covariates as 0 - centre numeric covariates first. ASReml’s own
 default is <code>"fail"</code>.</li>
 <li>Further <code>asreml()</code> arguments:
 <code>asreml_args = list(ai.sing = TRUE)</code>.</li>
+<li>Keep the computer awake during long runs: a sleeping computer (or an
+online licence waiting) shows up as a long pause, not as slow
+fitting.</li>
 </ul>
 <p>Next: <a href="https://tony2015116.github.io/mintyrasr/articles/models.html">Models
 and genetic parameters</a> - random effects, variance structures, how

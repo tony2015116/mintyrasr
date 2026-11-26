@@ -38,11 +38,12 @@ diag residual, no rp.
 **[asr_gblup](https://tony2015116.github.io/mintyrasr/reference/asr_gblup.md)**(param,
 cv, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL,
 genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc =
-"fixed", vpredict = NULL, inbreeding = NULL, min_rel = 0.05, min_n = 10,
-neg_to_na = TRUE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x =
-"include", dense = TRUE, maxit = 100, workspace = "30Gb", max_update =
-0, asreml_args = list(), on_error = "warn", keep_pred = TRUE, path =
-NULL, verbose = TRUE)
+"fixed", vpredict = NULL, inbreeding = NULL, cv_min_rel = -Inf, min_rel
+= 0.05, min_n = 10, neg_to_na = FALSE, test_rg = TRUE, test_rp = FALSE,
+rp = TRUE, na_x = "include", dense = TRUE, maxit = 100, workspace =
+"30Gb", max_update = 2, nonconv = "skip", asreml_args = list(),
+asreml_trace = FALSE, on_error = "warn", keep_pred = TRUE, keep_gebv =
+TRUE, path = NULL, verbose = TRUE)
 
     res <- asr_scenarios(sc, ginv, fixed = ~ hhys,
                          inbreeding = inbreeding, dir = "results")
@@ -117,7 +118,7 @@ rp = 0 alone.
 
 | measure | definition |
 |----|----|
-| `rel` | 1 − PEV / ((1 + F) Va), Va of the fold; \< `min_rel` dropped; fold needs ≥ `min_n` = 10 left |
+| `rel` | 1 − PEV / ((1 + F) Va), Va of the fold; **not filtered** in CV (`cv_min_rel = -Inf`); fold needs ≥ `min_n` = 10 |
 | `pa` | r(y, GEBV) |
 | `accuracy` | pa / √h2, full-data h2 |
 | `slope` | b(y ~ GEBV), ideally 1 |
@@ -129,9 +130,11 @@ rp = 0 alone.
 | `varcomp` | summary(fit)\$varcomp + `V` |
 | `vc_index` | V → term, role, kind, traits, used |
 | `param` | h2, rg, rp (+ SE), `formulas`, converge, loglik, boundary, tests |
-| `accuracy` | rep × fold × trait: n, pa, accuracy, slope, va, h2_full |
+| `accuracy` | rep × fold × trait: status, n, pa, accuracy, slope, va, cv_iter |
 | `summary` | pa / accuracy / slope: n, mean, sd, se |
 | `pred` | validation: obs, gebv, pev, inb, rel |
+| `gebv` | all individuals (full data): gebv, pev, rel, `reliable` = rel ≥ `min_rel` |
+| `log` | errors, non-convergence, boundary, invalid LRT |
 
 ## Checks & tips
 
@@ -140,7 +143,12 @@ rp = 0 alone.
   convergence
 - ASReml defaults `maxit = 13`, `workspace = "128mb"` are too small for
   two-trait GBLUP
-- `max_update = 2` → `update()` on non-converged fits
-- `on_error = "warn"`: a failing fit gives `NA`, the loop goes on
+- one progress line per fit: status, iterations, time, ~time left
+  (ASReml monitor off: `asreml_trace = FALSE`)
+- `max_update = 2` → `update()`; still not converged: `nonconv = "skip"`
+  (CV rows skipped) or `"keep"`
+- errors & non-convergence → `status` + `$log`, the loop goes on; rows
+  with status ≠ ok are not in `summary`
+- keep the computer awake: sleep shows up as a long pause
 - models are not kept → low memory
 - `asreml_args = list(ai.sing = TRUE)` for other `asreml()` arguments

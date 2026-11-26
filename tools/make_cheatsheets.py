@@ -6,12 +6,12 @@ The CSS and the small R highlighter are shared with the mintyr cheatsheet
 """
 import pathlib
 
-VERSION = "0.4.0"
+VERSION = "0.5.0"
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 CSS = (ROOT / "tools" / "cheatsheet.css").read_text(encoding="utf-8")
 
-FNS = ["asr_gblup", "asr_scenarios", "cv_scenarios", "nest_cv", "w2l_nest", "c2p_nest",
-       "asreml", "vpredict", "lrt.asreml", "G.inverse", "G.matrix", "import_xlsx", "vm", "ide"]
+FNS = ["asr_gblup", "asr_scenarios", "asr_compare", "ainverse", "H.inverse", "cv_scenarios", "nest_cv", "w2l_nest", "c2p_nest",
+       "asreml", "vpredict", "lrt", "G.inverse", "G.matrix", "import_xlsx", "vm", "ide"]
 
 SCRIPT = r"""
 <script>
@@ -160,14 +160,17 @@ inbreeding &lt;- data.frame(id = rownames(G), F = diag(G) - 1)</code></pre>
     <p>One workbook per scenario: <code>&lt;dir&gt;/&lt;scenario&gt;_&lt;tag&gt;.xlsx</code>. <code>"mt_bt"</code>: diag residual, no rp.</p>
   </div>
   <div class="fn">
-    <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, cv_min_rel = -Inf, min_rel = 0.05, min_n = 10, neg_to_na = FALSE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = TRUE, maxit = 100, workspace = "30Gb", max_update = 2, nonconv = "skip", asreml_args = list(), asreml_trace = FALSE, on_error = "warn", keep_pred = TRUE, keep_gebv = TRUE, path = NULL, verbose = TRUE)</div>
+    <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv = NULL, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, cv_min_rel = -Inf, min_rel = 0.05, min_n = 10, neg_to_na = FALSE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = "auto", maxit = 100, workspace = "30Gb", max_update = 2, nonconv = "skip", asreml_args = list(), asreml_trace = FALSE, on_error = "warn", keep_pred = TRUE, keep_gebv = TRUE, path = NULL, verbose = TRUE)</div>
     <pre><code>res &lt;- asr_scenarios(sc, ginv, fixed = ~ hhys,
                      inbreeding = inbreeding, dir = "results")
 st &lt;- asr_gblup(sc$st_sp$param, sc$st_sp$cv, ginv,
                 fixed = ~ hhys, path = "st_sp.xlsx")
-# own nested tables, other column names
-asr_gblup(all_nest, all_cv, ginv, fixed = ~ hhys,
-          traits = c("bfs", "nls"))</code></pre>
+# parameters only, per group / trait pair (cv = NULL)
+asr_gblup(w2l_nest(pheno, cols = c("adg", "bf"), by = "test_herd"),
+          ginv = ginv, fixed = ~ hhys)
+# pedigree, genomic, single-step on the same folds
+asr_compare(sc, list(ABLUP = ainv, GBLUP = ginv, ssGBLUP = hinv),
+            fixed = ~ hhys)</code></pre>
     <div class="note"><code>param</code> and <code>cv</code> rows are matched through shared outer columns (<code>name</code>, <code>pairs</code>, <code>test_herd</code>&hellip;). Single / two-trait from <code>value</code> / <code>value1</code>+<code>value2</code> or <code>traits</code>.</div>
   </div>
 </section>
@@ -179,14 +182,17 @@ asr_gblup(all_nest, all_cv, ginv, fixed = ~ hhys,
 # 2 traits: cbind(a, b) ~ trait + trait:fixed,
 #   ~ genetic_cov(trait):vm(id, ginv) + random_cov(trait):random,
 #   ~ units:residual_cov(trait)
-asr_gblup(..., random = ~ ide(id))            # repeated records
+asr_gblup(..., random = ~ ide(id))            # repeated records: rep
 asr_gblup(..., random = ~ litter, random_cov = "idh")
+asr_gblup(..., random = ~ vm(dam, ginv) + ide(dam))  # maternal
+asr_gblup(..., random = ~ vm(id, ginv):test_herd)    # GxE: rB
 asr_gblup(..., genetic_cov = "corgh")         # us too heavy
 asr_gblup(..., residual_cov = "diag", rp = FALSE)</code></pre>
     <table>
       <tr><th>argument</th><th>values</th></tr>
       <tr><td><code>genetic_cov</code>, <code>random_cov</code></td><td><code>us</code> <code>idh</code>/<code>diag</code> <code>corv</code> <code>corh</code> <code>corgh</code></td></tr>
       <tr><td><code>residual_cov</code></td><td><code>us</code> <code>idh</code>/<code>diag</code></td></tr>
+      <tr><td><code>ginv</code></td><td>A&#8315;&sup1; <code>ainverse(ped)</code> &middot; G&#8315;&sup1; &middot; H&#8315;&sup1;; <code>dense = "auto"</code>; F from <code>ainverse()</code></td></tr>
       <tr><td><code>na_x</code></td><td><code>include</code> (NA covariate = 0) <code>fail</code> <code>omit</code></td></tr>
     </table>
   </div>
@@ -201,6 +207,8 @@ asr_gblup(..., residual_cov = "diag", rp = FALSE)</code></pre>
       <tr><td>h2<sub>i</sub></td><td>Va<sub>i</sub> / (all variances of trait i)</td></tr>
       <tr><td>rg</td><td>Cov<sub>a</sub> / &radic;(Va<sub>1</sub>Va<sub>2</sub>); cor* &rarr; the correlation</td></tr>
       <tr><td>rp</td><td>&Sigma; covariances / &radic;(Vp<sub>1</sub>Vp<sub>2</sub>); cor term &rarr; r&radic;(V<sub>1</sub>V<sub>2</sub>)</td></tr>
+      <tr><td><code>prop_&lt;term&gt;</code></td><td>V<sub>term</sub> / Vp (c&sup2;, pe&sup2;, m&sup2;)</td></tr>
+      <tr><td><code>rep</code> / <code>rB_X</code></td><td>(Va + Vpe) / Vp &middot; Va / (Va + V<sub>G&times;X</sub>)</td></tr>
     </table>
     <pre><code># us G + us R
 h2_value1 = V1/(V1 + V5); rg = V2/sqrt(V1 * V3)
@@ -214,7 +222,7 @@ asr_gblup(..., random = ~ ide(id),
 </section>
 
 <section class="panel ut">
-  <h2>Tests <small>lrt.asreml(boundary = FALSE)</small></h2>
+  <h2>Tests <small>lrt(boundary = FALSE)</small></h2>
   <div class="fn">
     <table>
       <tr><th>argument</th><th>reduced model</th><th>output</th></tr>
@@ -340,14 +348,17 @@ inbreeding &lt;- data.frame(id = rownames(G), F = diag(G) - 1)</code></pre>
     <p>每个场景一个工作簿：<code>&lt;dir&gt;/&lt;场景&gt;_&lt;tag&gt;.xlsx</code>。<code>"mt_bt"</code>：diag 残差，不算 rp。</p>
   </div>
   <div class="fn">
-    <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, cv_min_rel = -Inf, min_rel = 0.05, min_n = 10, neg_to_na = FALSE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = TRUE, maxit = 100, workspace = "30Gb", max_update = 2, nonconv = "skip", asreml_args = list(), asreml_trace = FALSE, on_error = "warn", keep_pred = TRUE, keep_gebv = TRUE, path = NULL, verbose = TRUE)</div>
+    <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv = NULL, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, cv_min_rel = -Inf, min_rel = 0.05, min_n = 10, neg_to_na = FALSE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = "auto", maxit = 100, workspace = "30Gb", max_update = 2, nonconv = "skip", asreml_args = list(), asreml_trace = FALSE, on_error = "warn", keep_pred = TRUE, keep_gebv = TRUE, path = NULL, verbose = TRUE)</div>
     <pre><code>res &lt;- asr_scenarios(sc, ginv, fixed = ~ hhys,
                      inbreeding = inbreeding, dir = "results")
 st &lt;- asr_gblup(sc$st_sp$param, sc$st_sp$cv, ginv,
                 fixed = ~ hhys, path = "st_sp.xlsx")
-# 自己的嵌套表、其他列名
-asr_gblup(all_nest, all_cv, ginv, fixed = ~ hhys,
-          traits = c("bfs", "nls"))</code></pre>
+# 只估计参数：每个群体 / 每对性状（cv = NULL）
+asr_gblup(w2l_nest(pheno, cols = c("adg", "bf"), by = "test_herd"),
+          ginv = ginv, fixed = ~ hhys)
+# 系谱、基因组、一步法在同一套分折上比较
+asr_compare(sc, list(ABLUP = ainv, GBLUP = ginv, ssGBLUP = hinv),
+            fixed = ~ hhys)</code></pre>
     <div class="note"><code>param</code> 和 <code>cv</code> 通过共同的外层列（<code>name</code>、<code>pairs</code>、<code>test_herd</code>&hellip;）对应。单/两性状由 <code>value</code> / <code>value1</code>+<code>value2</code> 或 <code>traits</code> 判断。</div>
   </div>
 </section>
@@ -359,14 +370,17 @@ asr_gblup(all_nest, all_cv, ginv, fixed = ~ hhys,
 # 两性状：cbind(a, b) ~ trait + trait:fixed，
 #   ~ genetic_cov(trait):vm(id, ginv) + random_cov(trait):random，
 #   ~ units:residual_cov(trait)
-asr_gblup(..., random = ~ ide(id))            # 重复记录
+asr_gblup(..., random = ~ ide(id))            # 重复记录：rep
 asr_gblup(..., random = ~ litter, random_cov = "idh")
+asr_gblup(..., random = ~ vm(dam, ginv) + ide(dam))  # 母体效应
+asr_gblup(..., random = ~ vm(id, ginv):test_herd)    # G×E：rB
 asr_gblup(..., genetic_cov = "corgh")         # us 难收敛时
 asr_gblup(..., residual_cov = "diag", rp = FALSE)</code></pre>
     <table>
       <tr><th>参数</th><th>取值</th></tr>
       <tr><td><code>genetic_cov</code>、<code>random_cov</code></td><td><code>us</code> <code>idh</code>/<code>diag</code> <code>corv</code> <code>corh</code> <code>corgh</code></td></tr>
       <tr><td><code>residual_cov</code></td><td><code>us</code> <code>idh</code>/<code>diag</code></td></tr>
+      <tr><td><code>ginv</code></td><td>A&#8315;&sup1; <code>ainverse(ped)</code> &middot; G&#8315;&sup1; &middot; H&#8315;&sup1;；<code>dense = "auto"</code>；F 取自 <code>ainverse()</code></td></tr>
       <tr><td><code>na_x</code></td><td><code>include</code>（缺失协变量 = 0）<code>fail</code> <code>omit</code></td></tr>
     </table>
   </div>
@@ -381,6 +395,8 @@ asr_gblup(..., residual_cov = "diag", rp = FALSE)</code></pre>
       <tr><td>h2<sub>i</sub></td><td>Va<sub>i</sub> / 性状 i 的所有方差之和</td></tr>
       <tr><td>rg</td><td>Cov<sub>a</sub> / &radic;(Va<sub>1</sub>Va<sub>2</sub>)；cor* 结构直接取相关</td></tr>
       <tr><td>rp</td><td>所有协方差之和 / &radic;(Vp<sub>1</sub>Vp<sub>2</sub>)；相关项按 r&radic;(V<sub>1</sub>V<sub>2</sub>) 换算</td></tr>
+      <tr><td><code>prop_&lt;项&gt;</code></td><td>V<sub>项</sub> / Vp（c&sup2;、pe&sup2;、m&sup2;）</td></tr>
+      <tr><td><code>rep</code> / <code>rB_X</code></td><td>(Va + Vpe) / Vp &middot; Va / (Va + V<sub>G&times;X</sub>)</td></tr>
     </table>
     <pre><code># us G + us R
 h2_value1 = V1/(V1 + V5); rg = V2/sqrt(V1 * V3)
@@ -394,7 +410,7 @@ asr_gblup(..., random = ~ ide(id),
 </section>
 
 <section class="panel ut">
-  <h2>检验 <small>lrt.asreml(boundary = FALSE)</small></h2>
+  <h2>检验 <small>lrt(boundary = FALSE)</small></h2>
   <div class="fn">
     <table>
       <tr><th>参数</th><th>简化模型</th><th>输出</th></tr>

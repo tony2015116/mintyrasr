@@ -1,0 +1,134 @@
+---
+title: "Beyond the animal model: repeatability, maternal effects and G x E"
+description: >
+  Permanent environment, litter, maternal genetic and maternal environment
+  effects, and genotype x environment interaction - with the variance
+  proportions mintyrasr reports for each.
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+[中文版](other-models-zh.html)
+
+Further random effects are added with `random`. In single-trait models each
+term is added as it is; in two-trait models each term gets the structure
+`random_cov` (`us(trait):litter`, `idh(trait):litter`, ...). Whatever you add,
+mintyrasr reads the variance components by name and reports:
+
+| output | meaning |
+|---|---|
+| `h2` (`h2_<trait>`) | Va / Vp, where Vp is the sum of **all** variances: genetic, every extra term, residual |
+| `prop_<term>` | variance of that term / Vp, e.g. `prop_litter` (c²), `prop_ide_id` (pe²), `prop_vm_dam_ginv` (m²) |
+| `rep` | repeatability (Va + Vpe) / Vp, when `ide(<id>)` is in the model |
+| `rB_<X>` | type-B genetic correlation Va / (Va + V_GxX), when `vm(<id>, ginv):X` is in the model |
+
+Anything else - covariances between effects, total heritability - goes into
+`vpredict`, with the `V` numbers from the `vc_index` table of a first run.
+
+## Repeated records: repeatability
+
+Animals with several records (parities, test days) need a permanent
+environment effect; without it h2 is inflated:
+
+```{r}
+nest <- w2l_nest(pheno_rep, cols = "litter_size", out_type = "df")
+res  <- asr_gblup(nest, ginv = ginv, fixed = ~ parity + hys, random = ~ ide(id))
+res$param[, .(h2, h2_se, prop_ide_id, rep, rep_se)]
+```
+
+`ide(id)` uses the same levels as `vm(id, ginv)` but without relationships.
+
+**Cross-validation with repeated records**: all records of one animal must be
+in the same fold. `cv_scenarios(..., id = "id")` does this; `nest_cv()` splits
+rows, so the other records of a validation animal would stay in the training
+set.
+
+## Common environment: litter, pen
+
+```{r}
+res <- asr_gblup(nest, ginv = ginv, fixed = ~ hhys, random = ~ litter)
+res$param[, .(h2, prop_litter)]                 # prop_litter = c²
+
+# two traits, litter effects uncorrelated between traits
+asr_gblup(pairs, ginv = ginv, fixed = ~ hhys, random = ~ litter, random_cov = "idh")
+```
+
+## Maternal effects
+
+The dam's genetic effect needs the dams in the relationship matrix, which is
+usually true for A^-1 and H^-1 (pedigree) and for G^-1 only if the dams are
+genotyped. The data need a `dam` column.
+
+| model | `random` | variances |
+|---|---|---|
+| M1 maternal genetic | `~ vm(dam, ginv)` | Va, Vm, Ve |
+| M2 maternal environment | `~ ide(dam)` | Va, Vc, Ve |
+| M3 both | `~ vm(dam, ginv) + ide(dam)` | Va, Vm, Vc, Ve |
+
+```{r}
+res <- asr_gblup(nest, ginv = ainv, fixed = ~ sex + hys,
+                 random = ~ vm(dam, ginv) + ide(dam))
+res$param[, .(h2, prop_vm_dam_ginv, prop_ide_dam)]   # h2 direct, m², c²
+res$vc_index                                         # V numbers for vpredict
+
+# total heritability (Willham) for M3, no covariance: (Va + 0.5 Vm) / Vp
+# with V1 = Va, V2 = Vm, V3 = Vc, V4 = Ve as listed in vc_index:
+asr_gblup(nest, ginv = ainv, fixed = ~ sex + hys, random = ~ vm(dam, ginv) + ide(dam),
+          vpredict = list(h2_T = h2_T ~ (V1 + 0.5 * V2) / (V1 + V2 + V3 + V4)))
+```
+
+Inside `random` the relationship matrix is always called `ginv`, whatever
+object you pass (`ainv` above). `vm(dam, ginv)` is not taken as the direct
+genetic term: `h2`, the GEBVs and the reliabilities use `vm(id, ginv)` only.
+
+**M4 - covariance between direct and maternal effects** needs
+`str(~ vm(id, ainv) + vm(dam, ainv), ~ us(2):vm(id, ainv))`, which replaces
+the direct genetic term. mintyrasr does not build it; fit it with `asreml()`
+and use the formulas of the ASReml-R cookbook (with V1 = Va, V2 = Cov(a,m),
+V3 = Vm, V4 = Vc, V5 = Ve):
+
+```{r}
+m4 <- asreml(y ~ sex + hys,
+             random = ~ str(~ vm(id, ainv) + vm(dam, ainv), ~ us(2):vm(id, ainv)) + ide(dam),
+             residual = ~ idv(units), data = dat)
+summary(m4)$varcomp                                   # check the order first
+vpredict(m4, h2_d ~ V1 / (V1 + V2 + V3 + V4 + V5))
+vpredict(m4, r_am ~ V2 / sqrt(V1 * V3))
+vpredict(m4, h2_T ~ (V1 + 1.5 * V2 + 0.5 * V3) / (V1 + V2 + V3 + V4 + V5))
+```
+
+## Genotype x environment
+
+**Compound symmetry** (one genetic variance plus a genotype x environment
+variance; works with many environments, assumes the same genetic variance and
+the same correlation between all pairs of environments):
+
+```{r}
+nest <- w2l_nest(pheno, cols = "adg", out_type = "df")       # all herds together
+res  <- asr_gblup(nest, ginv = ginv, fixed = ~ hhys,
+                  random = ~ vm(id, ginv):test_herd)
+res$param[, .(h2, prop_vm_id_ginv_test_herd, rB_test_herd)]
+```
+
+`rB_test_herd` = Va / (Va + V_GxE) is the genetic correlation between herds.
+`h2` uses Vp = Va + V_GxE + Ve; the heritability within one herd is
+(Va + V_GxE) / Vp, available through `vpredict`.
+
+**One trait per environment** (heterogeneous variances, an rg for each pair of
+environments): treat the trait in each environment as a separate trait. See
+[The same trait in different populations](same-trait-across-groups.html).
+
+**Many environments** (5 or more): factor-analytic models (`fa()`) are the
+usual choice; they are not built by mintyrasr - fit them with `asreml()`.
+
+## Two-trait models with extra terms
+
+Every extra term gets `random_cov` and enters both the variances (h2) and the
+covariances (rp) of the traits:
+
+```{r}
+asr_gblup(pairs, ginv = ginv, fixed = ~ hhys, random = ~ litter, random_cov = "us")
+# prop_litter_value1, prop_litter_value2; rp includes the litter covariance
+```

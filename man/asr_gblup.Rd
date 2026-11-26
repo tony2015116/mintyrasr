@@ -6,7 +6,7 @@
 \usage{
 asr_gblup(
   param,
-  cv,
+  cv = NULL,
   ginv,
   fixed = ~1,
   random = NULL,
@@ -26,7 +26,7 @@ asr_gblup(
   test_rp = FALSE,
   rp = TRUE,
   na_x = c("include", "fail", "omit"),
-  dense = TRUE,
+  dense = "auto",
   maxit = 100L,
   workspace = "30Gb",
   max_update = 2L,
@@ -46,19 +46,30 @@ list-column \code{data} (e.g. \code{cv_scenarios(...)$st_sp$param}).}
 
 \item{cv}{Cross-validation table with list-columns \code{train} and \code{validate}
 (e.g. \code{cv_scenarios(...)$st_sp$cv} or the output of \code{\link[mintyr:nest_cv]{mintyr::nest_cv()}}).
+\code{NULL} (default): genetic parameters only, no cross-validation - e.g.
+for every group of \code{\link[mintyr:w2l_nest]{mintyr::w2l_nest()}} or every trait pair of
+\code{\link[mintyr:c2p_nest]{mintyr::c2p_nest()}}.
 Each row is matched to the row of \code{param} that shares its outer columns.}
 
-\item{ginv}{Inverse genomic (or pedigree) relationship matrix as used by
-\code{vm()}, e.g. \code{G.inverse(G, sparseform = TRUE)$Ginv.sparse}. It must carry
-\code{attr(, "INVERSE") = TRUE}, otherwise \code{vm()} takes it as G itself
-(a warning is given).}
+\item{ginv}{Inverse relationship matrix as used by \code{vm()}: A^-1 for
+pedigree BLUP (\code{ainverse(ped)}), G^-1 for GBLUP
+(\code{G.inverse(G, sparseform = TRUE)$Ginv.sparse}) or H^-1 for single-step
+GBLUP (\code{H.inverse(...)}). It must carry \code{attr(, "INVERSE") = TRUE},
+otherwise \code{vm()} takes it as the relationship matrix itself (a warning is
+given). With \code{ainverse()}, F is taken from its \code{inbreeding} attribute when
+\code{inbreeding} is \code{NULL}.}
 
 \item{fixed}{One-sided formula of fixed effects, e.g. \code{~ hhys}. For
 two-trait models every term is nested in trait (\code{trait + trait:hhys}).}
 
 \item{random}{Optional one-sided formula of further random effects, e.g.
-\code{~ ide(id)} (permanent environment, repeated records), \code{~ litter + pen}.
-In two-trait models each term gets the structure \code{random_cov}.}
+\code{~ ide(id)} (permanent environment, repeated records), \code{~ litter + pen},
+\code{~ vm(dam, ginv) + ide(dam)} (maternal genetic and permanent maternal
+environment), \code{~ vm(id, ginv):herd} (genotype x herd interaction). In
+two-trait models each term gets the structure \code{random_cov}. Each term is
+also reported as a proportion of the phenotypic variance
+(\verb{prop_<term>}), with \code{rep} (repeatability) for \verb{ide(<id>)} and
+\verb{rB_<X>} (type-B genetic correlation) for \verb{vm(<id>, ginv):X}.}
 
 \item{id}{Name of the individual ID column in the nested data.}
 
@@ -122,7 +133,9 @@ the residual covariance is then not estimable and rp is not meaningful.}
 scripts) treats missing covariates / factor levels as 0 in the design
 matrix - centre numeric covariates first; ASReml's own default is \code{"fail"}.}
 
-\item{dense}{Put the genomic term in \code{dense} (faster for GBLUP).}
+\item{dense}{Put the relationship term in \code{dense}. \code{"auto"} (default):
+yes for a (nearly) full inverse such as G^-1 or H^-1, no for a sparse
+one such as A^-1 from \code{ainverse()}, where \code{dense} would cost much memory.}
 
 \item{maxit, workspace}{Passed to \code{asreml()} (maxit is 1 for \code{cv_vc = "fixed"}).
 ASReml's own defaults are 13 and \code{"128mb"}; two-trait GBLUP usually

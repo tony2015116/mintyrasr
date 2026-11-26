@@ -1,0 +1,106 @@
+---
+title: "Pedigree, genomic and single-step: A, G and H"
+description: >
+  The same analyses with pedigree BLUP (A^-1), GBLUP (G^-1) or single-step
+  GBLUP (H^-1), and a paired comparison of the three with asr_compare().
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+[中文版](relationship-matrices-zh.html)
+
+Every function of mintyrasr takes the inverse relationship matrix in the
+argument `ginv` and puts it into `vm(id, ginv)`. Which information the model
+uses is decided only by the matrix you pass:
+
+| method | matrix | built from | individuals with a prediction |
+|---|---|---|---|
+| pedigree BLUP (ABLUP) | A^-1 | pedigree | everyone in the pedigree |
+| GBLUP | G^-1 | genotypes | genotyped individuals |
+| single-step GBLUP (ssGBLUP) | H^-1 | pedigree + genotypes | everyone in the pedigree |
+
+Nothing else changes: scenarios, models, outputs and tests are the same.
+
+## Building the matrices
+
+```{r}
+library(asreml)
+library(ASRgenomics)
+
+# A^-1 from the pedigree (id, sire, dam; parents before offspring, 0 / NA = unknown)
+ainv <- ainverse(ped)            # sparse, carries rowNames, INVERSE and inbreeding
+
+# G^-1 from a marker matrix (individuals x SNPs, coded 0/1/2)
+G    <- G.matrix(M = M, method = "VanRaden")$G
+ginv <- G.inverse(G = G, sparseform = TRUE)$Ginv.sparse
+
+# H^-1: G must be aligned to the pedigree relationships of the genotyped
+# animals (A22) first, and the genotyped animals must be in the pedigree.
+# See ?G.tuneup, ?match.G2A and ?H.inverse in your ASRgenomics version for the
+# exact arguments; the result must carry INVERSE = TRUE and rowNames.
+hinv <- H.inverse(A = A, Ginv = Ginv_aligned, lambda = 1, sparseform = TRUE)
+```
+
+All three must carry `attr(, "INVERSE") = TRUE`; mintyrasr warns otherwise,
+because `vm()` would then use the matrix as the relationship matrix itself.
+
+## What mintyrasr sets for you
+
+- **`dense = "auto"`**: the relationship term goes into `dense` for a (nearly)
+  full inverse such as G^-1 or H^-1, and not for a sparse A^-1, where it would
+  cost a lot of memory. The choice is shown in the first progress line.
+- **Inbreeding for the reliability** `1 - PEV / ((1 + F) Va)`: with `ainverse()`
+  F is taken from its `inbreeding` attribute when `inbreeding = NULL`. For G
+  use `diag(G) - 1`; for H the pedigree F of `ainverse()` is the usual choice.
+- The output file names carry the name of the matrix object
+  (`st_sp_ainv.xlsx`, `st_sp_ginv.xlsx`, ...), or the method name in
+  `asr_compare()`.
+
+## One method
+
+```{r}
+library(mintyr)
+library(mintyrasr)
+
+sc <- cv_scenarios(pheno, cols = c("adg", "bf"), id = "id", group = "test_herd",
+                   v = 5, repeats = 5, seed = 2026, out_type = "df")
+
+res_a <- asr_scenarios(sc, ainv, fixed = ~ hhys)                       # ABLUP, F from ainverse()
+res_g <- asr_scenarios(sc, ginv, fixed = ~ hhys, inbreeding = F_genomic) # GBLUP
+```
+
+## Comparing the methods
+
+`asr_compare()` runs the same scenarios with each matrix and stacks the
+results with a `method` column. All methods use the same folds, so the
+comparison is paired:
+
+```{r}
+cmp <- asr_compare(sc, list(ABLUP = ainv, GBLUP = ginv, ssGBLUP = hinv),
+                   scenarios = c("st_sp", "st_mp"), fixed = ~ hhys, dir = "compare",
+                   inbreeding = list(GBLUP = F_genomic))
+cmp$param                       # h2 (+ SE) per method and scenario
+cmp$summary[type == "pa"]       # predictive ability per method
+# compare/compare.xlsx and one workbook per scenario and method
+```
+
+A compact table of PA by method:
+
+```{r}
+library(data.table)
+dcast(cmp$summary[type == "pa"], scenario + name + test_herd ~ method, value.var = "mean")
+```
+
+## Points to watch
+
+- **Which animals are in the data.** GBLUP can only use genotyped animals.
+  For a fair comparison, validate all methods on the same (genotyped)
+  individuals; ABLUP and ssGBLUP can additionally use non-genotyped animals
+  with records in the training sets.
+- **IDs must match** between the phenotypes, the pedigree and the genotypes;
+  mintyrasr warns about phenotyped individuals that are not in the matrix.
+- **ssGBLUP needs a compatible G**: align G to A22 (scale and level) before
+  building H, otherwise the genomic and pedigree parts do not fit together and
+  predictions are biased - visible as a slope far from 1.

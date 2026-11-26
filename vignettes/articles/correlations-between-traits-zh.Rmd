@@ -1,0 +1,91 @@
+---
+title: "各群体中性状间的相关"
+description: >
+  每个群体中每对性状的遗传相关和表型相关（含遗传力）、相关的检验，以及每个群体的相关矩阵。
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+[English version](correlations-between-traits.html)
+
+两性状模型给出在同一批个体上测定的两个性状之间的遗传相关（rg）和表型相关（rp）。有多个群体时，对每个群体中的每对性状分别估计。
+
+## 数据与性状对
+
+```{r}
+library(asreml)
+library(mintyr)
+library(mintyrasr)
+
+pairs <- c2p_nest(pheno, cols = c("adg", "bf", "fcr"), by = "test_herd", out_type = "df")
+pairs                                    # pairs（"adg-bf"……）| test_herd | data（value1、value2）
+```
+
+`pairs = "adg-bf"` 中，`value1` 是 adg，`value2` 是 bf。`param` 表保留 `h2_value1` / `h2_value2` 的列名；`accuracy`、`pred` 和 `gebv` 表使用性状名。
+
+## 对每个群体的每对性状拟合
+
+```{r}
+res <- asr_gblup(pairs, ginv = ginv, fixed = ~ hhys, inbreeding = inbreeding,
+                 test_rg = TRUE, test_rp = TRUE, path = "correlations_by_herd.xlsx")
+res$param[, .(pairs, test_herd, rg, rg_se, rg_p, rp, rp_se, cov_p,
+              h2_value1, h2_value2, status)]
+```
+
+| 列 | 含义 |
+|---|---|
+| `rg`、`rg_se` | 遗传相关 Cov_a / sqrt(Va1 Va2) |
+| `rp`、`rp_se` | 表型相关：所有协方差之和 / sqrt(Vp1 Vp2) |
+| `rg_p` | rg = 0 的似然比检验：遗传项 `us(trait)` 对比 `idh(trait)`，`boundary = FALSE` |
+| `cov_p` | 所有协方差 = 0 的似然比检验（`test_rp = TRUE`）：两个性状是否有任何相关 |
+| `h2_value1`、`h2_value2` | 两性状模型给出的两个性状的遗传力 |
+
+模型为 `cbind(value1, value2) ~ trait + trait:hhys`、`us(trait):vm(id, ginv)`、`units:us(trait)`。残差协方差需要有个体同时有两个性状的记录；它是 rp 的一部分。
+
+## 所有群体合并
+
+```{r}
+pairs_all <- c2p_nest(pheno, cols = c("adg", "bf", "fcr"), out_type = "df")
+res_all <- asr_gblup(pairs_all, ginv = ginv, fixed = ~ hhys, inbreeding = inbreeding)
+```
+
+## 每个群体的相关矩阵
+
+对角线以上为遗传相关，以下为表型相关：
+
+```{r}
+library(data.table)
+p <- copy(res$param)[, c("t1", "t2") := tstrsplit(pairs, "-", fixed = TRUE)]
+cor_matrix <- function(herd) {
+  x <- p[test_herd == herd]
+  tr <- unique(c(x$t1, x$t2))
+  m <- diag(1, length(tr)); dimnames(m) <- list(tr, tr)
+  for (k in seq_len(nrow(x))) {
+    i <- match(x$t1[k], tr); j <- match(x$t2[k], tr)
+    m[min(i, j), max(i, j)] <- x$rg[k]        # 上三角：rg
+    m[max(i, j), min(i, j)] <- x$rp[k]        # 下三角：rp
+  }
+  round(m, 2)
+}
+cor_matrix("nls")
+```
+
+## 模型不收敛时
+
+- rg 接近 ±1 或两个性状共同记录很少：试试 `genetic_cov = "corgh"`（相关系数本身是一个参数，SE 直接给出）。
+- 增加迭代：`max_update`（默认 2）用 `update()` 继续迭代。
+- 仍不收敛的模型会被跳过并记入 `res$log`（`nonconv = "keep"` 则照常使用）。
+- 自由度为 0 的似然比检验（某个参数被约束或落在边界上）给出 `rg_p = NA` 并记入日志，而不是误导性的 p = 0。
+
+## 两性状模型的交叉验证
+
+同样的性状对做交叉验证，就是 `cv_scenarios()` 的 `mt_sp`（分群体）和 `mt_mp`（群体合并）场景：
+
+```{r}
+sc  <- cv_scenarios(pheno, cols = c("adg", "bf", "fcr"), id = "id", group = "test_herd",
+                    v = 5, repeats = 5, seed = 2026, scenarios = c("mt_sp", "mt_mp"),
+                    out_type = "df")
+res <- asr_scenarios(sc, ginv, scenarios = c("mt_sp", "mt_mp"), fixed = ~ hhys)
+```

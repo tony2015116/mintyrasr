@@ -1,0 +1,104 @@
+---
+title: "Correlations between traits in each population"
+description: >
+  Genetic and phenotypic correlations, with heritabilities, for every pair of
+  traits in every population, their tests, and a correlation matrix per
+  population.
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+[中文版](correlations-between-traits-zh.html)
+
+Two-trait models give the genetic correlation (rg) and the phenotypic
+correlation (rp) between two traits measured on the same animals. With
+several populations, they are estimated for every pair of traits in every
+population.
+
+## Data and trait pairs
+
+```{r}
+library(asreml)
+library(mintyr)
+library(mintyrasr)
+
+pairs <- c2p_nest(pheno, cols = c("adg", "bf", "fcr"), by = "test_herd", out_type = "df")
+pairs                                    # pairs ("adg-bf", ...) | test_herd | data (value1, value2)
+```
+
+In `pairs = "adg-bf"`, `value1` is adg and `value2` is bf. `param` keeps the
+names `h2_value1` / `h2_value2`; the `accuracy`, `pred` and `gebv` tables use the
+trait names.
+
+## Fit every pair in every population
+
+```{r}
+res <- asr_gblup(pairs, ginv = ginv, fixed = ~ hhys, inbreeding = inbreeding,
+                 test_rg = TRUE, test_rp = TRUE, path = "correlations_by_herd.xlsx")
+res$param[, .(pairs, test_herd, rg, rg_se, rg_p, rp, rp_se, cov_p,
+              h2_value1, h2_value2, status)]
+```
+
+| column | meaning |
+|---|---|
+| `rg`, `rg_se` | genetic correlation Cov_a / sqrt(Va1 Va2) |
+| `rp`, `rp_se` | phenotypic correlation: all covariances / sqrt(Vp1 Vp2) |
+| `rg_p` | LRT of rg = 0: `us(trait)` against `idh(trait)` for the genetic term, `boundary = FALSE` |
+| `cov_p` | LRT of all covariances = 0 (`test_rp = TRUE`): are the traits correlated at all |
+| `h2_value1`, `h2_value2` | heritabilities of the two traits from the two-trait model |
+
+The model is `cbind(value1, value2) ~ trait + trait:hhys`,
+`us(trait):vm(id, ginv)`, `units:us(trait)`. The residual covariance needs
+animals with records of both traits; it is part of rp.
+
+## All populations together
+
+```{r}
+pairs_all <- c2p_nest(pheno, cols = c("adg", "bf", "fcr"), out_type = "df")
+res_all <- asr_gblup(pairs_all, ginv = ginv, fixed = ~ hhys, inbreeding = inbreeding)
+```
+
+## A correlation matrix per population
+
+Genetic correlations above the diagonal, phenotypic below:
+
+```{r}
+library(data.table)
+p <- copy(res$param)[, c("t1", "t2") := tstrsplit(pairs, "-", fixed = TRUE)]
+cor_matrix <- function(herd) {
+  x <- p[test_herd == herd]
+  tr <- unique(c(x$t1, x$t2))
+  m <- diag(1, length(tr)); dimnames(m) <- list(tr, tr)
+  for (k in seq_len(nrow(x))) {
+    i <- match(x$t1[k], tr); j <- match(x$t2[k], tr)
+    m[min(i, j), max(i, j)] <- x$rg[k]        # upper: rg
+    m[max(i, j), min(i, j)] <- x$rp[k]        # lower: rp
+  }
+  round(m, 2)
+}
+cor_matrix("nls")
+```
+
+## When a model does not converge
+
+- rg close to +-1 or traits with few joint records: try `genetic_cov = "corgh"`
+  (the correlation is a parameter of its own and its SE comes directly).
+- More iterations: `max_update` (default 2) continues with `update()`.
+- Fits that still do not converge are skipped and listed in `res$log`
+  (`nonconv = "keep"` to use them anyway).
+- An LRT with df = 0 (a parameter restrained or at a bound) gives `rg_p = NA`
+  with an entry in the log, not a misleading p = 0.
+
+## Cross-validation of the two-trait models
+
+The same pairs with cross-validation are the `mt_sp` (per population) and
+`mt_mp` (populations together) scenarios of `cv_scenarios()`:
+
+```{r}
+sc  <- cv_scenarios(pheno, cols = c("adg", "bf", "fcr"), id = "id", group = "test_herd",
+                    v = 5, repeats = 5, seed = 2026, scenarios = c("mt_sp", "mt_mp"),
+                    out_type = "df")
+res <- asr_scenarios(sc, ginv, scenarios = c("mt_sp", "mt_mp"), fixed = ~ hhys)
+```

@@ -142,6 +142,26 @@ NULL
   tab
 }
 
+# "trait:vm(dam, ginv)" -> "vm_dam_ginv", "ide(id)" -> "ide_id", "litter" -> "litter"
+.clean_term <- function(t) {
+  t <- sub("^trait:", "", t)
+  t <- gsub("[^A-Za-z0-9]+", "_", t)
+  gsub("^_+|_+$", "", t)
+}
+
+# Should the relationship term go to `dense`? Yes for a (nearly) full inverse
+# such as G^-1; no for a sparse one such as A^-1 from ainverse().
+.is_dense <- function(ginv) {
+  ids <- .ginv_ids(ginv)
+  if (is.matrix(ginv) && nrow(ginv) == ncol(ginv)) return(TRUE)
+  if ((is.matrix(ginv) || is.data.frame(ginv)) && ncol(ginv) == 3L && length(ids)) {
+    n <- length(ids)
+    return(nrow(ginv) / (n * (n + 1) / 2) > 0.5)
+  }
+  if (inherits(ginv, "sparseMatrix")) return(FALSE)
+  TRUE
+}
+
 # Regex for the genomic term vm(<id>, ginv) in component / coefficient names
 .gpat <- function(id) paste0("vm\\(", id, ",\\s*ginv\\)")
 
@@ -159,7 +179,7 @@ NULL
   rn   <- rownames(vc)
   term <- sub("!.*$", "", rn)
   suf  <- ifelse(grepl("!", rn, fixed = TRUE), sub("^[^!]*!", "", rn), "")
-  role <- ifelse(grepl(.gpat(id), term), "genetic",
+  role <- ifelse(grepl(paste0("^(trait:)?", .gpat(id), "$"), term), "genetic",
                  ifelse(grepl("^units", term), "residual", "random"))
   bound <- if ("bound" %in% names(vc)) as.character(vc$bound) else rep("", length(rn))
   scale <- suf == "R" & (type == "mt" | bound %in% c("F", "Fixed") | "units!units" %in% rn)
@@ -225,7 +245,7 @@ NULL
 #   rg = Cov_a / sqrt(Va1 Va2)        (corh/corgh: the correlation itself)
 #   rp = sum of all covariances / sqrt(Vp1 Vp2), covariance of a cor() term
 #        written as r * sqrt(V1 V2)
-.vp_formulas <- function(idx, resp, rp = TRUE) {
+.vp_formulas <- function(idx, resp, rp = TRUE, id = "id") {
   u <- idx[idx$used, ]
   V <- function(k) paste0("V", k)
   var_rows <- function(r, roles = c("genetic", "residual", "random"), terms = NULL)
@@ -243,6 +263,34 @@ NULL
     g <- var_rows(r, "genetic"); p <- var_rows(r)
     nm <- if (length(resp) == 1L) "h2" else paste0("h2_", r)
     if (length(g) == 1L) f[[nm]] <- mk(nm, sprintf("%s / (%s)", V(g), paste(V(p), collapse = " + ")))
+    sfx <- if (length(resp) == 1L) "" else paste0("_", r)
+    vp_txt <- paste(V(p), collapse = " + ")
+    # every further random term as a proportion of the phenotypic variance
+    for (t in unique(u$term[u$role == "random" & u$kind == "var" & u$trait1 == r])) {
+      v <- var_rows(r, "random", terms = t)
+      if (length(v) == 1L) {
+        nm2 <- paste0("prop_", .clean_term(t), sfx)
+        f[[nm2]] <- mk(nm2, sprintf("%s / (%s)", V(v), vp_txt))
+      }
+    }
+    if (length(g) == 1L) {
+      # repeatability with a permanent-environment term ide(<id>)
+      pe <- unique(u$term[u$role == "random" & grepl(paste0("^(trait:)?ide\\(", id, "\\)$"), u$term)])
+      if (length(pe) == 1L) {
+        v <- var_rows(r, "random", terms = pe)
+        if (length(v) == 1L) f[[paste0("rep", sfx)]] <- mk(paste0("rep", sfx),
+                                  sprintf("(%s + %s) / (%s)", V(g), V(v), vp_txt))
+      }
+      # type-B genetic correlation across the levels of X with vm(<id>, ginv):X
+      if (length(resp) == 1L) {
+        gx <- unique(u$term[u$role == "random" & grepl(paste0("^", .gpat(id), ":"), u$term)])
+        for (t in gx) {
+          v <- var_rows(r, "random", terms = t)
+          nm3 <- paste0("rB_", .clean_term(sub(paste0("^", .gpat(id), ":"), "", t)))
+          if (length(v) == 1L) f[[nm3]] <- mk(nm3, sprintf("%s / (%s + %s)", V(g), V(g), V(v)))
+        }
+      }
+    }
   }
   if (length(resp) == 2L) {
     g1 <- var_rows(resp[1], "genetic"); g2 <- var_rows(resp[2], "genetic")
@@ -299,6 +347,7 @@ NULL
   tr <- if (length(resp) == 1L) rep(resp, length(rn)) else sub("^trait_([^:]+):.*$", "\\1", rn)
   out <- data.table::data.table(id = sub(pre, "", rn),     # IDs may contain "_"
                                 trait = tr, gebv = cr$solution, pev = cr$std.error^2)
+  out <- out[!grepl(":", id, fixed = TRUE)]               # interaction levels, e.g. vm(id, ginv):herd
   out[, inb := if (is.null(Ftab)) 0 else Ftab$F[match(id, Ftab$id)]]
   out[, rel := 1 - pev / ((1 + inb) * va[trait])]
   out

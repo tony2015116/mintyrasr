@@ -44,7 +44,7 @@ asreml <- function(fixed, random, residual, dense = NULL, na.action, data, G.par
   }
   vc <- data.frame(component = comp, std.error = 0.05, z.ratio = comp/0.05, bound = ifelse(comp == 1 & grepl("!R$", nm), "F", "P"), `%ch` = 0,
                    row.names = nm, check.names = FALSE)
-  ids <- rownames(ginv)
+  ids <- attr(ginv, "rowNames"); if (is.null(ids)) ids <- rownames(ginv)
   tbv <- if ("tbv" %in% names(data)) data$tbv[match(ids, as.character(data$id))] else NULL
   mk <- function(pref) {
     sol <- stats::rnorm(length(ids), 0, 0.3)

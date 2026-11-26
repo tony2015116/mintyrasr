@@ -1,0 +1,87 @@
+---
+title: "系谱、基因组与一步法：A、G 和 H"
+description: >
+  用系谱 BLUP（A⁻¹）、GBLUP（G⁻¹）或一步法 GBLUP（H⁻¹）做同样的分析，并用 asr_compare() 成对比较三种方法。
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+[English version](relationship-matrices.html)
+
+mintyrasr 的所有函数都通过参数 `ginv` 接收关系逆矩阵，并放进 `vm(id, ginv)`。模型用到哪些信息，只取决于你传入的矩阵：
+
+| 方法 | 矩阵 | 来源 | 有预测值的个体 |
+|---|---|---|---|
+| 系谱 BLUP（ABLUP） | A⁻¹ | 系谱 | 系谱中的所有个体 |
+| GBLUP | G⁻¹ | 基因型 | 有基因型的个体 |
+| 一步法 GBLUP（ssGBLUP） | H⁻¹ | 系谱 + 基因型 | 系谱中的所有个体 |
+
+其他都不变：场景、模型、输出和检验完全相同。
+
+## 构建矩阵
+
+```{r}
+library(asreml)
+library(ASRgenomics)
+
+# 由系谱得到 A⁻¹（id、sire、dam；父母排在后代之前，0 / NA 表示未知）
+ainv <- ainverse(ped)            # 稀疏格式，带 rowNames、INVERSE 和 inbreeding 属性
+
+# 由标记矩阵（个体 × SNP，编码 0/1/2）得到 G⁻¹
+G    <- G.matrix(M = M, method = "VanRaden")$G
+ginv <- G.inverse(G = G, sparseform = TRUE)$Ginv.sparse
+
+# H⁻¹：先把 G 与有基因型个体的系谱关系（A22）对齐，且有基因型的个体必须在系谱中。
+# 具体参数请查看你所用 ASRgenomics 版本的 ?G.tuneup、?match.G2A 和 ?H.inverse；
+# 结果必须带 INVERSE = TRUE 和 rowNames。
+hinv <- H.inverse(A = A, Ginv = Ginv_aligned, lambda = 1, sparseform = TRUE)
+```
+
+三个矩阵都必须带 `attr(, "INVERSE") = TRUE`；否则 `vm()` 会把它当作关系矩阵本身，mintyrasr 会警告。
+
+## mintyrasr 自动处理的设置
+
+- **`dense = "auto"`**：对（近似）满的逆矩阵，如 G⁻¹ 或 H⁻¹，关系项放进 `dense`；对稀疏的 A⁻¹ 不放，否则会占用大量内存。选择结果显示在第一行进度信息里。
+- **可靠性 `1 - PEV / ((1 + F) Va)` 中的近交系数**：用 `ainverse()` 且 `inbreeding = NULL` 时，F 自动取自它的 `inbreeding` 属性。G 用 `diag(G) - 1`；H 通常用 `ainverse()` 给出的系谱 F。
+- 输出文件名带矩阵对象的名字（`st_sp_ainv.xlsx`、`st_sp_ginv.xlsx`……），在 `asr_compare()` 中则带方法名。
+
+## 单个方法
+
+```{r}
+library(mintyr)
+library(mintyrasr)
+
+sc <- cv_scenarios(pheno, cols = c("adg", "bf"), id = "id", group = "test_herd",
+                   v = 5, repeats = 5, seed = 2026, out_type = "df")
+
+res_a <- asr_scenarios(sc, ainv, fixed = ~ hhys)                         # ABLUP，F 取自 ainverse()
+res_g <- asr_scenarios(sc, ginv, fixed = ~ hhys, inbreeding = F_genomic) # GBLUP
+```
+
+## 比较三种方法
+
+`asr_compare()` 用每个矩阵跑同样的场景，并把结果按 `method` 列合并。所有方法用同一套分折，因此是成对比较：
+
+```{r}
+cmp <- asr_compare(sc, list(ABLUP = ainv, GBLUP = ginv, ssGBLUP = hinv),
+                   scenarios = c("st_sp", "st_mp"), fixed = ~ hhys, dir = "compare",
+                   inbreeding = list(GBLUP = F_genomic))
+cmp$param                       # 各方法、各场景的 h2（含 SE）
+cmp$summary[type == "pa"]       # 各方法的预测能力
+# compare/compare.xlsx，以及每个场景 × 方法一个工作簿
+```
+
+按方法排列的 PA 表：
+
+```{r}
+library(data.table)
+dcast(cmp$summary[type == "pa"], scenario + name + test_herd ~ method, value.var = "mean")
+```
+
+## 注意事项
+
+- **数据里有哪些个体。** GBLUP 只能用有基因型的个体。为了公平比较，所有方法都在同一批（有基因型的）个体上验证；ABLUP 和 ssGBLUP 还可以在训练集中加入没有基因型但有表型的个体。
+- **ID 必须一致**：表型、系谱和基因型中的 ID 要对得上；有表型但不在矩阵中的个体，mintyrasr 会警告。
+- **ssGBLUP 需要相容的 G**：构建 H 之前先把 G 与 A22 对齐（尺度和水平），否则基因组部分与系谱部分不匹配，预测有偏，表现为回归系数明显偏离 1。

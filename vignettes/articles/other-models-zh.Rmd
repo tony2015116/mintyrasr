@@ -1,0 +1,108 @@
+---
+title: "动物模型之外：重复力、母体效应与基因型×环境互作"
+description: >
+  永久环境、窝效应、母体遗传与母体环境效应、基因型×环境互作，以及 mintyrasr 为每种效应给出的方差比例。
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+[English version](other-models.html)
+
+其他随机效应用 `random` 加入。单性状模型中每一项原样加入；两性状模型中每一项使用 `random_cov` 结构（`us(trait):litter`、`idh(trait):litter`……）。无论加入什么，mintyrasr 都按名字读取方差组分，并给出：
+
+| 输出 | 含义 |
+|---|---|
+| `h2`（`h2_<性状>`） | Va / Vp，Vp 为**所有**方差之和：遗传、每个额外随机项、残差 |
+| `prop_<项>` | 该项方差 / Vp，如 `prop_litter`（c²）、`prop_ide_id`（pe²）、`prop_vm_dam_ginv`（m²） |
+| `rep` | 重复力 (Va + Vpe) / Vp，模型中有 `ide(<id>)` 时给出 |
+| `rB_<X>` | B 型遗传相关 Va / (Va + V_GxX)，模型中有 `vm(<id>, ginv):X` 时给出 |
+
+其他参数——效应间的协方差、总遗传力——用 `vpredict` 给出，V 编号先看第一次运行的 `vc_index` 表。
+
+## 重复记录：重复力
+
+有多次记录的个体（胎次、测定日）需要加永久环境效应，否则 h2 偏高：
+
+```{r}
+nest <- w2l_nest(pheno_rep, cols = "litter_size", out_type = "df")
+res  <- asr_gblup(nest, ginv = ginv, fixed = ~ parity + hys, random = ~ ide(id))
+res$param[, .(h2, h2_se, prop_ide_id, rep, rep_se)]
+```
+
+`ide(id)` 与 `vm(id, ginv)` 用同样的水平，但不带亲缘关系。
+
+**有重复记录时的交叉验证**：同一个体的所有记录必须在同一折。`cv_scenarios(..., id = "id")` 会这样分；`nest_cv()` 按行分折，验证个体的其他记录会留在训练集里。
+
+## 共同环境：窝、栏
+
+```{r}
+res <- asr_gblup(nest, ginv = ginv, fixed = ~ hhys, random = ~ litter)
+res$param[, .(h2, prop_litter)]                 # prop_litter = c²
+
+# 两性状，窝效应在性状间不相关
+asr_gblup(pairs, ginv = ginv, fixed = ~ hhys, random = ~ litter, random_cov = "idh")
+```
+
+## 母体效应
+
+母体遗传效应要求母亲在关系矩阵中：A⁻¹ 和 H⁻¹（有系谱）一般满足；G⁻¹ 只有母亲有基因型时才满足。数据需要 `dam` 列。
+
+| 模型 | `random` | 方差 |
+|---|---|---|
+| M1 母体遗传 | `~ vm(dam, ginv)` | Va、Vm、Ve |
+| M2 母体环境 | `~ ide(dam)` | Va、Vc、Ve |
+| M3 两者都有 | `~ vm(dam, ginv) + ide(dam)` | Va、Vm、Vc、Ve |
+
+```{r}
+res <- asr_gblup(nest, ginv = ainv, fixed = ~ sex + hys,
+                 random = ~ vm(dam, ginv) + ide(dam))
+res$param[, .(h2, prop_vm_dam_ginv, prop_ide_dam)]   # 直接遗传力、m²、c²
+res$vc_index                                         # vpredict 用的 V 编号
+
+# M3（无协方差）的总遗传力（Willham）：(Va + 0.5 Vm) / Vp
+# vc_index 中 V1 = Va、V2 = Vm、V3 = Vc、V4 = Ve 时：
+asr_gblup(nest, ginv = ainv, fixed = ~ sex + hys, random = ~ vm(dam, ginv) + ide(dam),
+          vpredict = list(h2_T = h2_T ~ (V1 + 0.5 * V2) / (V1 + V2 + V3 + V4)))
+```
+
+在 `random` 中，关系矩阵始终写作 `ginv`，不论传入的对象叫什么（上例为 `ainv`）。`vm(dam, ginv)` 不会被当作直接遗传项：`h2`、GEBV 和可靠性只使用 `vm(id, ginv)`。
+
+**M4——直接效应与母体效应的协方差**需要 `str(~ vm(id, ainv) + vm(dam, ainv), ~ us(2):vm(id, ainv))`，它会取代直接遗传项。mintyrasr 不构建这个模型；请直接用 `asreml()` 拟合，并使用 ASReml-R 手册中的公式（V1 = Va、V2 = Cov(a,m)、V3 = Vm、V4 = Vc、V5 = Ve）：
+
+```{r}
+m4 <- asreml(y ~ sex + hys,
+             random = ~ str(~ vm(id, ainv) + vm(dam, ainv), ~ us(2):vm(id, ainv)) + ide(dam),
+             residual = ~ idv(units), data = dat)
+summary(m4)$varcomp                                   # 先确认顺序
+vpredict(m4, h2_d ~ V1 / (V1 + V2 + V3 + V4 + V5))
+vpredict(m4, r_am ~ V2 / sqrt(V1 * V3))
+vpredict(m4, h2_T ~ (V1 + 1.5 * V2 + 0.5 * V3) / (V1 + V2 + V3 + V4 + V5))
+```
+
+## 基因型 × 环境互作
+
+**复合对称模型**（一个遗传方差加一个基因型×环境方差；适用于环境很多时，假设各环境遗传方差相同、任意两环境间的相关相同）：
+
+```{r}
+nest <- w2l_nest(pheno, cols = "adg", out_type = "df")       # 所有场合并
+res  <- asr_gblup(nest, ginv = ginv, fixed = ~ hhys,
+                  random = ~ vm(id, ginv):test_herd)
+res$param[, .(h2, prop_vm_id_ginv_test_herd, rB_test_herd)]
+```
+
+`rB_test_herd` = Va / (Va + V_GxE) 即场间遗传相关。`h2` 的 Vp = Va + V_GxE + Ve；单个场内的遗传力为 (Va + V_GxE) / Vp，可用 `vpredict` 计算。
+
+**每个环境一个性状**（各环境方差不同，每两个环境一个 rg）：把每个环境中的性状当作不同性状，见[同一性状在不同群体中](same-trait-across-groups-zh.html)。
+
+**环境很多时**（5 个以上）：通常用因子分析模型（`fa()`）；mintyrasr 不构建，请直接用 `asreml()`。
+
+## 两性状模型加其他随机项
+
+每个额外随机项使用 `random_cov`，同时进入性状的方差（h2）和协方差（rp）：
+
+```{r}
+asr_gblup(pairs, ginv = ginv, fixed = ~ hhys, random = ~ litter, random_cov = "us")
+# 输出 prop_litter_value1、prop_litter_value2；rp 包含窝效应协方差
+```

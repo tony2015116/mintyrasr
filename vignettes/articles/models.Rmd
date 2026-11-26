@@ -137,7 +137,7 @@ use the term `vm(<id>, ginv)`.
 
 ## Tests
 
-| argument | full model | reduced model | `lrt.asreml()` |
+| argument | full model | reduced model | `lrt()` |
 |---|---|---|---|
 | `test_rg = TRUE` (default) | as specified | genetic structure `idh(trait)`, the rest unchanged | `boundary = FALSE` (0 is not on the boundary of a correlation) |
 | `test_rp = TRUE` | as specified | `idh` for the genetic, extra random and residual terms | `boundary = FALSE`; `cov_df` = number of covariances |

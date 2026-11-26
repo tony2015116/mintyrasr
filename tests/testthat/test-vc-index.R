@@ -7,7 +7,9 @@ test_that("single trait, idv(units) scale row is skipped", {
   idx <- mintyrasr:::.vc_index(vc, "st", "id", "value")
   expect_equal(idx$role, c("genetic", "random", "residual", "residual"))
   expect_equal(idx$used, c(TRUE, TRUE, TRUE, FALSE))
-  expect_equal(f_txt(mintyrasr:::.vp_formulas(idx, "value")), c(h2 = "V1/(V1 + V2 + V3)"))
+  expect_equal(f_txt(mintyrasr:::.vp_formulas(idx, "value")),
+               c(h2 = "V1/(V1 + V2 + V3)", prop_ide_id = "V2/(V1 + V2 + V3)",
+                 rep = "(V1 + V2)/(V1 + V2 + V3)"))
 })
 
 test_that("default residual units!R (not fixed) is the residual variance", {
@@ -62,4 +64,45 @@ test_that("a pedigree term vm(dam, ginv) is not taken as the genomic term", {
   vc <- vc_df(c("vm(id, ginv)", "vm(dam, ginv)", "units!R"))
   idx <- mintyrasr:::.vc_index(vc, "st", "id", "value")
   expect_equal(idx$role, c("genetic", "random", "residual"))
+})
+
+test_that("maternal terms: genetic is only vm(id, ginv); proportions for the rest", {
+  vc <- vc_df(c("vm(id, ginv)", "vm(dam, ginv)", "ide(dam)", "units!units", "units!R"),
+              bound = c("P", "P", "P", "P", "F"))
+  idx <- mintyrasr:::.vc_index(vc, "st", "id", "value")
+  expect_equal(idx$role[1:3], c("genetic", "random", "random"))
+  f <- f_txt(mintyrasr:::.vp_formulas(idx, "value"))
+  expect_equal(unname(f["h2"]), "V1/(V1 + V2 + V3 + V4)")
+  expect_equal(unname(f["prop_vm_dam_ginv"]), "V2/(V1 + V2 + V3 + V4)")
+  expect_equal(unname(f["prop_ide_dam"]), "V3/(V1 + V2 + V3 + V4)")
+  expect_false("rep" %in% names(f))                 # ide(dam) is not a pe term of id
+})
+
+test_that("G x E compound symmetry: vm(id, ginv):herd gives rB", {
+  vc <- vc_df(c("vm(id, ginv)", "vm(id, ginv):herd", "units!units", "units!R"),
+              bound = c("P", "P", "P", "F"))
+  idx <- mintyrasr:::.vc_index(vc, "st", "id", "value")
+  expect_equal(idx$role[1:2], c("genetic", "random"))
+  f <- f_txt(mintyrasr:::.vp_formulas(idx, "value"))
+  expect_equal(unname(f["rB_herd"]), "V1/(V1 + V2)")
+  expect_equal(unname(f["h2"]), "V1/(V1 + V2 + V3)")
+})
+
+test_that("two traits: proportions per trait", {
+  nm <- c("trait:vm(id, ginv)!trait_a:a", "trait:vm(id, ginv)!trait_b:a", "trait:vm(id, ginv)!trait_b:b",
+          "trait:litter!trait_a", "trait:litter!trait_b", "units:trait!R",
+          "units:trait!trait_a:a", "units:trait!trait_b:a", "units:trait!trait_b:b")
+  idx <- mintyrasr:::.vc_index(vc_df(nm), "mt", "id", c("a", "b"))
+  f <- f_txt(mintyrasr:::.vp_formulas(idx, c("a", "b")))
+  expect_equal(unname(f["prop_litter_a"]), "V4/(V1 + V4 + V7)")
+  expect_equal(unname(f["prop_litter_b"]), "V5/(V3 + V5 + V9)")
+})
+
+test_that("dense is chosen from the form of the inverse", {
+  g <- diag(3); rownames(g) <- letters[1:3]
+  expect_true(mintyrasr:::.is_dense(g))
+  a <- cbind(c(1:10, 2), c(1:10, 1), 1)            # ainverse-like triplet: 11 of 55 cells
+  attr(a, "rowNames") <- letters[1:10]
+  expect_false(mintyrasr:::.is_dense(a))
+  expect_equal(mintyrasr:::.clean_term("trait:vm(dam, ginv)"), "vm_dam_ginv")
 })

@@ -45,11 +45,24 @@ articles:
   contents:
   - mintyrasr
   - articles/mintyrasr-zh
-- title: Models and genetic parameters
-  navbar: Models and genetic parameters
+- title: Models and relationship matrices
+  navbar: Models and relationship matrices
   contents:
   - articles/models
   - articles/models-zh
+  - articles/relationship-matrices
+  - articles/relationship-matrices-zh
+  - articles/other-models
+  - articles/other-models-zh
+- title: Genetic parameters across populations
+  navbar: Genetic parameters across populations
+  contents:
+  - articles/parameters-by-group
+  - articles/parameters-by-group-zh
+  - articles/correlations-between-traits
+  - articles/correlations-between-traits-zh
+  - articles/same-trait-across-groups
+  - articles/same-trait-across-groups-zh
 
 reference:
 - title: GBLUP with ASReml-R
@@ -59,6 +72,10 @@ reference:
   contents:
   - asr_gblup
   - asr_scenarios
+- title: Comparing relationship matrices
+  desc: Pedigree (A), genomic (G) and single-step (H) on the same folds.
+  contents:
+  - asr_compare
 
 news:
   cran_dates: false

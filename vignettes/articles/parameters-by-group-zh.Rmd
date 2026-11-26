@@ -1,0 +1,71 @@
+---
+title: "分组估计遗传参数"
+description: >
+  一份数据里有多个群体（场、品种、品系），分别估计每个群体的遗传力等参数，并与所有群体合并估计的结果比较。
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+[English version](parameters-by-group.html)
+
+数据中有多个群体时，各群体的遗传参数往往不同。常见的结果表是"每个群体、每个性状的 h2（SE）"。用 mintyrasr 只需一张嵌套表和一次调用，不需要交叉验证（`cv = NULL`，默认值）。
+
+## 数据
+
+每个个体一行，包括分组列（这里是 `test_herd`）、固定效应和性状：
+
+```{r}
+library(asreml)
+library(mintyr)
+library(mintyrasr)
+
+pheno <- import_xlsx("pheno.xlsx")      # id、test_herd、hhys、sex、adg、bf、fcr
+```
+
+## 分组估计单性状参数
+
+`w2l_nest(by = "test_herd")` 为每个性状 × 群体生成一份数据：
+
+```{r}
+nest <- w2l_nest(pheno, cols = c("adg", "bf", "fcr"), by = "test_herd", out_type = "df")
+nest                                     # name | test_herd | data
+
+res <- asr_gblup(nest, ginv = ginv, fixed = ~ hhys + sex, inbreeding = inbreeding,
+                 path = "h2_by_herd.xlsx")
+res$param[, .(name, test_herd, h2, h2_se, status, boundary)]
+```
+
+做成报告表，性状为行、群体为列：
+
+```{r}
+library(data.table)
+p <- res$param[, .(name, test_herd, txt = sprintf("%.2f (%.2f)", h2, h2_se))]
+dcast(p, name ~ test_herd, value.var = "txt")
+```
+
+[动物模型之外](other-models-zh.html)中的模型都可以这样用，例如 `random = ~ litter` 会为每个群体给出 `prop_litter`。系谱或一步法分析只需换一个矩阵（见 [A、G 和 H](relationship-matrices-zh.html)）。
+
+## 所有群体合并
+
+作为对照，把所有群体放进一个模型估计同样的性状；群体效应在固定效应里（这里通过嵌套在场内的 `hhys`）：
+
+```{r}
+all <- w2l_nest(pheno, cols = c("adg", "bf", "fcr"), out_type = "df")
+res_all <- asr_gblup(all, ginv = ginv, fixed = ~ hhys + sex, inbreeding = inbreeding)
+res_all$param[, .(name, h2, h2_se)]
+```
+
+要检验群体间遗传方差是否不同、群体间遗传联系如何，见[动物模型之外](other-models-zh.html)中的基因型×环境部分，以及[同一性状在不同群体中](same-trait-across-groups-zh.html)。
+
+## 分组估计两性状参数
+
+`c2p_nest(by = "test_herd")` 生成每个群体中的每对性状；见[各群体中性状间的相关](correlations-between-traits-zh.html)。
+
+## 注意事项
+
+- **群体大小。** 小群体的 SE 大，估计值容易落在边界上（h2 = 0）。请检查 `status`、`boundary` 和 `res$log`；落在边界上的组分会列在那里。
+- **各群体的固定效应。** 同期组通常因群体而异；每个群体一个模型时，各群体本来就有自己的水平。
+- **所有群体用同一个模型**，估计值才可比；某个群体需要不同模型时，单独运行。
+- **各群体的 GEBV** 在 `res$gebv` 中（`reliable = rel >= min_rel`）。

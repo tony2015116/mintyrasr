@@ -170,3 +170,43 @@ test_that("progress lines", {
   expect_message(asr_gblup(x$sc$mt_mp$param, x$sc$mt_mp$cv[1, ], x$s$ginv),
                  "\\[cv 1/1 +100%\\].*left")
 })
+
+test_that("parameters only (cv = NULL), F from ainverse(), sparse A^-1 -> no dense", {
+  skip_if_no_mock()
+  s <- sim_data()
+  nest <- mintyr::w2l_nest(s$pheno, cols = c("adg", "bf"), by = "test_herd", out_type = "df")
+  ids <- rownames(s$ginv)
+  ainv <- cbind(seq_along(ids), seq_along(ids), 1)          # sparse triplet like ainverse()
+  attr(ainv, "rowNames") <- ids; attr(ainv, "INVERSE") <- TRUE
+  attr(ainv, "inbreeding") <- rep(0.03, length(ids)); attr(ainv, "tbv") <- attr(s$ginv, "tbv")
+  expect_message(r <- asr_gblup(nest, ginv = ainv, fixed = ~ hhys), "dense = FALSE")
+  expect_equal(nrow(r$param), 4L)                            # 2 traits x 2 herds
+  expect_null(r$accuracy); expect_null(r$summary)
+  expect_true(all(r$gebv$inb == 0.03))                       # F from attr "inbreeding"
+  expect_s3_class(r, "asr_gblup")
+})
+
+test_that("asr_compare stacks methods", {
+  skip_if_no_mock()
+  skip_if_not_installed("writexl")
+  s <- sim_data()
+  sc <- mintyr::cv_scenarios(s$pheno[, c("id", "test_herd", "hhys", "adg")], cols = "adg",
+                             id = "id", group = "test_herd", v = 3, seed = 1,
+                             scenarios = "st_sp", out_type = "df")
+  dir <- tempfile("cmp")
+  cmp <- asr_compare(sc, list(GBLUP = s$ginv, other = s$ginv), scenarios = "st_sp",
+                     dir = dir, fixed = ~ hhys, verbose = FALSE)
+  expect_setequal(unique(cmp$summary$method), c("GBLUP", "other"))
+  expect_true(file.exists(file.path(dir, "compare.xlsx")))
+  expect_true(file.exists(file.path(dir, "st_sp_GBLUP.xlsx")))
+})
+
+test_that("random terms such as maternal effects run end to end", {
+  skip_if_no_mock()
+  s <- sim_data()
+  d <- s$pheno; d$dam <- sample(d$id, nrow(d), TRUE)
+  nest <- data.table::data.table(name = "adg", data = list(d[, c("id", "dam", "hhys", "adg")]))
+  r <- asr_gblup(nest, ginv = s$ginv, traits = "adg", fixed = ~ hhys,
+                 random = ~ vm(dam, ginv) + ide(dam), verbose = FALSE)
+  expect_true(all(c("h2", "prop_vm_dam_ginv", "prop_ide_dam") %in% names(r$param)))
+})

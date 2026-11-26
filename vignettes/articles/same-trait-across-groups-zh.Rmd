@@ -1,0 +1,68 @@
+---
+title: "同一性状在不同群体中"
+description: >
+  在两个群体中测定的同一性状当作两个性状：群体间的遗传相关（G×E）、为什么通常没有表型相关，以及数据需要满足的条件。
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+[English version](same-trait-across-groups.html)
+
+nls 场的生长和 bfs 场的生长在遗传上是同一个性状吗？如果两者的遗传相关高（比如 0.8 以上），两个场里最好的个体是同一批；相关较低则意味着排名变化，即基因型×环境互作。做法是把每个群体中的这个性状当作两性状模型中的不同性状。
+
+## 数据：每个群体一列
+
+`cv_scenarios(scenarios = "mt_bt")` 直接生成所需数据：每个性状一份数据，每个群体水平一列，并保留固定效应：
+
+```{r}
+library(asreml)
+library(mintyr)
+library(mintyrasr)
+
+sc <- cv_scenarios(pheno, cols = c("adg", "bf"), id = "id", group = "test_herd",
+                   v = 5, repeats = 5, seed = 2026, scenarios = "mt_bt", out_type = "df")
+sc$mt_bt$param                            # name（性状）| data
+head(sc$mt_bt$param$data[[1]])            # id、test_herd、hhys、……、nls、bfs
+```
+
+`nls` 列是 nls 场个体的 adg，其他场为 `NA`；`bfs` 列同理。（`mintyr::r2p_nest()` 也给出同样的列，但只保留 ID，固定效应需要另外并回。）
+
+## 群体间的遗传相关
+
+```{r}
+res <- asr_gblup(sc$mt_bt$param, ginv = ginv, traits = c("nls", "bfs"),
+                 fixed = ~ hhys, residual_cov = "diag", rp = FALSE,
+                 genetic_cov = "corgh", inbreeding = inbreeding)
+res$param[, .(name, h2_nls, h2_bfs, rg, rg_se, rg_p, boundary, status)]
+```
+
+- `h2_nls`、`h2_bfs`：该性状在各群体中的遗传力。
+- `rg`：群体间的遗传相关。`genetic_cov = "corgh"` 时它是模型的一个参数，SE 直接给出；`"us"` 通过 Cov / sqrt(Va1 Va2) 得到同样的值。
+- `rg_p`：rg = 0 的似然比检验。通常更关心的是 rg 是否小于 1：在 `asreml()` 中把相关固定为接近 1 的值再比较（边界检验）。
+
+## 为什么这里没有表型相关
+
+表型相关要求两个性状在**同一个体**上测定。每个个体只在一个场测定，它在两个场的残差永远不可能同时观测到：残差协方差无法估计，所以去掉（`residual_cov = "diag"`）；需要它的 rp 也就没有定义（`rp = FALSE`）。`asr_scenarios(scenarios = "mt_bt")` 会自动这样设置。
+
+只有同一批个体在两个群体都有记录时（例如同一批个体在两种环境下测定），才可以用 `residual_cov = "us"` 和 `rp = TRUE`。
+
+## 数据需要满足的条件
+
+群体间的 rg 只能从跨群体相关的个体中估计：共同的公畜、有亲缘的母畜、基因组关系。联系很弱时似然函数很平：
+
+- 用 `us` 时，协方差停在 0 附近，ASReml 报告该参数被约束（restrained）；此时似然比检验自由度为 0，mintyrasr 给出 `rg_p = NA` 并记入日志；
+- 用 `corgh` 时，相关系数跑到边界（±1），没有 SE；会列在 `boundary` 和 `res$log` 中。
+
+解释结果之前先检查：两个群体都有后代的公畜数，或群体间的平均基因组关系，例如 `mean(G[ids_nls, ids_bfs])`。
+
+## 两个以上的群体
+
+- 对每两个群体分别分析（每对一份数据），或
+- 在一个单性状分析中用复合对称模型：`random = ~ vm(id, ginv):test_herd` 给出 `rB_test_herd`，即所有群体之间共同的遗传相关（见[动物模型之外](other-models-zh.html)）；或
+- 环境很多时在 `asreml()` 中用因子分析模型（`fa()`）。
+
+## 跨群体预测
+
+`asr_scenarios(sc, ginv, scenarios = "mt_bt")` 对这个模型做交叉验证：借助遗传相关，用两个群体的记录预测一个群体的个体。可与 `st_sp`（只用本群体）和 `st_mp`（群体合并为一个性状）比较。

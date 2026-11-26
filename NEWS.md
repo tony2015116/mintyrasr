@@ -1,3 +1,34 @@
+# mintyrasr 0.5.0
+
+## Pedigree, genomic and single-step
+
+* `ginv` takes any inverse relationship matrix: A^-1 (`ainverse()`), G^-1 or
+  H^-1. `dense = "auto"` (new default) puts the term in `dense` only for a
+  (nearly) full inverse, not for a sparse A^-1. With `ainverse()` and
+  `inbreeding = NULL`, F is taken from its `inbreeding` attribute.
+* New `asr_compare()`: the same scenarios with several matrices (e.g. ABLUP,
+  GBLUP, ssGBLUP) on the same folds, stacked with a `method` column.
+
+## Other models
+
+* Only `vm(<id>, ginv)` itself is the direct genetic term, so `vm(dam, ginv)`
+  (maternal genetic) and `vm(id, ginv):herd` (G x E) can be added in `random`.
+* Every extra random term is reported as `prop_<term>` (its share of the
+  phenotypic variance, e.g. c^2, pe^2, m^2); `rep` (repeatability) with
+  `ide(<id>)`; `rB_<X>` (type-B genetic correlation) with `vm(<id>, ginv):X`.
+
+## Parameters only
+
+* `cv = NULL` (new default): genetic parameters without cross-validation, e.g.
+  for every group of `w2l_nest(by = )` or every trait pair of `c2p_nest()`.
+
+## Documentation
+
+* New articles (English and Chinese): pedigree, genomic and single-step;
+  repeatability, maternal effects and G x E; genetic parameters for each
+  group; correlations between traits in each population; the same trait in
+  different populations.
+
 # mintyrasr 0.4.0
 
 ## Cross-validation without a reliability filter

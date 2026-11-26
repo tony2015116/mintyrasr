@@ -1,0 +1,89 @@
+---
+title: "Genetic parameters for each group"
+description: >
+  Several populations (herds, breeds, lines) in one data set, with
+  heritabilities and other parameters estimated separately for each group -
+  and for all groups together for comparison.
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
+```
+
+[中文版](parameters-by-group-zh.html)
+
+When the data hold several populations, the genetic parameters often differ
+between them. The usual table is "h2 (SE) of every trait in every group".
+With mintyrasr this is one nested table and one call; no cross-validation is
+needed (`cv = NULL`, the default).
+
+## Data
+
+One row per individual, with the group column (here `test_herd`), the fixed
+effects and the traits:
+
+```{r}
+library(asreml)
+library(mintyr)
+library(mintyrasr)
+
+pheno <- import_xlsx("pheno.xlsx")      # id, test_herd, hhys, sex, adg, bf, fcr
+```
+
+## Single-trait parameters per group
+
+`w2l_nest(by = "test_herd")` makes one data set per trait and group:
+
+```{r}
+nest <- w2l_nest(pheno, cols = c("adg", "bf", "fcr"), by = "test_herd", out_type = "df")
+nest                                     # name | test_herd | data
+
+res <- asr_gblup(nest, ginv = ginv, fixed = ~ hhys + sex, inbreeding = inbreeding,
+                 path = "h2_by_herd.xlsx")
+res$param[, .(name, test_herd, h2, h2_se, status, boundary)]
+```
+
+A report table, traits in rows and groups in columns:
+
+```{r}
+library(data.table)
+p <- res$param[, .(name, test_herd, txt = sprintf("%.2f (%.2f)", h2, h2_se))]
+dcast(p, name ~ test_herd, value.var = "txt")
+```
+
+Any model of [Beyond the animal model](other-models.html) works the same way,
+e.g. `random = ~ litter` adds `prop_litter` per group. Pedigree or single-step
+analyses only need another matrix (see
+[A, G and H](relationship-matrices.html)).
+
+## All groups together
+
+For comparison, the same traits with all groups in one model; the group
+effect is in the fixed effects (here through `hhys`, which is nested in herd):
+
+```{r}
+all <- w2l_nest(pheno, cols = c("adg", "bf", "fcr"), out_type = "df")
+res_all <- asr_gblup(all, ginv = ginv, fixed = ~ hhys + sex, inbreeding = inbreeding)
+res_all$param[, .(name, h2, h2_se)]
+```
+
+To test whether the genetic variance differs between groups, or how well the
+groups are genetically connected, see the G x E part of
+[Beyond the animal model](other-models.html) and
+[The same trait in different populations](same-trait-across-groups.html).
+
+## Two-trait parameters per group
+
+`c2p_nest(by = "test_herd")` gives every trait pair in every group; see
+[Correlations between traits in each population](correlations-between-traits.html).
+
+## Points to watch
+
+- **Group size.** Small groups give large SEs and estimates at the boundary
+  (h2 = 0). Check `status`, `boundary` and `res$log`; a component fixed at
+  the boundary is listed there.
+- **Fixed effects per group.** Contemporary groups usually differ between
+  groups; with one model per group each group gets its own levels anyway.
+- **Same model in all groups**, so that the estimates are comparable; if one
+  group needs a different model, run it separately.
+- **GEBVs per group** are in `res$gebv` (with `reliable = rel >= min_rel`).

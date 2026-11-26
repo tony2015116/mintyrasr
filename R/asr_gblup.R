@@ -48,16 +48,27 @@
 #'   list-column `data` (e.g. `cv_scenarios(...)$st_sp$param`).
 #' @param cv Cross-validation table with list-columns `train` and `validate`
 #'   (e.g. `cv_scenarios(...)$st_sp$cv` or the output of [mintyr::nest_cv()]).
+#'   `NULL` (default): genetic parameters only, no cross-validation - e.g.
+#'   for every group of [mintyr::w2l_nest()] or every trait pair of
+#'   [mintyr::c2p_nest()].
 #'   Each row is matched to the row of `param` that shares its outer columns.
-#' @param ginv Inverse genomic (or pedigree) relationship matrix as used by
-#'   `vm()`, e.g. `G.inverse(G, sparseform = TRUE)$Ginv.sparse`. It must carry
-#'   `attr(, "INVERSE") = TRUE`, otherwise `vm()` takes it as G itself
-#'   (a warning is given).
+#' @param ginv Inverse relationship matrix as used by `vm()`: A^-1 for
+#'   pedigree BLUP (`ainverse(ped)`), G^-1 for GBLUP
+#'   (`G.inverse(G, sparseform = TRUE)$Ginv.sparse`) or H^-1 for single-step
+#'   GBLUP (`H.inverse(...)`). It must carry `attr(, "INVERSE") = TRUE`,
+#'   otherwise `vm()` takes it as the relationship matrix itself (a warning is
+#'   given). With `ainverse()`, F is taken from its `inbreeding` attribute when
+#'   `inbreeding` is `NULL`.
 #' @param fixed One-sided formula of fixed effects, e.g. `~ hhys`. For
 #'   two-trait models every term is nested in trait (`trait + trait:hhys`).
 #' @param random Optional one-sided formula of further random effects, e.g.
-#'   `~ ide(id)` (permanent environment, repeated records), `~ litter + pen`.
-#'   In two-trait models each term gets the structure `random_cov`.
+#'   `~ ide(id)` (permanent environment, repeated records), `~ litter + pen`,
+#'   `~ vm(dam, ginv) + ide(dam)` (maternal genetic and permanent maternal
+#'   environment), `~ vm(id, ginv):herd` (genotype x herd interaction). In
+#'   two-trait models each term gets the structure `random_cov`. Each term is
+#'   also reported as a proportion of the phenotypic variance
+#'   (`prop_<term>`), with `rep` (repeatability) for `ide(<id>)` and
+#'   `rB_<X>` (type-B genetic correlation) for `vm(<id>, ginv):X`.
 #' @param id Name of the individual ID column in the nested data.
 #' @param traits Optional response column(s), one or two, when the nested
 #'   data do not use `value` / `value1` + `value2`, e.g. `c("bfs", "nls")`
@@ -106,7 +117,9 @@
 #' @param na_x `na.method(x = )`: `"include"` (default, as in the original
 #'   scripts) treats missing covariates / factor levels as 0 in the design
 #'   matrix - centre numeric covariates first; ASReml's own default is `"fail"`.
-#' @param dense Put the genomic term in `dense` (faster for GBLUP).
+#' @param dense Put the relationship term in `dense`. `"auto"` (default):
+#'   yes for a (nearly) full inverse such as G^-1 or H^-1, no for a sparse
+#'   one such as A^-1 from `ainverse()`, where `dense` would cost much memory.
 #' @param maxit,workspace Passed to `asreml()` (maxit is 1 for `cv_vc = "fixed"`).
 #'   ASReml's own defaults are 13 and `"128mb"`; two-trait GBLUP usually
 #'   needs more.
@@ -162,12 +175,12 @@
 #' res$vc_index   # which V is which component
 #' res$summary
 #' }
-asr_gblup <- function(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL,
+asr_gblup <- function(param, cv = NULL, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL,
                       genetic_cov = "us", random_cov = "us", residual_cov = "us",
                       cv_vc = c("fixed", "warm", "estimate"), vpredict = NULL,
                       inbreeding = NULL, cv_min_rel = -Inf, min_rel = 0.05, min_n = 10L,
                       neg_to_na = FALSE, test_rg = TRUE, test_rp = FALSE, rp = TRUE,
-                      na_x = c("include", "fail", "omit"), dense = TRUE, maxit = 100L,
+                      na_x = c("include", "fail", "omit"), dense = "auto", maxit = 100L,
                       workspace = "30Gb", max_update = 2L, nonconv = c("skip", "keep"),
                       asreml_args = list(), asreml_trace = FALSE, on_error = c("warn", "stop"),
                       keep_pred = TRUE, keep_gebv = TRUE, path = NULL, verbose = TRUE) {
@@ -191,17 +204,17 @@ asr_gblup <- function(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", tr
     stop("`asreml_args` must be a named list.", call. = FALSE)
 
   P <- data.table::as.data.table(param)
-  C <- data.table::as.data.table(cv)
   if (!"data" %in% names(P)) stop("`param` needs a list-column `data`.", call. = FALSE)
-  if (!all(c("train", "validate") %in% names(C)))
+  C <- if (is.null(cv)) NULL else data.table::as.data.table(cv)   # NULL: parameters only
+  if (!is.null(C) && !all(c("train", "validate") %in% names(C)))
     stop("`cv` needs list-columns `train` and `validate`.", call. = FALSE)
 
   p_outer <- .outer_cols(P)
-  c_outer <- .outer_cols(C)
+  c_outer <- if (is.null(C)) character(0) else .outer_cols(C)
   keys      <- intersect(p_outer, c_outer)               # e.g. name / pairs (+ herd)
   fold_cols <- intersect(c_outer, c("rep", "fold", "id", "id2"))
   grp_cols  <- setdiff(c_outer, c(keys, fold_cols))      # validated group (mp scenarios)
-  if (!length(keys) && nrow(P) != 1L)
+  if (!is.null(C) && !length(keys) && nrow(P) != 1L)
     stop("`param` and `cv` share no outer column to match rows on.", call. = FALSE)
 
   d1   <- P$data[[1L]]
@@ -239,7 +252,15 @@ asr_gblup <- function(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", tr
               call. = FALSE)
   }
   Ftab <- .prep_F(inbreeding)
+  if (is.null(Ftab) && !is.null(attr(ginv, "inbreeding")) && !is.null(gids) &&
+      length(attr(ginv, "inbreeding")) == length(gids)) {
+    Ftab <- data.table::data.table(id = gids, F = as.numeric(attr(ginv, "inbreeding")))
+    if (verbose) message("F taken from attr(ginv, \"inbreeding\") (e.g. ainverse()).")
+  }
   if (is.null(Ftab) && verbose) message("`inbreeding` is NULL: F = 0 is used for all individuals.")
+  if (identical(dense, "auto")) dense <- .is_dense(ginv)
+  if (!is.logical(dense) || length(dense) != 1L)
+    stop("`dense` must be TRUE, FALSE or \"auto\".", call. = FALSE)
 
   # ASReml's iteration monitor floods the console in long runs: off while we run
   if (!asreml_trace) {
@@ -279,11 +300,12 @@ asr_gblup <- function(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", tr
                asreml_args = asreml_args)
   fit1 <- function(d, ...) .asr_fit(d, spec = spec, ginv = ginv, ...)
 
-  np <- nrow(P); nc <- nrow(C)
+  np <- nrow(P); nc <- if (is.null(C)) 0L else nrow(C)
   t_start <- Sys.time()
   say <- function(...) if (verbose) message(...)
-  say(sprintf("asr_gblup: %s model | %d parameter fit(s) + %d CV fit(s) | cv_vc = \"%s\"",
-              if (type == "mt") "two-trait" else "single-trait", np, nc, cv_vc))
+  say(sprintf("asr_gblup: %s model | %d parameter fit(s) + %d CV fit(s)%s | dense = %s",
+              if (type == "mt") "two-trait" else "single-trait", np, nc,
+              if (nc) sprintf(" | cv_vc = \"%s\"", cv_vc) else "", dense))
   fit_note <- function(fit, t1) {
     if (is.null(fit)) return("FAILED")
     st <- if (conv_ok(fit)) "ok" else "NOT CONVERGED"
@@ -322,7 +344,7 @@ asr_gblup <- function(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", tr
     vc_rows[[i]]  <- cbind(meta[rep(1L, nrow(vc))], V = idx$V[match(rownames(vc), idx$item)],
                            item = rownames(vc), vc)
     idx_rows[[i]] <- cbind(meta[rep(1L, nrow(idx))], idx[order(V), !"component"])
-    gp <- run(.genetic_params(fit, c(.vp_formulas(idx, resp, rp = rp), vpredict)), "param", lab)
+    gp <- run(.genetic_params(fit, c(.vp_formulas(idx, resp, rp = rp, id = id), vpredict)), "param", lab)
     if (is.null(gp)) gp <- data.table::data.table(formulas = NA_character_)
     h2_list[[i]] <- stats::setNames(
       vapply(resp, function(r) {
@@ -366,7 +388,7 @@ asr_gblup <- function(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", tr
                             cov_p   = if (is.null(lr)) NA_real_ else lr[[ncol(lr)]][1L])]
       rm(fit00)
     }
-    if (cv_vc != "estimate" && p_status[i] != "not_converged") {   # start values by Component name
+    if (nc && cv_vc != "estimate" && p_status[i] != "not_converged") {   # start values by Component name
       init <- run(fit1(dat, maxit = maxit, start_values = TRUE), "param", paste(lab, "(start values)"))
       if (!is.null(init)) vc_cv[[i]] <- run(.vc_table(init, vc, lab, fix = cv_vc == "fixed"), "param", lab)
       rm(init)
@@ -375,6 +397,8 @@ asr_gblup <- function(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", tr
   }
 
   # ---- 2-3. cross-validation ------------------------------------------------
+  acc_rows <- pred_rows <- list()
+  if (nc) {
   pidx <- if (length(keys)) {
     m <- P[, c(keys), with = FALSE][, .pi := .I]
     m[C[, c(keys), with = FALSE], on = keys, .pi]
@@ -438,13 +462,17 @@ asr_gblup <- function(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", tr
     }
     if (j %% 20L == 0L) gc(verbose = FALSE)
   }
+  }
 
   # ---- 4. assemble ----------------------------------------------------------
-  accuracy <- data.table::rbindlist(acc_rows, use.names = TRUE, fill = TRUE)
-  # traits without any record in a validation set (e.g. the other herd in mt_bt)
-  accuracy <- accuracy[is.na(n_obs) | n_obs > 0]
-  if (neg_to_na)
-    accuracy[, `:=`(pa = .neg_na(pa), accuracy = .neg_na(accuracy), slope = .neg_na(slope))]
+  accuracy <- NULL
+  if (nc) {
+    accuracy <- data.table::rbindlist(acc_rows, use.names = TRUE, fill = TRUE)
+    # traits without any record in a validation set (e.g. the other herd in mt_bt)
+    accuracy <- accuracy[is.na(n_obs) | n_obs > 0]
+    if (neg_to_na)
+      accuracy[, `:=`(pa = .neg_na(pa), accuracy = .neg_na(accuracy), slope = .neg_na(slope))]
+  }
   log <- if (length(issues)) data.table::rbindlist(issues)
          else data.table::data.table(time = character(), stage = character(), label = character(),
                                      type = character(), message = character())
@@ -453,18 +481,19 @@ asr_gblup <- function(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", tr
     vc_index = data.table::rbindlist(idx_rows, use.names = TRUE, fill = TRUE),
     param    = data.table::rbindlist(par_rows, use.names = TRUE, fill = TRUE),
     accuracy = accuracy,
-    summary  = .summarise(accuracy[status == "ok"], c(keys, grp_cols, "trait")),
+    summary  = if (nc) .summarise(accuracy[status == "ok"], c(keys, grp_cols, "trait")),
     gebv     = if (keep_gebv) data.table::rbindlist(gebv_rows, use.names = TRUE, fill = TRUE),
-    pred     = if (keep_pred) data.table::rbindlist(pred_rows, use.names = TRUE, fill = TRUE),
+    pred     = if (nc && keep_pred) data.table::rbindlist(pred_rows, use.names = TRUE, fill = TRUE),
     log      = log
   )
   out <- Filter(Negate(is.null), out)
 
-  cv_st <- table(factor(unique(accuracy[, c(c_outer, "status"), with = FALSE])$status))
+  cv_st <- if (nc) table(factor(unique(accuracy[, c(c_outer, "status"), with = FALSE])$status))
+           else NULL
   msg <- sprintf("Done in %s | param: %d ok, %d not converged, %d failed | cv: %s | %d log entr%s",
                  .fmt_time(difftime(Sys.time(), t_start, units = "secs")),
                  sum(p_status == "ok"), sum(grepl("not_converged", p_status)), sum(p_status == "failed"),
-                 paste(names(cv_st), cv_st, sep = " ", collapse = ", "),
+                 if (nc) paste(names(cv_st), cv_st, sep = " ", collapse = ", ") else "none (cv = NULL)",
                  nrow(log), if (nrow(log) == 1L) "y" else "ies")
   say(msg)
   bad <- log[type %in% c("error", "not_converged")]
@@ -526,6 +555,6 @@ print.asr_gblup <- function(x, ...) {
               nrow(x$param), as.integer(attr(x, "n_cv")), attr(x, "cv_vc")))
   if (!is.null(x$log) && nrow(x$log))
     cat(sprintf("log: %s\n", paste(names(table(x$log$type)), table(x$log$type), collapse = ", ")))
-  print(x$summary)
+  print(if (!is.null(x$summary)) x$summary else x$param)
   invisible(x)
 }

@@ -122,7 +122,7 @@ res$param[, c("h2", "h2_se", "rep", "rep_se")]
 
 ## 检验
 
-| 参数 | 完整模型 | 简化模型 | `lrt.asreml()` |
+| 参数 | 完整模型 | 简化模型 | `lrt()` |
 |---|---|---|---|
 | `test_rg = TRUE`（默认） | 按设定 | 遗传结构换成 `idh(trait)`，其余不变 | `boundary = FALSE`（相关为 0 不在参数边界上） |
 | `test_rp = TRUE` | 按设定 | 遗传、其他随机效应和残差都换成 `idh` | `boundary = FALSE`；`cov_df` = 协方差个数 |

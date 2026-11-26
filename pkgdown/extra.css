@@ -1,0 +1,5 @@
+/* Bootstrap 3 fixed navbar (50px) covered the top of every page, e.g. the
+   logo and title on the home page: start the content below it. */
+body {
+  padding-top: 50px;
+}

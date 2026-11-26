@@ -65,7 +65,8 @@ two-trait models every term is nested in trait (\code{trait + trait:hhys}).}
 \item{random}{Optional one-sided formula of further random effects, e.g.
 \code{~ ide(id)} (permanent environment, repeated records), \code{~ litter + pen},
 \code{~ vm(dam, ginv) + ide(dam)} (maternal genetic and permanent maternal
-environment), \code{~ vm(id, ginv):herd} (genotype x herd interaction). In
+environment), \code{~ vm(id, ginv):herd} (genotype x herd interaction; the
+factor is given the variance structure \code{idv(herd)} ASReml needs). In
 two-trait models each term gets the structure \code{random_cov}. Each term is
 also reported as a proportion of the phenotypic variance
 (\verb{prop_<term>}), with \code{rep} (repeatability) for \verb{ide(<id>)} and

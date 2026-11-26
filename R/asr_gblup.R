@@ -64,7 +64,8 @@
 #' @param random Optional one-sided formula of further random effects, e.g.
 #'   `~ ide(id)` (permanent environment, repeated records), `~ litter + pen`,
 #'   `~ vm(dam, ginv) + ide(dam)` (maternal genetic and permanent maternal
-#'   environment), `~ vm(id, ginv):herd` (genotype x herd interaction). In
+#'   environment), `~ vm(id, ginv):herd` (genotype x herd interaction; the
+#'   factor is given the variance structure `idv(herd)` ASReml needs). In
 #'   two-trait models each term gets the structure `random_cov`. Each term is
 #'   also reported as a proportion of the phenotypic variance
 #'   (`prop_<term>`), with `rep` (repeatability) for `ide(<id>)` and

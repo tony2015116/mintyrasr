@@ -113,6 +113,11 @@ res  <- asr_gblup(nest, ginv = ginv, fixed = ~ hhys,
 res$param[, .(h2, prop_vm_id_ginv_test_herd, rB_test_herd)]
 ```
 
+ASReml needs a variance structure for the factor that is crossed with
+`vm()`; mintyrasr writes `vm(id, ginv):test_herd` as
+`vm(id, relmat):idv(test_herd)` for you (you can also write the `idv()`
+yourself).
+
 `rB_test_herd` = Va / (Va + V_GxE) is the genetic correlation between herds.
 `h2` uses Vp = Va + V_GxE + Ve; the heritability within one herd is
 (Va + V_GxE) / Vp, available through `vpredict`.

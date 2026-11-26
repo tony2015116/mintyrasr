@@ -92,6 +92,8 @@ res  <- asr_gblup(nest, ginv = ginv, fixed = ~ hhys,
 res$param[, .(h2, prop_vm_id_ginv_test_herd, rB_test_herd)]
 ```
 
+ASReml 要求与 `vm()` 做直积的因子带方差结构；mintyrasr 会把 `vm(id, ginv):test_herd` 自动写成 `vm(id, relmat):idv(test_herd)`（也可以自己写上 `idv()`）。
+
 `rB_test_herd` = Va / (Va + V_GxE) 即场间遗传相关。`h2` 的 Vp = Va + V_GxE + Ve；单个场内的遗传力为 (Va + V_GxE) / Vp，可用 `vpredict` 计算。
 
 **每个环境一个性状**（各环境方差不同，每两个环境一个 rg）：把每个环境中的性状当作不同性状，见[同一性状在不同群体中](same-trait-across-groups-zh.html)。

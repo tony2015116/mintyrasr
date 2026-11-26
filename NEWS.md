@@ -1,3 +1,15 @@
+# mintyrasr 0.5.3
+
+* G x E: ASReml-R rejects `vm(id, ginv):herd` ("Direct product with vm() must
+  be a variance structure"). mintyrasr now writes it as
+  `vm(id, relmat):idv(herd)`; `rB_herd` and `prop_vm_id_ginv_herd` keep their
+  names.
+* Confirmed on ASReml-R 4.2.0.481 (round 4): pedigree BLUP with `ainverse()`
+  (F from its `inbreeding` attribute, `dense = FALSE`, 512mb workspace),
+  single-step with `H.inverse()`, maternal, repeatability, parameters-only
+  mode, `asr_compare()`; h2, m2, c2 and rep identical to hand-written
+  `vpredict()` formulas.
+
 # mintyrasr 0.5.2
 
 Found with real ASReml-R 4.2.0.481 (pedigree BLUP crashed R):

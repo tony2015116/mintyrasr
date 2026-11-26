@@ -109,7 +109,7 @@ test_that("dense is chosen from the form of the inverse", {
 
 test_that("random terms written with ginv are mapped to the internal relmat", {
   expect_equal(mintyrasr:::.random_terms(~ vm(dam, ginv) + ide(dam) + vm(id, ginv):herd),
-               c("vm(dam, relmat)", "ide(dam)", "vm(id, relmat):herd"))
+               c("vm(dam, relmat)", "ide(dam)", "vm(id, relmat):idv(herd)"))
   expect_equal(mintyrasr:::.random_terms(~ litter), "litter")
   expect_equal(mintyrasr:::.random_terms(NULL), character(0))
 })
@@ -119,4 +119,17 @@ test_that("workspace is sized from the dense part", {
   expect_equal(mintyrasr:::.auto_workspace(g, 1, TRUE), "512mb")
   big <- matrix(0, 1, 1); attr(big, "rowNames") <- as.character(seq_len(10000))
   expect_equal(mintyrasr:::.auto_workspace(big, 2, TRUE), "14gb")
+})
+
+test_that("G x E: the factor of a direct product with vm() gets idv()", {
+  f <- mintyrasr:::.random_terms
+  expect_equal(f(~ vm(id, ginv):test_herd), "vm(id, relmat):idv(test_herd)")
+  expect_equal(f(~ test_herd:vm(id, ginv)), "idv(test_herd):vm(id, relmat)")
+  expect_equal(f(~ vm(id, ginv):idv(test_herd)), "vm(id, relmat):idv(test_herd)")
+  expect_equal(mintyrasr:::.clean_term("vm(id, relmat):idv(test_herd)"), "vm_id_ginv_test_herd")
+  vc <- vc_df(c("vm(id, relmat)", "vm(id, relmat):test_herd!test_herd", "units!units", "units!R"),
+              bound = c("P", "P", "P", "F"))
+  idx <- mintyrasr:::.vc_index(vc, "st", "id", "value")
+  f2 <- vapply(mintyrasr:::.vp_formulas(idx, "value"), function(x) deparse(x[[3L]]), "")
+  expect_equal(unname(f2["rB_test_herd"]), "V1/(V1 + V2)")
 })

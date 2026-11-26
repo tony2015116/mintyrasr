@@ -149,12 +149,17 @@ NULL
 # write vm(dam, ginv) (or relmat); both are mapped to relmat.
 .random_terms <- function(random) {
   if (is.null(random)) return(character(0))
-  gsub("\\bginv\\b", "relmat", attr(stats::terms(random), "term.labels"))
+  t <- gsub("\\bginv\\b", "relmat", attr(stats::terms(random), "term.labels"))
+  # ASReml needs a variance structure for the other factor of a direct product
+  # with vm(): vm(id, relmat):herd -> vm(id, relmat):idv(herd)
+  t <- sub("^(vm\\([^)]*\\)):([A-Za-z.][A-Za-z0-9._]*)$", "\\1:idv(\\2)", t)
+  sub("^([A-Za-z.][A-Za-z0-9._]*):(vm\\([^)]*\\))$", "idv(\\1):\\2", t)
 }
 
 # "trait:vm(dam, relmat)" -> "vm_dam_ginv", "ide(id)" -> "ide_id", "litter" -> "litter"
 .clean_term <- function(t) {
   t <- sub("^trait:", "", t)
+  t <- gsub("\\b(idv|idh|id|diag)\\(([^()]*)\\)", "\\2", t)   # idv(herd) -> herd
   t <- gsub("\\brelmat\\b", "ginv", t)          # output names keep the user's "ginv"
   t <- gsub("[^A-Za-z0-9]+", "_", t)
   gsub("^_+|_+$", "", t)

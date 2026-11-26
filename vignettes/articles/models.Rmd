@@ -63,9 +63,9 @@ of the `vparameters` component of the fit. That order depends on the model:
 
 | model | V1 | V2 | V3 | V4 | V5 | V6 | V7 |
 |---|---|---|---|---|---|---|---|
-| us G + us R | Va1 | Cov_a | Va2 | `units:trait!R` = 1 | Ve1 | Cov_e | Ve2 |
-| corgh G + diag R | r_a | Va1 | Va2 | `units:trait!R` = 1 | Ve1 | Ve2 | - |
-| us G + idh litter + us R | Va1 | Cov_a | Va2 | Vc1 | Vc2 | `units:trait!R` | ... |
+| us G + us R | V~a,1~ | Cov~a~ | V~a,2~ | `units:trait!R` = 1 | V~e,1~ | Cov~e~ | V~e,2~ |
+| corgh G + diag R | r~a~ | V~a,1~ | V~a,2~ | `units:trait!R` = 1 | V~e,1~ | V~e,2~ | - |
+| us G + idh litter + us R | V~a,1~ | Cov~a~ | V~a,2~ | V~c,1~ | V~c,2~ | `units:trait!R` | ... |
 
 The formula `rg ~ V2 / sqrt(V1 * V3)` is right for the first model, wrong for
 the second (V1 is already the correlation) and `rp` with `V7` fails. So
@@ -100,16 +100,33 @@ Trait names are found as whole words in the name, so any column name works.
 The `vc_index` table of the result shows the classification - look at it
 after the first run of a new model.
 
+## Notation
+
+Symbols in the text are written with sub- and superscripts; the output uses
+plain column names:
+
+| symbol | meaning | in the output |
+|---|---|---|
+| h², h²~i~ | heritability (of trait *i*) | `h2`, `h2_<trait>` |
+| r~g~, r~p~ | genetic, phenotypic correlation | `rg`, `rp` |
+| r~B~ | type-B genetic correlation between environments | `rB_<X>` |
+| V~a~, V~e~, V~p~ | additive genetic, residual, phenotypic variance | `va` (per fold) |
+| V~a,1~, V~p,2~ | the variance of trait 1, trait 2 | |
+| Cov~a~, Cov~e~ | genetic, residual covariance of the two traits | |
+| c², pe², m² | litter, permanent environment, maternal genetic proportion | `prop_<term>` |
+| A⁻¹, G⁻¹, H⁻¹ | inverse pedigree, genomic, single-step relationship matrix | argument `ginv` |
+| `V1`, `V2`, ... | **labels** of the variance parameters used by `vpredict()`, not subscripts | `vc_index$V` |
+
 ## The formulas
 
-For each trait *i*, with Vp_i = the sum of **all** used variances of that
+For each trait *i*, with V~p,i~ = the sum of **all** used variances of that
 trait (genetic + other random + residual):
 
-- **h2_i** = Va_i / Vp_i
-- **rg** = Cov_a / sqrt(Va1 Va2); for `corv` / `corh` / `corgh` the
+- **h²~i~** = V~a,i~ / V~p,i~
+- **r~g~** = Cov~a~ / √(V~a,1~ V~a,2~); for `corv` / `corh` / `corgh` the
   correlation parameter itself
-- **rp** = (sum of all covariances) / sqrt(Vp1 Vp2); the covariance of a
-  correlation-parameterised term is written as r sqrt(V1 V2)
+- **r~p~** = (sum of all covariances) / √(V~p,1~ V~p,2~); the covariance of a
+  correlation-parameterised term is written as r√(V~1~V~2~)
 
 Examples of what is generated (`param$formulas`):
 
@@ -149,7 +166,7 @@ use the term `vm(<id>, relmat)`.
 | `test_rp = TRUE` | as specified | `idh` for the genetic, extra random and residual terms | `boundary = FALSE`; `cov_df` = number of covariances |
 
 `test_rp` asks whether the two traits are correlated at all; it is not a test
-of rp = 0 on its own. Results: `rg_lrt`, `rg_p`, `cov_df`, `cov_lrt`, `cov_p`
+of r~p~ = 0 on its own. Results: `rg_lrt`, `rg_p`, `cov_df`, `cov_lrt`, `cov_p`
 in `param`.
 
 ## Checks and warnings

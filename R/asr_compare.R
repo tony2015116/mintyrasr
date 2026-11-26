@@ -1,7 +1,7 @@
 #' Compare relationship matrices: pedigree, genomic and single-step
 #'
 #' Runs the same scenarios with several inverse relationship matrices - e.g.
-#' A^-1 (pedigree BLUP), G^-1 (GBLUP) and H^-1 (single-step GBLUP) - and
+#' \inv{A} (pedigree BLUP), \inv{G} (GBLUP) and \inv{H} (single-step GBLUP) - and
 #' stacks the genetic parameters and the cross-validation summaries with a
 #' `method` column, so the methods can be compared directly. All methods use
 #' the same folds, so the comparison is paired.

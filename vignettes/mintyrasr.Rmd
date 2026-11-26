@@ -24,11 +24,11 @@ site is built. Every chunk runs as shown on a computer with ASReml-R 4.
 mintyr prepares the data for the usual comparison of genomic prediction
 models: for every scenario a nested table for **parameter estimation** (all
 records) and a table of **training / validation sets** (one row per
-repeat x fold), all validated on the same individuals. mintyrasr takes both
+repeat × fold), all validated on the same individuals. mintyrasr takes both
 tables and, for every row:
 
-1. fits the model to the full data: variance components, h2 and, for two
-   traits, rg, rp and an LRT of rg = 0;
+1. fits the model to the full data: variance components, h² and, for two
+   traits, r~g~, r~p~ and an LRT of r~g~ = 0;
 2. refits it to every training set (variance components fixed, warm-started
    or re-estimated);
 3. predicts the GEBVs of the validation individuals and computes their
@@ -58,7 +58,7 @@ You need three objects:
   accepts. It must carry `attr(ginv, "INVERSE") <- TRUE`, otherwise `vm()`
   treats it as G itself (mintyrasr warns);
 - **inbreeding** (optional): a data.frame `(id, F)` for the reliability
-  `1 - PEV / ((1 + F) Va)`. For GBLUP, `F = diag(G) - 1` is common. Without
+  1 − PEV / ((1 + F) V~a~). For GBLUP, `F = diag(G) - 1` is common. Without
   it, F = 0 is used.
 
 ```{r}
@@ -85,9 +85,9 @@ sc
 
 | scenario | model | parameter data | training set |
 |---|---|---|---|
-| `st_sp` | single-trait, single group | trait x group | target group |
+| `st_sp` | single-trait, single group | trait × group | target group |
 | `st_mp` | single-trait, groups combined | trait | target group + all other groups |
-| `mt_sp` | two-trait, single group | trait pair x group | target group |
+| `mt_sp` | two-trait, single group | trait pair × group | target group |
 | `mt_mp` | two-trait, groups combined | trait pair | target group + all other groups |
 | `mt_bt` | one trait as a different trait in each group | trait | target group + all other groups |
 
@@ -103,8 +103,8 @@ res$mt_sp$param
 ```
 
 Add `"mt_bt"` to `scenarios` for one trait treated as a different trait in
-each of two groups (G x E). It is fitted with a `diag` residual and without
-rp, because no individual has records in both groups:
+each of two groups (G×E). It is fitted with a `diag` residual and without
+r~p~, because no individual has records in both groups:
 
 ```{r}
 res_bt <- asr_scenarios(sc, ginv, scenarios = "mt_bt", fixed = ~ hhys,
@@ -145,15 +145,15 @@ Each result is a list; every element becomes one sheet of the workbook.
 |---|---|
 | `varcomp` | `summary(fit)$varcomp` of every parameter fit, with its `V` number |
 | `vc_index` | which `V` is which component: term, role (genetic / random / residual), kind (var / cov / cor), traits, used |
-| `param` | h2 (two traits: per trait), rg, rp with SE; `formulas` used; `status`, `converge`, `updates`, `iterations`, `loglik`, `boundary`; `rg_lrt`, `rg_p` (and `cov_*` with `test_rp = TRUE`) |
-| `accuracy` | per repeat x fold x trait: `status`, `n`, `pa`, `accuracy`, `slope`, `va`, `h2_full`, `cv_converge`, `cv_updates`, `cv_iter` |
+| `param` | `h2` (two traits: per trait), `rg`, `rp` with SE; `formulas` used; `status`, `converge`, `updates`, `iterations`, `loglik`, `boundary`; `rg_lrt`, `rg_p` (and `cov_*` with `test_rp = TRUE`) |
+| `accuracy` | per repeat × fold × trait: `status`, `n`, `pa`, `accuracy`, `slope`, `va`, `h2_full`, `cv_converge`, `cv_updates`, `cv_iter` |
 | `summary` | `pa`, `accuracy`, `slope`: n, mean, sd, se over the folds with `status == "ok"` |
 | `pred` | validation individuals: `obs`, `gebv`, `pev`, `inb` (F), `rel` |
 | `gebv` | all individuals of the full-data fit: `gebv`, `pev`, `inb`, `rel`, `reliable` |
 | `log` | every error, non-convergence, boundary estimate and invalid LRT, with time and label |
 
 - `pa` (predictive ability) = r(y, GEBV) on the validation individuals;
-- `accuracy` = pa / sqrt(h2), with h2 from the full data (Dekkers 2007);
+- `accuracy` = pa / √h², with h² from the full data (Dekkers 2007);
 - `slope` = b(y ~ GEBV); 1 means no inflation or deflation of the GEBVs.
 
 **Reliability in cross-validation is not filtered** (`cv_min_rel = -Inf`).

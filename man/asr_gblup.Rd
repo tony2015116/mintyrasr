@@ -51,9 +51,9 @@ for every group of \code{\link[mintyr:w2l_nest]{mintyr::w2l_nest()}} or every tr
 \code{\link[mintyr:c2p_nest]{mintyr::c2p_nest()}}.
 Each row is matched to the row of \code{param} that shares its outer columns.}
 
-\item{ginv}{Inverse relationship matrix as used by \code{vm()}: A^-1 for
-pedigree BLUP (\code{ainverse(ped)}), G^-1 for GBLUP
-(\code{G.inverse(G, sparseform = TRUE)$Ginv.sparse}) or H^-1 for single-step
+\item{ginv}{Inverse relationship matrix as used by \code{vm()}: \inv{A} for
+pedigree BLUP (\code{ainverse(ped)}), \inv{G} for GBLUP
+(\code{G.inverse(G, sparseform = TRUE)$Ginv.sparse}) or \inv{H} for single-step
 GBLUP (\code{H.inverse(...)}). It must carry \code{attr(, "INVERSE") = TRUE},
 otherwise \code{vm()} takes it as the relationship matrix itself (a warning is
 given). With \code{ainverse()}, F is taken from its \code{inbreeding} attribute when
@@ -65,7 +65,7 @@ two-trait models every term is nested in trait (\code{trait + trait:hhys}).}
 \item{random}{Optional one-sided formula of further random effects, e.g.
 \code{~ ide(id)} (permanent environment, repeated records), \code{~ litter + pen},
 \code{~ vm(dam, ginv) + ide(dam)} (maternal genetic and permanent maternal
-environment), \code{~ vm(id, ginv):herd} (genotype x herd interaction; the
+environment), \code{~ vm(id, ginv):herd} (genotype \by{} herd interaction; the
 factor is given the variance structure \code{idv(herd)} ASReml needs). In
 two-trait models each term gets the structure \code{random_cov}. Each term is
 also reported as a proportion of the phenotypic variance
@@ -109,14 +109,14 @@ fit (\verb{$gebv}): sets \code{reliable = rel >= min_rel}; no rows are dropped.}
 
 \item{min_n}{Minimum number of validation individuals with a GEBV and a
 record for PA, accuracy and slope of a fold; fewer gives \code{NA}
-(\code{n} still shows the number). With a low h2 the reliability filter can
+(\code{n} still shows the number). With a low \hsq{} the reliability filter can
 leave only a handful of individuals, whose PA and slope are noise.}
 
 \item{neg_to_na}{Set negative PA / accuracy / slope to \code{NA} before the
 summary. Default \code{FALSE}: dropping negative values biases the mean
 upwards; \code{TRUE} reproduces the original scripts.}
 
-\item{test_rg}{Two-trait models only: LRT of rg = 0 (\code{idh(trait)} genetic
+\item{test_rg}{Two-trait models only: LRT of \sb{r}{g} = 0 (\code{idh(trait)} genetic
 structure, other structures unchanged, \code{boundary = FALSE}). If both
 models end up with the same number of free parameters (df = 0, e.g. a
 restrained covariance), \code{rg_p} is \code{NA} with a warning.}
@@ -124,25 +124,25 @@ restrained covariance), \code{rg_p} is \code{NA} with a warning.}
 \item{test_rp}{Two-trait models only: LRT of \emph{all} covariances = 0
 (\code{idh} for the genetic, extra random and residual terms; \code{df} = number
 of covariance / correlation parameters). This tests whether the traits
-are correlated at all, not rp = 0 as such.}
+are correlated at all, not \sb{r}{p} = 0 as such.}
 
 \item{rp}{Compute the phenotypic correlation. Set \code{FALSE} when no
 individual has records for both traits (e.g. one trait in two herds):
-the residual covariance is then not estimable and rp is not meaningful.}
+the residual covariance is then not estimable and \sb{r}{p} is not meaningful.}
 
 \item{na_x}{\code{na.method(x = )}: \code{"include"} (default, as in the original
 scripts) treats missing covariates / factor levels as 0 in the design
 matrix - centre numeric covariates first; ASReml's own default is \code{"fail"}.}
 
 \item{dense}{Put the relationship term in \code{dense}. \code{"auto"} (default):
-yes for a (nearly) full inverse such as G^-1 or H^-1, no for a sparse
-one such as A^-1 from \code{ainverse()}, where \code{dense} would cost much memory.}
+yes for a (nearly) full inverse such as \inv{G} or \inv{H}, no for a sparse
+one such as \inv{A} from \code{ainverse()}, where \code{dense} would cost much memory.}
 
 \item{maxit}{Passed to \code{asreml()} (1 for \code{cv_vc = "fixed"}). ASReml's own
 default is 13; two-trait GBLUP usually needs more.}
 
 \item{workspace}{Passed to \code{asreml()}. \code{"auto"} (default): estimated from the
-size of the dense part (individuals x traits when the relationship term
+size of the dense part (individuals \by{} traits when the relationship term
 is in \code{dense}), at least \code{"512mb"}. ASReml reserves the whole workspace
 for every fit, so a large fixed value (e.g. \code{"30Gb"}) slows every fit
 down and can exhaust the memory of the computer.}
@@ -179,7 +179,7 @@ fits (\code{gebv}: gebv, pev, inb (F), rel, reliable).}
 A list of class \code{asr_gblup}:
 \itemize{
 \item \code{varcomp}, \code{vc_index}: variance components and which \code{V} is which;
-\item \code{param}: h2, rg, rp (+ SE), \code{formulas}, \code{status}, \code{converge}, \code{updates},
+\item \code{param}: \code{h2}, \code{rg}, \code{rp} (+ SE), \code{formulas}, \code{status}, \code{converge}, \code{updates},
 \code{iterations}, \code{loglik}, \code{boundary}, tests;
 \item \code{accuracy}: one row per fold and trait: \code{status}, \code{n}, \code{pa}, \code{accuracy},
 \code{slope}, \code{va}, \code{h2_full}, \code{cv_converge}, \code{cv_updates}, \code{cv_iter} (length
@@ -201,14 +201,14 @@ so no input files have to be exported for ASReml:
 \enumerate{
 \item fits the model to every data set in \code{param}: variance components,
 heritability and, for two-trait models, genetic / phenotypic
-correlations plus an LRT of rg = 0 (\code{idh(trait)} vs the full genetic
+correlations plus an LRT of \sb{r}{g} = 0 (\code{idh(trait)} vs the full genetic
 structure, \code{boundary = FALSE});
 \item refits the model to every training set in \code{cv}, with the variance
 components handled as set by \code{cv_vc};
 \item predicts GEBVs of the validation individuals (all of them: they have
 no own record, so a low reliability is expected and not filtered by
 default) and returns per fold the predictive ability
-\code{pa = r(y, GEBV)}, the accuracy \code{pa / sqrt(h2)} (h2 from the full data,
+\code{pa = r(y, GEBV)}, the accuracy pa / \sqrthsq{} (\hsq{} from the full data,
 Dekkers 2007) and the slope \code{b(y ~ GEBV)};
 \item summarises them over folds (n, mean, sd, se), returns the GEBVs of all
 individuals from the full-data fit with their reliability (flag
@@ -223,13 +223,13 @@ stopping the loop; fits that do not converge are first continued with
 kept. A progress line per fit shows status, iterations, time and the
 estimated time left.
 
-h2, rg and rp are built from the \strong{names} of the variance components,
+\hsq{}, \sb{r}{g} and \sb{r}{p} are built from the \strong{names} of the variance components,
 not from fixed \code{V} positions, so they stay correct when random effects
 are added (\code{random = ~ ide(id) + litter}) or covariance structures change
 (\code{us}, \code{idh}/\code{diag}, \code{corh}, \code{corgh}):
-h2 = Va / (all variances of the trait), rg = Cov_a / sqrt(Va1 Va2)
-(the correlation itself for \code{corh}/\code{corgh}), rp = sum of all covariances /
-sqrt(Vp1 Vp2). The \code{vc_index} table shows which \code{V} each component is and
+\hsq{} = \sb{V}{a} / (all variances of the trait), \sb{r}{g} = \sb{Cov}{a} / \rt{\sb{V}{a,1} \sb{V}{a,2}}
+(the correlation itself for \code{corh}/\code{corgh}), \sb{r}{p} = sum of all covariances /
+\rt{\sb{V}{p,1} \sb{V}{p,2}}. The \code{vc_index} table shows which \code{V} each component is and
 \code{param$formulas} the formulas used. \code{V} numbers follow \code{fit$vparameters},
 the order \code{vpredict()} uses. Components fixed at the boundary (bound \code{B})
 are reported with a warning and in \code{param$boundary}. \code{fa()} / \code{rr()} terms and models with

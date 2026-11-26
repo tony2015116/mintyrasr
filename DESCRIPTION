@@ -1,6 +1,6 @@
 Package: mintyrasr
 Title: Run 'mintyr' GBLUP Cross-Validation Scenarios Directly in 'ASReml-R'
-Version: 0.5.3
+Version: 0.5.4
 Authors@R: person("Guo Meng", email = "tony2015116@163.com", role = c("aut", "cre", "cph"))
 Description: Fits single- and two-trait models with 'ASReml-R' - pedigree
     BLUP, GBLUP or single-step GBLUP, with repeatability, maternal, litter

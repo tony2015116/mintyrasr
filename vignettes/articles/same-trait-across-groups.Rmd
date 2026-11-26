@@ -15,7 +15,7 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 Is growth in herd nls genetically the same trait as growth in herd bfs? If
 the genetic correlation between the two is high (say above 0.8), the best
 animals are the same in both herds; a lower value means re-ranking -
-genotype x environment interaction. The trait in each population is treated as
+genotype × environment interaction. The trait in each population is treated as
 a separate trait in a two-trait model.
 
 ## Data: one column per population
@@ -50,8 +50,8 @@ res$param[, .(name, h2_nls, h2_bfs, rg, rg_se, rg_p, boundary, status)]
 - `h2_nls`, `h2_bfs`: heritability of the trait in each population.
 - `rg`: genetic correlation between the populations. With
   `genetic_cov = "corgh"` it is a parameter of the model and its SE comes
-  directly; `"us"` gives the same value through Cov / sqrt(Va1 Va2).
-- `rg_p`: LRT of rg = 0. The more interesting question is usually whether rg
+  directly; `"us"` gives the same value through Cov~a~ / √(V~a,1~ V~a,2~).
+- `rg_p`: LRT of r~g~ = 0. The more interesting question is usually whether r~g~
   is below 1: compare the model with a correlation fixed close to 1 in
   `asreml()` (a boundary test).
 
@@ -60,7 +60,7 @@ res$param[, .(name, h2_nls, h2_bfs, rg, rg_se, rg_p, boundary, status)]
 A phenotypic correlation needs both traits measured on the **same
 individual**. An animal is tested in one herd only, so its residuals in the
 two herds can never be observed together: the residual covariance is not
-estimable and is left out (`residual_cov = "diag"`), and rp - which needs it -
+estimable and is left out (`residual_cov = "diag"`), and r~p~ - which needs it -
 is not defined (`rp = FALSE`). `asr_scenarios(scenarios = "mt_bt")` sets
 both for you.
 
@@ -70,13 +70,13 @@ animals tested in two environments) can you use `residual_cov = "us"` and
 
 ## What the data must allow
 
-rg between populations is estimated only from animals that are related
+r~g~ between populations is estimated only from animals that are related
 across the populations: common sires, related dams, genomic relationships.
 With weak ties the likelihood is flat:
 
 - with `us`, the covariance stays near 0 and ASReml reports it as restrained;
   the LRT then has df = 0 and mintyrasr gives `rg_p = NA` with a log entry;
-- with `corgh`, the correlation runs to the boundary (+-1) without SE; it is
+- with `corgh`, the correlation runs to the boundary (±1) without SE; it is
   listed in `boundary` and in `res$log`.
 
 Check before interpreting: the number of sires with progeny in both

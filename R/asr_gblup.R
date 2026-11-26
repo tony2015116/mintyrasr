@@ -6,14 +6,14 @@
 #'
 #' 1. fits the model to every data set in `param`: variance components,
 #'    heritability and, for two-trait models, genetic / phenotypic
-#'    correlations plus an LRT of rg = 0 (`idh(trait)` vs the full genetic
+#'    correlations plus an LRT of \sb{r}{g} = 0 (`idh(trait)` vs the full genetic
 #'    structure, `boundary = FALSE`);
 #' 2. refits the model to every training set in `cv`, with the variance
 #'    components handled as set by `cv_vc`;
 #' 3. predicts GEBVs of the validation individuals (all of them: they have
 #'    no own record, so a low reliability is expected and not filtered by
 #'    default) and returns per fold the predictive ability
-#'    `pa = r(y, GEBV)`, the accuracy `pa / sqrt(h2)` (h2 from the full data,
+#'    `pa = r(y, GEBV)`, the accuracy pa / \sqrthsq{} (\hsq{} from the full data,
 #'    Dekkers 2007) and the slope `b(y ~ GEBV)`;
 #' 4. summarises them over folds (n, mean, sd, se), returns the GEBVs of all
 #'    individuals from the full-data fit with their reliability (flag
@@ -27,13 +27,13 @@
 #' kept. A progress line per fit shows status, iterations, time and the
 #' estimated time left.
 #'
-#' h2, rg and rp are built from the **names** of the variance components,
+#' \hsq{}, \sb{r}{g} and \sb{r}{p} are built from the **names** of the variance components,
 #' not from fixed `V` positions, so they stay correct when random effects
 #' are added (`random = ~ ide(id) + litter`) or covariance structures change
 #' (`us`, `idh`/`diag`, `corh`, `corgh`):
-#' h2 = Va / (all variances of the trait), rg = Cov_a / sqrt(Va1 Va2)
-#' (the correlation itself for `corh`/`corgh`), rp = sum of all covariances /
-#' sqrt(Vp1 Vp2). The `vc_index` table shows which `V` each component is and
+#' \hsq{} = \sb{V}{a} / (all variances of the trait), \sb{r}{g} = \sb{Cov}{a} / \rt{\sb{V}{a,1} \sb{V}{a,2}}
+#' (the correlation itself for `corh`/`corgh`), \sb{r}{p} = sum of all covariances /
+#' \rt{\sb{V}{p,1} \sb{V}{p,2}}. The `vc_index` table shows which `V` each component is and
 #' `param$formulas` the formulas used. `V` numbers follow `fit$vparameters`,
 #' the order `vpredict()` uses. Components fixed at the boundary (bound `B`)
 #' are reported with a warning and in `param$boundary`. `fa()` / `rr()` terms and models with
@@ -52,9 +52,9 @@
 #'   for every group of [mintyr::w2l_nest()] or every trait pair of
 #'   [mintyr::c2p_nest()].
 #'   Each row is matched to the row of `param` that shares its outer columns.
-#' @param ginv Inverse relationship matrix as used by `vm()`: A^-1 for
-#'   pedigree BLUP (`ainverse(ped)`), G^-1 for GBLUP
-#'   (`G.inverse(G, sparseform = TRUE)$Ginv.sparse`) or H^-1 for single-step
+#' @param ginv Inverse relationship matrix as used by `vm()`: \inv{A} for
+#'   pedigree BLUP (`ainverse(ped)`), \inv{G} for GBLUP
+#'   (`G.inverse(G, sparseform = TRUE)$Ginv.sparse`) or \inv{H} for single-step
 #'   GBLUP (`H.inverse(...)`). It must carry `attr(, "INVERSE") = TRUE`,
 #'   otherwise `vm()` takes it as the relationship matrix itself (a warning is
 #'   given). With `ainverse()`, F is taken from its `inbreeding` attribute when
@@ -64,7 +64,7 @@
 #' @param random Optional one-sided formula of further random effects, e.g.
 #'   `~ ide(id)` (permanent environment, repeated records), `~ litter + pen`,
 #'   `~ vm(dam, ginv) + ide(dam)` (maternal genetic and permanent maternal
-#'   environment), `~ vm(id, ginv):herd` (genotype x herd interaction; the
+#'   environment), `~ vm(id, ginv):herd` (genotype \by{} herd interaction; the
 #'   factor is given the variance structure `idv(herd)` ASReml needs). In
 #'   two-trait models each term gets the structure `random_cov`. Each term is
 #'   also reported as a proportion of the phenotypic variance
@@ -99,32 +99,32 @@
 #'   fit (`$gebv`): sets `reliable = rel >= min_rel`; no rows are dropped.
 #' @param min_n Minimum number of validation individuals with a GEBV and a
 #'   record for PA, accuracy and slope of a fold; fewer gives `NA`
-#'   (`n` still shows the number). With a low h2 the reliability filter can
+#'   (`n` still shows the number). With a low \hsq{} the reliability filter can
 #'   leave only a handful of individuals, whose PA and slope are noise.
 #' @param neg_to_na Set negative PA / accuracy / slope to `NA` before the
 #'   summary. Default `FALSE`: dropping negative values biases the mean
 #'   upwards; `TRUE` reproduces the original scripts.
-#' @param test_rg Two-trait models only: LRT of rg = 0 (`idh(trait)` genetic
+#' @param test_rg Two-trait models only: LRT of \sb{r}{g} = 0 (`idh(trait)` genetic
 #'   structure, other structures unchanged, `boundary = FALSE`). If both
 #'   models end up with the same number of free parameters (df = 0, e.g. a
 #'   restrained covariance), `rg_p` is `NA` with a warning.
 #' @param test_rp Two-trait models only: LRT of *all* covariances = 0
 #'   (`idh` for the genetic, extra random and residual terms; `df` = number
 #'   of covariance / correlation parameters). This tests whether the traits
-#'   are correlated at all, not rp = 0 as such.
+#'   are correlated at all, not \sb{r}{p} = 0 as such.
 #' @param rp Compute the phenotypic correlation. Set `FALSE` when no
 #'   individual has records for both traits (e.g. one trait in two herds):
-#'   the residual covariance is then not estimable and rp is not meaningful.
+#'   the residual covariance is then not estimable and \sb{r}{p} is not meaningful.
 #' @param na_x `na.method(x = )`: `"include"` (default, as in the original
 #'   scripts) treats missing covariates / factor levels as 0 in the design
 #'   matrix - centre numeric covariates first; ASReml's own default is `"fail"`.
 #' @param dense Put the relationship term in `dense`. `"auto"` (default):
-#'   yes for a (nearly) full inverse such as G^-1 or H^-1, no for a sparse
-#'   one such as A^-1 from `ainverse()`, where `dense` would cost much memory.
+#'   yes for a (nearly) full inverse such as \inv{G} or \inv{H}, no for a sparse
+#'   one such as \inv{A} from `ainverse()`, where `dense` would cost much memory.
 #' @param maxit Passed to `asreml()` (1 for `cv_vc = "fixed"`). ASReml's own
 #'   default is 13; two-trait GBLUP usually needs more.
 #' @param workspace Passed to `asreml()`. `"auto"` (default): estimated from the
-#'   size of the dense part (individuals x traits when the relationship term
+#'   size of the dense part (individuals \by{} traits when the relationship term
 #'   is in `dense`), at least `"512mb"`. ASReml reserves the whole workspace
 #'   for every fit, so a large fixed value (e.g. `"30Gb"`) slows every fit
 #'   down and can exhaust the memory of the computer.
@@ -150,7 +150,7 @@
 #'
 #' @return A list of class `asr_gblup`:
 #'   * `varcomp`, `vc_index`: variance components and which `V` is which;
-#'   * `param`: h2, rg, rp (+ SE), `formulas`, `status`, `converge`, `updates`,
+#'   * `param`: `h2`, `rg`, `rp` (+ SE), `formulas`, `status`, `converge`, `updates`,
 #'     `iterations`, `loglik`, `boundary`, tests;
 #'   * `accuracy`: one row per fold and trait: `status`, `n`, `pa`, `accuracy`,
 #'     `slope`, `va`, `h2_full`, `cv_converge`, `cv_updates`, `cv_iter` (length
@@ -517,7 +517,7 @@ asr_gblup <- function(param, cv = NULL, ginv, fixed = ~ 1, random = NULL, id = "
 #' @param ginv Inverse genomic relationship matrix.
 #' @param scenarios Scenarios to run. `"mt_bt"` (one trait as a different
 #'   trait per group, two groups) is fitted with `residual_cov = "diag"` and
-#'   without rp, since no individual has records in both groups.
+#'   without \sb{r}{p}, since no individual has records in both groups.
 #' @param dir Folder for the workbooks `<scenario>_<tag>.xlsx`; `NULL` writes nothing.
 #' @param tag Label used in the file names; defaults to the name of `ginv`.
 #' @param ... Further arguments for [asr_gblup()] (e.g. `fixed`, `inbreeding`).

@@ -1,13 +1,23 @@
+# mintyrasr 0.5.4
+
+* Documentation: symbols are now written with proper sub- and superscripts
+  (h², r<sub>g</sub>, r<sub>p</sub>, r<sub>B</sub>, V<sub>a</sub>,
+  V<sub>a,1</sub>, Cov<sub>a</sub>, A⁻¹, G⁻¹, H⁻¹, A<sub>22</sub>) in the
+  articles, the reference pages and the cheatsheets; output column names
+  (`h2`, `rg`, `rB_<X>`) and vpredict labels (`V1`, `V2`) stay as code. The
+  Models article has a notation table. Reference pages use Rd macros
+  (`man/macros/mintyrasr.Rd`), so the console help shows the plain names.
+
 # mintyrasr 0.5.3
 
-* G x E: ASReml-R rejects `vm(id, ginv):herd` ("Direct product with vm() must
+* G×E: ASReml-R rejects `vm(id, ginv):herd` ("Direct product with vm() must
   be a variance structure"). mintyrasr now writes it as
   `vm(id, relmat):idv(herd)`; `rB_herd` and `prop_vm_id_ginv_herd` keep their
   names.
 * Confirmed on ASReml-R 4.2.0.481 (round 4): pedigree BLUP with `ainverse()`
   (F from its `inbreeding` attribute, `dense = FALSE`, 512mb workspace),
   single-step with `H.inverse()`, maternal, repeatability, parameters-only
-  mode, `asr_compare()`; h2, m2, c2 and rep identical to hand-written
+  mode, `asr_compare()`; h², m², c² and `rep` identical to hand-written
   `vpredict()` formulas.
 
 # mintyrasr 0.5.2
@@ -35,9 +45,9 @@ Found with real ASReml-R 4.2.0.481 (pedigree BLUP crashed R):
 
 ## Pedigree, genomic and single-step
 
-* `ginv` takes any inverse relationship matrix: A^-1 (`ainverse()`), G^-1 or
-  H^-1. `dense = "auto"` (new default) puts the term in `dense` only for a
-  (nearly) full inverse, not for a sparse A^-1. With `ainverse()` and
+* `ginv` takes any inverse relationship matrix: A⁻¹ (`ainverse()`), G⁻¹ or
+  H⁻¹. `dense = "auto"` (new default) puts the term in `dense` only for a
+  (nearly) full inverse, not for a sparse A⁻¹. With `ainverse()` and
   `inbreeding = NULL`, F is taken from its `inbreeding` attribute.
 * New `asr_compare()`: the same scenarios with several matrices (e.g. ABLUP,
   GBLUP, ssGBLUP) on the same folds, stacked with a `method` column.
@@ -45,7 +55,7 @@ Found with real ASReml-R 4.2.0.481 (pedigree BLUP crashed R):
 ## Other models
 
 * Only `vm(<id>, ginv)` itself is the direct genetic term, so `vm(dam, ginv)`
-  (maternal genetic) and `vm(id, ginv):herd` (G x E) can be added in `random`.
+  (maternal genetic) and `vm(id, ginv):herd` (G×E) can be added in `random`.
 * Every extra random term is reported as `prop_<term>` (its share of the
   phenotypic variance, e.g. c^2, pe^2, m^2); `rep` (repeatability) with
   `ide(<id>)`; `rB_<X>` (type-B genetic correlation) with `vm(<id>, ginv):X`.
@@ -58,7 +68,7 @@ Found with real ASReml-R 4.2.0.481 (pedigree BLUP crashed R):
 ## Documentation
 
 * New articles (English and Chinese): pedigree, genomic and single-step;
-  repeatability, maternal effects and G x E; genetic parameters for each
+  repeatability, maternal effects and G×E; genetic parameters for each
   group; correlations between traits in each population; the same trait in
   different populations.
 
@@ -100,7 +110,7 @@ From the second validation run with ASReml-R 4.2.0.481:
   e.g. a covariance restrained at a bound) gives `rg_p = NA` with a warning,
   instead of a misleading p = 0.
 * New `min_n = 10`: a fold needs at least `min_n` validation individuals with
-  a usable GEBV (after `min_rel`) for PA, accuracy and slope. With a low h2
+  a usable GEBV (after `min_rel`) for PA, accuracy and slope. With a low h²
   the reliability filter could leave 2-7 animals and PA / slope were noise.
 * `cv_iter` is documented as the length of the iteration history (2 for
   fixed variances).
@@ -112,14 +122,14 @@ From the second validation run with ASReml-R 4.2.0.481:
 
 Fixes found by running the validation script with ASReml-R 4.2.0.481:
 
-* The LRT of rg = 0 (and `test_rp`) uses `lrt()`, the name in ASReml-R 4.2,
+* The LRT of r<sub>g</sub> = 0 (and `test_rp`) uses `lrt()`, the name in ASReml-R 4.2,
   with a fallback to `lrt.asreml()` for older releases. Before, the call
   failed silently and `rg_p` was always `NA`. LRT failures now give a warning.
 * Fixed-variance CV fits (`cv_vc = "fixed"`, `maxit = 1`) no longer pass on
   ASReml's expected "Log-likelihood not converged" warnings.
 * `accuracy` gains `cv_converge` and `cv_iter` (iterations of each fold's fit).
 * Confirmed on real ASReml-R: component names for idv, us, idh/diag, corgh,
-  corh and corv, `vparameters` order, coefficient names, and h2 / rg / rp /
+  corh and corv, `vparameters` order, coefficient names, and h² / r<sub>g</sub> / r<sub>p</sub> /
   repeatability identical to hand-written `vpredict()` formulas.
 
 # mintyrasr 0.3.0
@@ -128,7 +138,7 @@ Fixes found by running the validation script with ASReml-R 4.2.0.481:
   `value` / `value1` + `value2` (e.g. `traits = c("bfs", "nls")`).
 * `asr_scenarios()` runs the `mt_bt` scenario of `cv_scenarios()` (one trait
   treated as a different trait in each of two groups), with a `diag`
-  residual and without rp.
+  residual and without r<sub>p</sub>.
 * `test_rp = TRUE`: joint LRT of all covariances = 0. `rp = FALSE` drops the
   phenotypic correlation.
 * corgh correlation rows such as `...!trait!b:!trait!a.cor` are recognised.
@@ -143,16 +153,16 @@ Fixes found by running the validation script with ASReml-R 4.2.0.481:
 
 # mintyrasr 0.2.0
 
-* LRT of rg = 0 uses `idh(trait)` and `boundary = FALSE`.
+* LRT of r<sub>g</sub> = 0 uses `idh(trait)` and `boundary = FALSE`.
 * New columns: `pa` = r(y, GEBV) (the former `accuracy`), `accuracy` =
-  pa / sqrt(h2) with the full-data h2, `va`, `h2_full`.
+  pa / √h² with the full-data h², `va`, `h2_full`.
 * `cv_vc = "fixed"` (`maxit = 1`), `"warm"` or `"estimate"`.
 * `genetic_cov`, `random_cov`: `us`, `idh` / `diag`, `corh`, `corgh`;
   `random = ~ ide(id)` etc.; `na_x`; `asreml_args`.
 
 # mintyrasr 0.1.1
 
-* h2, rg and rp are built from the names of the variance components instead
+* h², r<sub>g</sub> and r<sub>p</sub> are built from the names of the variance components instead
   of fixed `V1`, `V2`, ... positions; `vc_index` table; `vpredict =` for
   your own formulas; `random =`, `random_cov`, `residual_cov`.
 

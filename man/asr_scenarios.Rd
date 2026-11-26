@@ -20,7 +20,7 @@ asr_scenarios(
 
 \item{scenarios}{Scenarios to run. \code{"mt_bt"} (one trait as a different
 trait per group, two groups) is fitted with \code{residual_cov = "diag"} and
-without rp, since no individual has records in both groups.}
+without \sb{r}{p}, since no individual has records in both groups.}
 
 \item{dir}{Folder for the workbooks \verb{<scenario>_<tag>.xlsx}; \code{NULL} writes nothing.}
 

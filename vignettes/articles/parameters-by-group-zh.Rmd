@@ -10,7 +10,7 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 
 [English version](parameters-by-group.html)
 
-数据中有多个群体时，各群体的遗传参数往往不同。常见的结果表是"每个群体、每个性状的 h2（SE）"。用 mintyrasr 只需一张嵌套表和一次调用，不需要交叉验证（`cv = NULL`，默认值）。
+数据中有多个群体时，各群体的遗传参数往往不同。常见的结果表是"每个群体、每个性状的 h²（SE）"。用 mintyrasr 只需一张嵌套表和一次调用，不需要交叉验证（`cv = NULL`，默认值）。
 
 ## 数据
 
@@ -65,7 +65,7 @@ res_all$param[, .(name, h2, h2_se)]
 
 ## 注意事项
 
-- **群体大小。** 小群体的 SE 大，估计值容易落在边界上（h2 = 0）。请检查 `status`、`boundary` 和 `res$log`；落在边界上的组分会列在那里。
+- **群体大小。** 小群体的 SE 大，估计值容易落在边界上（h² = 0）。请检查 `status`、`boundary` 和 `res$log`；落在边界上的组分会列在那里。
 - **各群体的固定效应。** 同期组通常因群体而异；每个群体一个模型时，各群体本来就有自己的水平。
 - **所有群体用同一个模型**，估计值才可比；某个群体需要不同模型时，单独运行。
 - **各群体的 GEBV** 在 `res$gebv` 中（`reliable = rel >= min_rel`）。

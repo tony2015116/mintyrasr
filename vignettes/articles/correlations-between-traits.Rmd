@@ -12,8 +12,8 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 
 [中文版](correlations-between-traits-zh.html)
 
-Two-trait models give the genetic correlation (rg) and the phenotypic
-correlation (rp) between two traits measured on the same animals. With
+Two-trait models give the genetic correlation (r~g~) and the phenotypic
+correlation (r~p~) between two traits measured on the same animals. With
 several populations, they are estimated for every pair of traits in every
 population.
 
@@ -43,15 +43,15 @@ res$param[, .(pairs, test_herd, rg, rg_se, rg_p, rp, rp_se, cov_p,
 
 | column | meaning |
 |---|---|
-| `rg`, `rg_se` | genetic correlation Cov_a / sqrt(Va1 Va2) |
-| `rp`, `rp_se` | phenotypic correlation: all covariances / sqrt(Vp1 Vp2) |
-| `rg_p` | LRT of rg = 0: `us(trait)` against `idh(trait)` for the genetic term, `boundary = FALSE` |
+| `rg`, `rg_se` | genetic correlation Cov~a~ / √(V~a,1~ V~a,2~) |
+| `rp`, `rp_se` | phenotypic correlation: all covariances / √(V~p,1~ V~p,2~) |
+| `rg_p` | LRT of r~g~ = 0: `us(trait)` against `idh(trait)` for the genetic term, `boundary = FALSE` |
 | `cov_p` | LRT of all covariances = 0 (`test_rp = TRUE`): are the traits correlated at all |
 | `h2_value1`, `h2_value2` | heritabilities of the two traits from the two-trait model |
 
 The model is `cbind(value1, value2) ~ trait + trait:hhys`,
 `us(trait):vm(id, ginv)`, `units:us(trait)`. The residual covariance needs
-animals with records of both traits; it is part of rp.
+animals with records of both traits; it is part of r~p~.
 
 ## All populations together
 
@@ -83,7 +83,7 @@ cor_matrix("nls")
 
 ## When a model does not converge
 
-- rg close to +-1 or traits with few joint records: try `genetic_cov = "corgh"`
+- r~g~ close to ±1 or traits with few joint records: try `genetic_cov = "corgh"`
   (the correlation is a parameter of its own and its SE comes directly).
 - More iterations: `max_update` (default 2) continues with `update()`.
 - Fits that still do not converge are skipped and listed in `res$log`

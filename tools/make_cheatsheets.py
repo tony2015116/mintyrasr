@@ -6,7 +6,7 @@ The CSS and the small R highlighter are shared with the mintyr cheatsheet
 """
 import pathlib
 
-VERSION = "0.5.3"
+VERSION = "0.5.4"
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 CSS = (ROOT / "tools" / "cheatsheet.css").read_text(encoding="utf-8")
 
@@ -114,7 +114,7 @@ EN = dict(
     flow="""  <div class="files"><div class="step">Inputs</div><div class="fns">pheno · ginv · F</div></div>
   <div class="io"><div class="step">1 · Scenarios</div><div class="fns">cv_scenarios()<br>nest_cv()</div></div>
   <div class="rs"><div class="step">2 · Full-data fit</div><div class="fns">varcomp · vc_index</div></div>
-  <div class="st"><div class="step">3 · Parameters</div><div class="fns">h2 · rg · rp · LRT</div></div>
+  <div class="st"><div class="step">3 · Parameters</div><div class="fns">h&sup2; · r<sub>g</sub> · r<sub>p</sub> · LRT</div></div>
   <div class="cv"><div class="step">4 · CV fits</div><div class="fns">GEBV · rel · PA<br>accuracy · slope</div></div>
   <div class="io"><div class="step">5 · Output</div><div class="fns">summary · xlsx</div></div>""",
     footer='<a href="https://tony2015116.github.io/mintyrasr/">tony2015116.github.io/mintyrasr</a> &middot; <a href="https://tony2015116.github.io/mintyr/">mintyr</a> &middot; <a href="https://github.com/tony2015116/mintyrasr/issues">Issues</a>',
@@ -130,7 +130,7 @@ inbreeding &lt;- data.frame(id = rownames(G), F = diag(G) - 1)</code></pre>
     <table>
       <tr><th>input</th><th>requirement</th></tr>
       <tr><td><code>pheno</code></td><td>one row per individual: id, group, fixed effects, traits</td></tr>
-      <tr><td><code>ginv</code></td><td>inverse G (or A) with <code>attr(, "INVERSE") = TRUE</code>; otherwise <code>vm()</code> takes it as G (warning)</td></tr>
+      <tr><td><code>ginv</code></td><td>G<sup>&minus;1</sup>, A<sup>&minus;1</sup> or H<sup>&minus;1</sup> with <code>attr(, "INVERSE") = TRUE</code>; otherwise <code>vm()</code> takes it as G (warning)</td></tr>
       <tr><td><code>inbreeding</code></td><td>data.frame <code>(id, F)</code> or named vector; <code>NULL</code> &rarr; F = 0</td></tr>
     </table>
   </div>
@@ -157,7 +157,7 @@ inbreeding &lt;- data.frame(id = rownames(G), F = diag(G) - 1)</code></pre>
   <h2><a href="reference/asr_scenarios.html">Run</a> <small>all scenarios or one</small></h2>
   <div class="fn">
     <div class="sig"><b><a href="reference/asr_scenarios.html">asr_scenarios</a></b>(sc, ginv, scenarios = c("st_sp", "st_mp", "mt_sp", "mt_mp"), dir = ".", tag = deparse(substitute(ginv)), ...)</div>
-    <p>One workbook per scenario: <code>&lt;dir&gt;/&lt;scenario&gt;_&lt;tag&gt;.xlsx</code>. <code>"mt_bt"</code>: diag residual, no rp.</p>
+    <p>One workbook per scenario: <code>&lt;dir&gt;/&lt;scenario&gt;_&lt;tag&gt;.xlsx</code>. <code>"mt_bt"</code>: diag residual, no r<sub>p</sub>.</p>
   </div>
   <div class="fn">
     <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv = NULL, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, cv_min_rel = -Inf, min_rel = 0.05, min_n = 10, neg_to_na = FALSE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = "auto", maxit = 100, workspace = "auto", max_update = 2, nonconv = "skip", asreml_args = list(), asreml_trace = FALSE, on_error = "warn", keep_pred = TRUE, keep_gebv = TRUE, path = NULL, verbose = TRUE)</div>
@@ -192,7 +192,7 @@ asr_gblup(..., residual_cov = "diag", rp = FALSE)</code></pre>
       <tr><th>argument</th><th>values</th></tr>
       <tr><td><code>genetic_cov</code>, <code>random_cov</code></td><td><code>us</code> <code>idh</code>/<code>diag</code> <code>corv</code> <code>corh</code> <code>corgh</code></td></tr>
       <tr><td><code>residual_cov</code></td><td><code>us</code> <code>idh</code>/<code>diag</code></td></tr>
-      <tr><td><code>ginv</code></td><td>A&#8315;&sup1; <code>ainverse(ped)</code> &middot; G&#8315;&sup1; &middot; H&#8315;&sup1;; <code>dense = "auto"</code>; F from <code>ainverse()</code></td></tr>
+      <tr><td><code>ginv</code></td><td>A<sup>&minus;1</sup> <code>ainverse(ped)</code> &middot; G<sup>&minus;1</sup> &middot; H<sup>&minus;1</sup>; <code>dense = "auto"</code>; F from <code>ainverse()</code></td></tr>
       <tr><td><code>na_x</code></td><td><code>include</code> (NA covariate = 0) <code>fail</code> <code>omit</code></td></tr>
     </table>
   </div>
@@ -204,11 +204,11 @@ asr_gblup(..., residual_cov = "diag", rp = FALSE)</code></pre>
     <p>Each varcomp row is matched to <code>names(fit$vparameters)</code> (= <code>V</code> of <code>vpredict</code>) and classified as genetic / random / residual and var / cov / cor. Scale rows <code>units!R</code> (after <code>units!units</code>) and <code>units:trait!R</code> are skipped.</p>
     <table>
       <tr><th>parameter</th><th>formula</th></tr>
-      <tr><td>h2<sub>i</sub></td><td>Va<sub>i</sub> / (all variances of trait i)</td></tr>
-      <tr><td>rg</td><td>Cov<sub>a</sub> / &radic;(Va<sub>1</sub>Va<sub>2</sub>); cor* &rarr; the correlation</td></tr>
-      <tr><td>rp</td><td>&Sigma; covariances / &radic;(Vp<sub>1</sub>Vp<sub>2</sub>); cor term &rarr; r&radic;(V<sub>1</sub>V<sub>2</sub>)</td></tr>
-      <tr><td><code>prop_&lt;term&gt;</code></td><td>V<sub>term</sub> / Vp (c&sup2;, pe&sup2;, m&sup2;)</td></tr>
-      <tr><td><code>rep</code> / <code>rB_X</code></td><td>(Va + Vpe) / Vp &middot; Va / (Va + V<sub>G&times;X</sub>)</td></tr>
+      <tr><td>h&sup2;<sub>i</sub></td><td>V<sub>a,i</sub> / (all variances of trait i)</td></tr>
+      <tr><td>r<sub>g</sub></td><td>Cov<sub>a</sub> / &radic;(V<sub>a,1</sub>V<sub>a,2</sub>); cor* &rarr; the correlation</td></tr>
+      <tr><td>r<sub>p</sub></td><td>&Sigma; covariances / &radic;(V<sub>p,1</sub>V<sub>p,2</sub>); cor term &rarr; r&radic;(V<sub>1</sub>V<sub>2</sub>)</td></tr>
+      <tr><td><code>prop_&lt;term&gt;</code></td><td>V<sub>term</sub> / V<sub>p</sub> (c&sup2;, pe&sup2;, m&sup2;)</td></tr>
+      <tr><td><code>rep</code> / <code>rB_X</code></td><td>(V<sub>a</sub> + V<sub>pe</sub>) / V<sub>p</sub> &middot; V<sub>a</sub> / (V<sub>a</sub> + V<sub>G&times;X</sub>)</td></tr>
     </table>
     <pre><code># us G + us R
 h2_value1 = V1/(V1 + V5); rg = V2/sqrt(V1 * V3)
@@ -229,7 +229,7 @@ asr_gblup(..., random = ~ ide(id),
       <tr><td><code>test_rg = TRUE</code></td><td>genetic <code>idh(trait)</code></td><td><code>rg_lrt</code> <code>rg_p</code></td></tr>
       <tr><td><code>test_rp = TRUE</code></td><td>all terms <code>idh</code></td><td><code>cov_df</code> <code>cov_lrt</code> <code>cov_p</code></td></tr>
     </table>
-    <div class="note"><code>test_rp</code>: are the traits correlated at all (all covariances = 0), not rp = 0 alone.</div>
+    <div class="note"><code>test_rp</code>: are the traits correlated at all (all covariances = 0), not r<sub>p</sub> = 0 alone.</div>
   </div>
 </section>
 
@@ -244,9 +244,9 @@ asr_gblup(..., random = ~ ide(id),
     </table>
     <table>
       <tr><th>measure</th><th>definition</th></tr>
-      <tr><td><code>rel</code></td><td>1 &minus; PEV / ((1 + F) Va), Va of the fold; <b>not filtered</b> in CV (<code>cv_min_rel = -Inf</code>); fold needs &ge; <code>min_n</code> = 10</td></tr>
+      <tr><td><code>rel</code></td><td>1 &minus; PEV / ((1 + F) V<sub>a</sub>), V<sub>a</sub> of the fold; <b>not filtered</b> in CV (<code>cv_min_rel = -Inf</code>); fold needs &ge; <code>min_n</code> = 10</td></tr>
       <tr><td><code>pa</code></td><td>r(y, GEBV)</td></tr>
-      <tr><td><code>accuracy</code></td><td>pa / &radic;h2, full-data h2</td></tr>
+      <tr><td><code>accuracy</code></td><td>pa / &radic;h&sup2;, full-data h&sup2;</td></tr>
       <tr><td><code>slope</code></td><td>b(y ~ GEBV), ideally 1</td></tr>
     </table>
   </div>
@@ -259,7 +259,7 @@ asr_gblup(..., random = ~ ide(id),
       <tr><th>element</th><th>content</th></tr>
       <tr><td><code>varcomp</code></td><td>summary(fit)$varcomp + <code>V</code></td></tr>
       <tr><td><code>vc_index</code></td><td>V &rarr; term, role, kind, traits, used</td></tr>
-      <tr><td><code>param</code></td><td>h2, rg, rp (+ SE), <code>formulas</code>, converge, loglik, boundary, tests</td></tr>
+      <tr><td><code>param</code></td><td><code>h2</code>, <code>rg</code>, <code>rp</code> (+ SE), <code>formulas</code>, converge, loglik, boundary, tests</td></tr>
       <tr><td><code>accuracy</code></td><td>rep &times; fold &times; trait: status, n, pa, accuracy, slope, va, cv_iter</td></tr>
       <tr><td><code>summary</code></td><td>pa / accuracy / slope: n, mean, sd, se</td></tr>
       <tr><td><code>pred</code></td><td>validation: obs, gebv, pev, inb, rel</td></tr>
@@ -303,7 +303,7 @@ ZH = dict(
     flow="""  <div class="files"><div class="step">输入</div><div class="fns">表型 · ginv · F</div></div>
   <div class="io"><div class="step">1 · 场景</div><div class="fns">cv_scenarios()<br>nest_cv()</div></div>
   <div class="rs"><div class="step">2 · 全数据拟合</div><div class="fns">varcomp · vc_index</div></div>
-  <div class="st"><div class="step">3 · 遗传参数</div><div class="fns">h2 · rg · rp · LRT</div></div>
+  <div class="st"><div class="step">3 · 遗传参数</div><div class="fns">h&sup2; · r<sub>g</sub> · r<sub>p</sub> · LRT</div></div>
   <div class="cv"><div class="step">4 · 交叉验证</div><div class="fns">GEBV · rel · PA<br>accuracy · slope</div></div>
   <div class="io"><div class="step">5 · 输出</div><div class="fns">summary · xlsx</div></div>""",
     footer='<a href="https://tony2015116.github.io/mintyrasr/">tony2015116.github.io/mintyrasr</a> &middot; <a href="https://tony2015116.github.io/mintyr/">mintyr</a> &middot; <a href="https://github.com/tony2015116/mintyrasr/issues">反馈问题</a>',
@@ -319,7 +319,7 @@ inbreeding &lt;- data.frame(id = rownames(G), F = diag(G) - 1)</code></pre>
     <table>
       <tr><th>输入</th><th>要求</th></tr>
       <tr><td><code>pheno</code></td><td>每个个体一行：id、分组、固定效应、性状</td></tr>
-      <tr><td><code>ginv</code></td><td>G（或 A）的逆，带 <code>attr(, "INVERSE") = TRUE</code>；否则 <code>vm()</code> 当作 G 本身（会警告）</td></tr>
+      <tr><td><code>ginv</code></td><td>G<sup>&minus;1</sup>、A<sup>&minus;1</sup> 或 H<sup>&minus;1</sup>，带 <code>attr(, "INVERSE") = TRUE</code>；否则 <code>vm()</code> 当作 G 本身（会警告）</td></tr>
       <tr><td><code>inbreeding</code></td><td>数据框 <code>(id, F)</code> 或命名向量；<code>NULL</code> &rarr; F = 0</td></tr>
     </table>
   </div>
@@ -346,7 +346,7 @@ inbreeding &lt;- data.frame(id = rownames(G), F = diag(G) - 1)</code></pre>
   <h2><a href="reference/asr_scenarios.html">运行</a> <small>全部场景或单个场景</small></h2>
   <div class="fn">
     <div class="sig"><b><a href="reference/asr_scenarios.html">asr_scenarios</a></b>(sc, ginv, scenarios = c("st_sp", "st_mp", "mt_sp", "mt_mp"), dir = ".", tag = deparse(substitute(ginv)), ...)</div>
-    <p>每个场景一个工作簿：<code>&lt;dir&gt;/&lt;场景&gt;_&lt;tag&gt;.xlsx</code>。<code>"mt_bt"</code>：diag 残差，不算 rp。</p>
+    <p>每个场景一个工作簿：<code>&lt;dir&gt;/&lt;场景&gt;_&lt;tag&gt;.xlsx</code>。<code>"mt_bt"</code>：diag 残差，不算 r<sub>p</sub>。</p>
   </div>
   <div class="fn">
     <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv = NULL, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, cv_min_rel = -Inf, min_rel = 0.05, min_n = 10, neg_to_na = FALSE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = "auto", maxit = 100, workspace = "auto", max_update = 2, nonconv = "skip", asreml_args = list(), asreml_trace = FALSE, on_error = "warn", keep_pred = TRUE, keep_gebv = TRUE, path = NULL, verbose = TRUE)</div>
@@ -381,7 +381,7 @@ asr_gblup(..., residual_cov = "diag", rp = FALSE)</code></pre>
       <tr><th>参数</th><th>取值</th></tr>
       <tr><td><code>genetic_cov</code>、<code>random_cov</code></td><td><code>us</code> <code>idh</code>/<code>diag</code> <code>corv</code> <code>corh</code> <code>corgh</code></td></tr>
       <tr><td><code>residual_cov</code></td><td><code>us</code> <code>idh</code>/<code>diag</code></td></tr>
-      <tr><td><code>ginv</code></td><td>A&#8315;&sup1; <code>ainverse(ped)</code> &middot; G&#8315;&sup1; &middot; H&#8315;&sup1;；<code>dense = "auto"</code>；F 取自 <code>ainverse()</code></td></tr>
+      <tr><td><code>ginv</code></td><td>A<sup>&minus;1</sup> <code>ainverse(ped)</code> &middot; G<sup>&minus;1</sup> &middot; H<sup>&minus;1</sup>；<code>dense = "auto"</code>；F 取自 <code>ainverse()</code></td></tr>
       <tr><td><code>na_x</code></td><td><code>include</code>（缺失协变量 = 0）<code>fail</code> <code>omit</code></td></tr>
     </table>
   </div>
@@ -393,11 +393,11 @@ asr_gblup(..., residual_cov = "diag", rp = FALSE)</code></pre>
     <p>varcomp 每一行与 <code>names(fit$vparameters)</code>（即 <code>vpredict</code> 的 <code>V</code>）对应，并分为 遗传 / 随机 / 残差 和 方差 / 协方差 / 相关。尺度参数 <code>units!R</code>（在 <code>units!units</code> 之后）和 <code>units:trait!R</code> 不使用。</p>
     <table>
       <tr><th>参数</th><th>公式</th></tr>
-      <tr><td>h2<sub>i</sub></td><td>Va<sub>i</sub> / 性状 i 的所有方差之和</td></tr>
-      <tr><td>rg</td><td>Cov<sub>a</sub> / &radic;(Va<sub>1</sub>Va<sub>2</sub>)；cor* 结构直接取相关</td></tr>
-      <tr><td>rp</td><td>所有协方差之和 / &radic;(Vp<sub>1</sub>Vp<sub>2</sub>)；相关项按 r&radic;(V<sub>1</sub>V<sub>2</sub>) 换算</td></tr>
-      <tr><td><code>prop_&lt;项&gt;</code></td><td>V<sub>项</sub> / Vp（c&sup2;、pe&sup2;、m&sup2;）</td></tr>
-      <tr><td><code>rep</code> / <code>rB_X</code></td><td>(Va + Vpe) / Vp &middot; Va / (Va + V<sub>G&times;X</sub>)</td></tr>
+      <tr><td>h&sup2;<sub>i</sub></td><td>V<sub>a,i</sub> / 性状 i 的所有方差之和</td></tr>
+      <tr><td>r<sub>g</sub></td><td>Cov<sub>a</sub> / &radic;(V<sub>a,1</sub>V<sub>a,2</sub>)；cor* 结构直接取相关</td></tr>
+      <tr><td>r<sub>p</sub></td><td>所有协方差之和 / &radic;(V<sub>p,1</sub>V<sub>p,2</sub>)；相关项按 r&radic;(V<sub>1</sub>V<sub>2</sub>) 换算</td></tr>
+      <tr><td><code>prop_&lt;项&gt;</code></td><td>V<sub>项</sub> / V<sub>p</sub>（c&sup2;、pe&sup2;、m&sup2;）</td></tr>
+      <tr><td><code>rep</code> / <code>rB_X</code></td><td>(V<sub>a</sub> + V<sub>pe</sub>) / V<sub>p</sub> &middot; V<sub>a</sub> / (V<sub>a</sub> + V<sub>G&times;X</sub>)</td></tr>
     </table>
     <pre><code># us G + us R
 h2_value1 = V1/(V1 + V5); rg = V2/sqrt(V1 * V3)
@@ -418,7 +418,7 @@ asr_gblup(..., random = ~ ide(id),
       <tr><td><code>test_rg = TRUE</code></td><td>遗传项 <code>idh(trait)</code></td><td><code>rg_lrt</code> <code>rg_p</code></td></tr>
       <tr><td><code>test_rp = TRUE</code></td><td>所有项 <code>idh</code></td><td><code>cov_df</code> <code>cov_lrt</code> <code>cov_p</code></td></tr>
     </table>
-    <div class="note"><code>test_rp</code>：两性状是否有任何相关（所有协方差 = 0），不是单独检验 rp = 0。</div>
+    <div class="note"><code>test_rp</code>：两性状是否有任何相关（所有协方差 = 0），不是单独检验 r<sub>p</sub> = 0。</div>
   </div>
 </section>
 
@@ -433,9 +433,9 @@ asr_gblup(..., random = ~ ide(id),
     </table>
     <table>
       <tr><th>指标</th><th>定义</th></tr>
-      <tr><td><code>rel</code></td><td>1 &minus; PEV / ((1 + F) Va)，Va 取当折；交叉验证中<b>不过滤</b>（<code>cv_min_rel = -Inf</code>）；每折至少 <code>min_n</code> = 10 个</td></tr>
+      <tr><td><code>rel</code></td><td>1 &minus; PEV / ((1 + F) V<sub>a</sub>)，V<sub>a</sub> 取当折；交叉验证中<b>不过滤</b>（<code>cv_min_rel = -Inf</code>）；每折至少 <code>min_n</code> = 10 个</td></tr>
       <tr><td><code>pa</code></td><td>r(y, GEBV)，预测能力</td></tr>
-      <tr><td><code>accuracy</code></td><td>pa / &radic;h2，h2 用全数据估计值</td></tr>
+      <tr><td><code>accuracy</code></td><td>pa / &radic;h&sup2;，h&sup2; 用全数据估计值</td></tr>
       <tr><td><code>slope</code></td><td>b(y ~ GEBV)，理想值 1</td></tr>
     </table>
   </div>
@@ -448,7 +448,7 @@ asr_gblup(..., random = ~ ide(id),
       <tr><th>元素</th><th>内容</th></tr>
       <tr><td><code>varcomp</code></td><td>summary(fit)$varcomp + <code>V</code></td></tr>
       <tr><td><code>vc_index</code></td><td>V &rarr; 所属项、角色、类型、性状、是否使用</td></tr>
-      <tr><td><code>param</code></td><td>h2、rg、rp（含 SE）、<code>formulas</code>、converge、loglik、boundary、检验</td></tr>
+      <tr><td><code>param</code></td><td><code>h2</code>、<code>rg</code>、<code>rp</code>（含 SE）、<code>formulas</code>、converge、loglik、boundary、检验</td></tr>
       <tr><td><code>accuracy</code></td><td>重复 &times; 折 &times; 性状：status、n、pa、accuracy、slope、va、cv_iter</td></tr>
       <tr><td><code>summary</code></td><td>pa / accuracy / slope：n、mean、sd、se</td></tr>
       <tr><td><code>pred</code></td><td>验证个体：obs、gebv、pev、inb、rel</td></tr>

@@ -13,7 +13,7 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 [中文版](parameters-by-group-zh.html)
 
 When the data hold several populations, the genetic parameters often differ
-between them. The usual table is "h2 (SE) of every trait in every group".
+between them. The usual table is "h² (SE) of every trait in every group".
 With mintyrasr this is one nested table and one call; no cross-validation is
 needed (`cv = NULL`, the default).
 
@@ -68,7 +68,7 @@ res_all$param[, .(name, h2, h2_se)]
 ```
 
 To test whether the genetic variance differs between groups, or how well the
-groups are genetically connected, see the G x E part of
+groups are genetically connected, see the G×E part of
 [Beyond the animal model](other-models.html) and
 [The same trait in different populations](same-trait-across-groups.html).
 
@@ -80,7 +80,7 @@ groups are genetically connected, see the G x E part of
 ## Points to watch
 
 - **Group size.** Small groups give large SEs and estimates at the boundary
-  (h2 = 0). Check `status`, `boundary` and `res$log`; a component fixed at
+  (h² = 0). Check `status`, `boundary` and `res$log`; a component fixed at
   the boundary is listed there.
 - **Fixed effects per group.** Contemporary groups usually differ between
   groups; with one model per group each group gets its own levels anyway.

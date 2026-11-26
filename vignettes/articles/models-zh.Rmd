@@ -61,11 +61,11 @@ asr_gblup(param, cv, ginv, fixed = ~ hhys, traits = c("bfs", "nls"),
 
 | 模型 | V1 | V2 | V3 | V4 | V5 | V6 | V7 |
 |---|---|---|---|---|---|---|---|
-| us G + us R | Va1 | Cov_a | Va2 | `units:trait!R` = 1 | Ve1 | Cov_e | Ve2 |
-| corgh G + diag R | r_a | Va1 | Va2 | `units:trait!R` = 1 | Ve1 | Ve2 | - |
-| us G + idh 窝 + us R | Va1 | Cov_a | Va2 | Vc1 | Vc2 | `units:trait!R` | …… |
+| us G + us R | V~a,1~ | Cov~a~ | V~a,2~ | `units:trait!R` = 1 | V~e,1~ | Cov~e~ | V~e,2~ |
+| corgh G + diag R | r~a~ | V~a,1~ | V~a,2~ | `units:trait!R` = 1 | V~e,1~ | V~e,2~ | - |
+| us G + idh 窝 + us R | V~a,1~ | Cov~a~ | V~a,2~ | V~c,1~ | V~c,2~ | `units:trait!R` | …… |
 
-`rg ~ V2 / sqrt(V1 * V3)` 对第一个模型是对的；对第二个模型是错的（V1 已经是相关系数），带 `V7` 的 rp 公式还会报错。所以 mintyrasr 读取方差组分的**名字**，自动生成公式。
+`rg ~ V2 / sqrt(V1 * V3)` 对第一个模型是对的；对第二个模型是错的（V1 已经是相关系数），带 `V7` 的 r~p~ 公式还会报错。所以 mintyrasr 读取方差组分的**名字**，自动生成公式。
 
 ## 如何识别方差组分
 
@@ -88,13 +88,29 @@ asr_gblup(param, cv, ginv, fixed = ~ hhys, traits = c("bfs", "nls"),
 
 性状名在组分名中按完整单词匹配，任何列名都可以。结果中的 `vc_index` 表列出了分类，新模型第一次运行后请看一眼。
 
+## 符号
+
+正文中的符号用上标和下标书写；输出表中使用普通列名：
+
+| 符号 | 含义 | 输出中 |
+|---|---|---|
+| h²、h²~i~ | 遗传力（性状 *i*） | `h2`、`h2_<性状>` |
+| r~g~、r~p~ | 遗传相关、表型相关 | `rg`、`rp` |
+| r~B~ | 环境间的 B 型遗传相关 | `rB_<X>` |
+| V~a~、V~e~、V~p~ | 加性遗传方差、残差方差、表型方差 | `va`（每折） |
+| V~a,1~、V~p,2~ | 性状 1、性状 2 的方差 | |
+| Cov~a~、Cov~e~ | 两性状的遗传协方差、残差协方差 | |
+| c²、pe²、m² | 窝效应、永久环境、母体遗传方差占比 | `prop_<项>` |
+| A⁻¹、G⁻¹、H⁻¹ | 系谱、基因组、一步法关系矩阵的逆 | 参数 `ginv` |
+| `V1`、`V2`…… | `vpredict()` 使用的方差参数**编号**，不是下标 | `vc_index$V` |
+
 ## 公式
 
-对每个性状 *i*，Vp_i = 该性状**所有**方差之和（遗传 + 其他随机效应 + 残差）：
+对每个性状 *i*，V~p,i~ = 该性状**所有**方差之和（遗传 + 其他随机效应 + 残差）：
 
-- **h2_i** = Va_i / Vp_i
-- **rg** = Cov_a / sqrt(Va1 Va2)；`corv` / `corh` / `corgh` 时直接取相关参数
-- **rp** = 所有协方差之和 / sqrt(Vp1 Vp2)；相关参数化的项按 r sqrt(V1 V2) 换算成协方差
+- **h²~i~** = V~a,i~ / V~p,i~
+- **r~g~** = Cov~a~ / √(V~a,1~ V~a,2~)；`corv` / `corh` / `corgh` 时直接取相关参数
+- **r~p~** = 所有协方差之和 / √(V~p,1~ V~p,2~)；相关参数化的项按 r√(V~1~V~2~) 换算成协方差
 
 自动生成的例子（`param$formulas`）：
 
@@ -129,7 +145,7 @@ res$param[, c("h2", "h2_se", "rep", "rep_se")]
 | `test_rg = TRUE`（默认） | 按设定 | 遗传结构换成 `idh(trait)`，其余不变 | `boundary = FALSE`（相关为 0 不在参数边界上） |
 | `test_rp = TRUE` | 按设定 | 遗传、其他随机效应和残差都换成 `idh` | `boundary = FALSE`；`cov_df` = 协方差个数 |
 
-`test_rp` 检验的是两个性状是否有任何相关，不是单独对 rp = 0 的检验。结果在 `param` 的 `rg_lrt`、`rg_p`、`cov_df`、`cov_lrt`、`cov_p` 列。
+`test_rp` 检验的是两个性状是否有任何相关，不是单独对 r~p~ = 0 的检验。结果在 `param` 的 `rg_lrt`、`rg_p`、`cov_df`、`cov_lrt`、`cov_p` 列。
 
 ## 检查与警告
 

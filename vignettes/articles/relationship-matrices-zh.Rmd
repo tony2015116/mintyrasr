@@ -44,7 +44,7 @@ hinv <- H.inverse(A = A, Ginv = Ginv_aligned, lambda = 1, sparseform = TRUE)
 ## mintyrasr 自动处理的设置
 
 - **`dense = "auto"`**：对（近似）满的逆矩阵，如 G⁻¹ 或 H⁻¹，关系项放进 `dense`；对稀疏的 A⁻¹ 不放，否则会占用大量内存。选择结果显示在第一行进度信息里。
-- **可靠性 `1 - PEV / ((1 + F) Va)` 中的近交系数**：用 `ainverse()` 且 `inbreeding = NULL` 时，F 自动取自它的 `inbreeding` 属性。G 用 `diag(G) - 1`；H 通常用 `ainverse()` 给出的系谱 F。
+- **可靠性 1 − PEV / ((1 + F) V~a~) 中的近交系数**：用 `ainverse()` 且 `inbreeding = NULL` 时，F 自动取自它的 `inbreeding` 属性。G 用 `diag(G) - 1`；H 通常用 `ainverse()` 给出的系谱 F。
 - 输出文件名带矩阵对象的名字（`st_sp_ainv.xlsx`、`st_sp_ginv.xlsx`……），在 `asr_compare()` 中则带方法名。
 
 ## 单个方法
@@ -84,4 +84,4 @@ dcast(cmp$summary[type == "pa"], scenario + name + test_herd ~ method, value.var
 
 - **数据里有哪些个体。** GBLUP 只能用有基因型的个体。为了公平比较，所有方法都在同一批（有基因型的）个体上验证；ABLUP 和 ssGBLUP 还可以在训练集中加入没有基因型但有表型的个体。
 - **ID 必须一致**：表型、系谱和基因型中的 ID 要对得上；有表型但不在矩阵中的个体，mintyrasr 会警告。
-- **ssGBLUP 需要相容的 G**：构建 H 之前先把 G 与 A22 对齐（尺度和水平），否则基因组部分与系谱部分不匹配，预测有偏，表现为回归系数明显偏离 1。
+- **ssGBLUP 需要相容的 G**：构建 H 之前先把 G 与 A~22~ 对齐（尺度和水平），否则基因组部分与系谱部分不匹配，预测有偏，表现为回归系数明显偏离 1。

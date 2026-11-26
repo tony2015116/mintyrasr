@@ -1,5 +1,5 @@
 ---
-title: "Beyond the animal model: repeatability, maternal effects and G x E"
+title: "Beyond the animal model: repeatability, maternal effects and G×E"
 description: >
   Permanent environment, litter, maternal genetic and maternal environment
   effects, and genotype x environment interaction - with the variance
@@ -19,10 +19,10 @@ mintyrasr reads the variance components by name and reports:
 
 | output | meaning |
 |---|---|
-| `h2` (`h2_<trait>`) | Va / Vp, where Vp is the sum of **all** variances: genetic, every extra term, residual |
-| `prop_<term>` | variance of that term / Vp, e.g. `prop_litter` (c²), `prop_ide_id` (pe²), `prop_vm_dam_ginv` (m²) |
-| `rep` | repeatability (Va + Vpe) / Vp, when `ide(<id>)` is in the model |
-| `rB_<X>` | type-B genetic correlation Va / (Va + V_GxX), when `vm(<id>, ginv):X` is in the model |
+| `h2` (`h2_<trait>`) | V~a~ / V~p~, where V~p~ is the sum of **all** variances: genetic, every extra term, residual |
+| `prop_<term>` | variance of that term / V~p~, e.g. `prop_litter` (c²), `prop_ide_id` (pe²), `prop_vm_dam_ginv` (m²) |
+| `rep` | repeatability (V~a~ + V~pe~) / V~p~, when `ide(<id>)` is in the model |
+| `rB_<X>` | type-B genetic correlation V~a~ / (V~a~ + V~G×X~), when `vm(<id>, ginv):X` is in the model |
 
 Anything else - covariances between effects, total heritability - goes into
 `vpredict`, with the `V` numbers from the `vc_index` table of a first run.
@@ -30,7 +30,7 @@ Anything else - covariances between effects, total heritability - goes into
 ## Repeated records: repeatability
 
 Animals with several records (parities, test days) need a permanent
-environment effect; without it h2 is inflated:
+environment effect; without it h² is inflated:
 
 ```{r}
 nest <- w2l_nest(pheno_rep, cols = "litter_size", out_type = "df")
@@ -58,14 +58,14 @@ asr_gblup(pairs, ginv = ginv, fixed = ~ hhys, random = ~ litter, random_cov = "i
 ## Maternal effects
 
 The dam's genetic effect needs the dams in the relationship matrix, which is
-usually true for A^-1 and H^-1 (pedigree) and for G^-1 only if the dams are
+usually true for A⁻¹ and H⁻¹ (pedigree) and for G⁻¹ only if the dams are
 genotyped. The data need a `dam` column.
 
 | model | `random` | variances |
 |---|---|---|
-| M1 maternal genetic | `~ vm(dam, ginv)` | Va, Vm, Ve |
-| M2 maternal environment | `~ ide(dam)` | Va, Vc, Ve |
-| M3 both | `~ vm(dam, ginv) + ide(dam)` | Va, Vm, Vc, Ve |
+| M1 maternal genetic | `~ vm(dam, ginv)` | V~a~, V~m~, V~e~ |
+| M2 maternal environment | `~ ide(dam)` | V~a~, V~c~, V~e~ |
+| M3 both | `~ vm(dam, ginv) + ide(dam)` | V~a~, V~m~, V~c~, V~e~ |
 
 ```{r}
 res <- asr_gblup(nest, ginv = ainv, fixed = ~ sex + hys,
@@ -87,8 +87,8 @@ term `vm(id, relmat)` only (inside the model the matrix is called `relmat`).
 **M4 - covariance between direct and maternal effects** needs
 `str(~ vm(id, ainv) + vm(dam, ainv), ~ us(2):vm(id, ainv))`, which replaces
 the direct genetic term. mintyrasr does not build it; fit it with `asreml()`
-and use the formulas of the ASReml-R cookbook (with V1 = Va, V2 = Cov(a,m),
-V3 = Vm, V4 = Vc, V5 = Ve):
+and use the formulas of the ASReml-R cookbook (with V1 = V~a~, V2 = Cov(a,m),
+V3 = V~m~, V4 = V~c~, V5 = V~e~):
 
 ```{r}
 m4 <- asreml(y ~ sex + hys,
@@ -100,9 +100,9 @@ vpredict(m4, r_am ~ V2 / sqrt(V1 * V3))
 vpredict(m4, h2_T ~ (V1 + 1.5 * V2 + 0.5 * V3) / (V1 + V2 + V3 + V4 + V5))
 ```
 
-## Genotype x environment
+## Genotype × environment
 
-**Compound symmetry** (one genetic variance plus a genotype x environment
+**Compound symmetry** (one genetic variance plus a genotype × environment
 variance; works with many environments, assumes the same genetic variance and
 the same correlation between all pairs of environments):
 
@@ -118,11 +118,11 @@ ASReml needs a variance structure for the factor that is crossed with
 `vm(id, relmat):idv(test_herd)` for you (you can also write the `idv()`
 yourself).
 
-`rB_test_herd` = Va / (Va + V_GxE) is the genetic correlation between herds.
-`h2` uses Vp = Va + V_GxE + Ve; the heritability within one herd is
-(Va + V_GxE) / Vp, available through `vpredict`.
+`rB_test_herd` = V~a~ / (V~a~ + V~G×E~) is the genetic correlation between herds.
+`h2` uses V~p~ = V~a~ + V~G×E~ + V~e~; the heritability within one herd is
+(V~a~ + V~G×E~) / V~p~, available through `vpredict`.
 
-**One trait per environment** (heterogeneous variances, an rg for each pair of
+**One trait per environment** (heterogeneous variances, an r~g~ for each pair of
 environments): treat the trait in each environment as a separate trait. See
 [The same trait in different populations](same-trait-across-groups.html).
 
@@ -131,8 +131,8 @@ usual choice; they are not built by mintyrasr - fit them with `asreml()`.
 
 ## Two-trait models with extra terms
 
-Every extra term gets `random_cov` and enters both the variances (h2) and the
-covariances (rp) of the traits:
+Every extra term gets `random_cov` and enters both the variances (h²) and the
+covariances (r~p~) of the traits:
 
 ```{r}
 asr_gblup(pairs, ginv = ginv, fixed = ~ hhys, random = ~ litter, random_cov = "us")

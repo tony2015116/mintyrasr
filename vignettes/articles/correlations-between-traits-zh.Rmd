@@ -10,7 +10,7 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 
 [English version](correlations-between-traits.html)
 
-两性状模型给出在同一批个体上测定的两个性状之间的遗传相关（rg）和表型相关（rp）。有多个群体时，对每个群体中的每对性状分别估计。
+两性状模型给出在同一批个体上测定的两个性状之间的遗传相关（r~g~）和表型相关（r~p~）。有多个群体时，对每个群体中的每对性状分别估计。
 
 ## 数据与性状对
 
@@ -36,13 +36,13 @@ res$param[, .(pairs, test_herd, rg, rg_se, rg_p, rp, rp_se, cov_p,
 
 | 列 | 含义 |
 |---|---|
-| `rg`、`rg_se` | 遗传相关 Cov_a / sqrt(Va1 Va2) |
-| `rp`、`rp_se` | 表型相关：所有协方差之和 / sqrt(Vp1 Vp2) |
-| `rg_p` | rg = 0 的似然比检验：遗传项 `us(trait)` 对比 `idh(trait)`，`boundary = FALSE` |
+| `rg`、`rg_se` | 遗传相关 Cov~a~ / √(V~a,1~ V~a,2~) |
+| `rp`、`rp_se` | 表型相关：所有协方差之和 / √(V~p,1~ V~p,2~) |
+| `rg_p` | r~g~ = 0 的似然比检验：遗传项 `us(trait)` 对比 `idh(trait)`，`boundary = FALSE` |
 | `cov_p` | 所有协方差 = 0 的似然比检验（`test_rp = TRUE`）：两个性状是否有任何相关 |
 | `h2_value1`、`h2_value2` | 两性状模型给出的两个性状的遗传力 |
 
-模型为 `cbind(value1, value2) ~ trait + trait:hhys`、`us(trait):vm(id, ginv)`、`units:us(trait)`。残差协方差需要有个体同时有两个性状的记录；它是 rp 的一部分。
+模型为 `cbind(value1, value2) ~ trait + trait:hhys`、`us(trait):vm(id, ginv)`、`units:us(trait)`。残差协方差需要有个体同时有两个性状的记录；它是 r~p~ 的一部分。
 
 ## 所有群体合并
 
@@ -74,7 +74,7 @@ cor_matrix("nls")
 
 ## 模型不收敛时
 
-- rg 接近 ±1 或两个性状共同记录很少：试试 `genetic_cov = "corgh"`（相关系数本身是一个参数，SE 直接给出）。
+- r~g~ 接近 ±1 或两个性状共同记录很少：试试 `genetic_cov = "corgh"`（相关系数本身是一个参数，SE 直接给出）。
 - 增加迭代：`max_update`（默认 2）用 `update()` 继续迭代。
 - 仍不收敛的模型会被跳过并记入 `res$log`（`nonconv = "keep"` 则照常使用）。
 - 自由度为 0 的似然比检验（某个参数被约束或落在边界上）给出 `rg_p = NA` 并记入日志，而不是误导性的 p = 0。

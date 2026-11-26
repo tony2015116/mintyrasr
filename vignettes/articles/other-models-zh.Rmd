@@ -14,16 +14,16 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 
 | 输出 | 含义 |
 |---|---|
-| `h2`（`h2_<性状>`） | Va / Vp，Vp 为**所有**方差之和：遗传、每个额外随机项、残差 |
-| `prop_<项>` | 该项方差 / Vp，如 `prop_litter`（c²）、`prop_ide_id`（pe²）、`prop_vm_dam_ginv`（m²） |
-| `rep` | 重复力 (Va + Vpe) / Vp，模型中有 `ide(<id>)` 时给出 |
-| `rB_<X>` | B 型遗传相关 Va / (Va + V_GxX)，模型中有 `vm(<id>, ginv):X` 时给出 |
+| `h2`（`h2_<性状>`） | V~a~ / V~p~，V~p~ 为**所有**方差之和：遗传、每个额外随机项、残差 |
+| `prop_<项>` | 该项方差 / V~p~，如 `prop_litter`（c²）、`prop_ide_id`（pe²）、`prop_vm_dam_ginv`（m²） |
+| `rep` | 重复力 (V~a~ + V~pe~) / V~p~，模型中有 `ide(<id>)` 时给出 |
+| `rB_<X>` | B 型遗传相关 V~a~ / (V~a~ + V~G×X~)，模型中有 `vm(<id>, ginv):X` 时给出 |
 
 其他参数——效应间的协方差、总遗传力——用 `vpredict` 给出，V 编号先看第一次运行的 `vc_index` 表。
 
 ## 重复记录：重复力
 
-有多次记录的个体（胎次、测定日）需要加永久环境效应，否则 h2 偏高：
+有多次记录的个体（胎次、测定日）需要加永久环境效应，否则 h² 偏高：
 
 ```{r}
 nest <- w2l_nest(pheno_rep, cols = "litter_size", out_type = "df")
@@ -51,9 +51,9 @@ asr_gblup(pairs, ginv = ginv, fixed = ~ hhys, random = ~ litter, random_cov = "i
 
 | 模型 | `random` | 方差 |
 |---|---|---|
-| M1 母体遗传 | `~ vm(dam, ginv)` | Va、Vm、Ve |
-| M2 母体环境 | `~ ide(dam)` | Va、Vc、Ve |
-| M3 两者都有 | `~ vm(dam, ginv) + ide(dam)` | Va、Vm、Vc、Ve |
+| M1 母体遗传 | `~ vm(dam, ginv)` | V~a~、V~m~、V~e~ |
+| M2 母体环境 | `~ ide(dam)` | V~a~、V~c~、V~e~ |
+| M3 两者都有 | `~ vm(dam, ginv) + ide(dam)` | V~a~、V~m~、V~c~、V~e~ |
 
 ```{r}
 res <- asr_gblup(nest, ginv = ainv, fixed = ~ sex + hys,
@@ -69,7 +69,7 @@ asr_gblup(nest, ginv = ainv, fixed = ~ sex + hys, random = ~ vm(dam, ginv) + ide
 
 在 `random` 中，关系矩阵始终写作 `ginv`，不论传入的对象叫什么（上例为 `ainv`）。`vm(dam, ginv)` 不会被当作直接遗传项：`h2`、GEBV 和可靠性只使用直接遗传项 `vm(id, relmat)`（模型内部矩阵称为 `relmat`）。
 
-**M4——直接效应与母体效应的协方差**需要 `str(~ vm(id, ainv) + vm(dam, ainv), ~ us(2):vm(id, ainv))`，它会取代直接遗传项。mintyrasr 不构建这个模型；请直接用 `asreml()` 拟合，并使用 ASReml-R 手册中的公式（V1 = Va、V2 = Cov(a,m)、V3 = Vm、V4 = Vc、V5 = Ve）：
+**M4——直接效应与母体效应的协方差**需要 `str(~ vm(id, ainv) + vm(dam, ainv), ~ us(2):vm(id, ainv))`，它会取代直接遗传项。mintyrasr 不构建这个模型；请直接用 `asreml()` 拟合，并使用 ASReml-R 手册中的公式（V1 = V~a~、V2 = Cov(a,m)、V3 = V~m~、V4 = V~c~、V5 = V~e~）：
 
 ```{r}
 m4 <- asreml(y ~ sex + hys,
@@ -94,15 +94,15 @@ res$param[, .(h2, prop_vm_id_ginv_test_herd, rB_test_herd)]
 
 ASReml 要求与 `vm()` 做直积的因子带方差结构；mintyrasr 会把 `vm(id, ginv):test_herd` 自动写成 `vm(id, relmat):idv(test_herd)`（也可以自己写上 `idv()`）。
 
-`rB_test_herd` = Va / (Va + V_GxE) 即场间遗传相关。`h2` 的 Vp = Va + V_GxE + Ve；单个场内的遗传力为 (Va + V_GxE) / Vp，可用 `vpredict` 计算。
+`rB_test_herd` = V~a~ / (V~a~ + V~G×E~) 即场间遗传相关。`h2` 的 V~p~ = V~a~ + V~G×E~ + V~e~；单个场内的遗传力为 (V~a~ + V~G×E~) / V~p~，可用 `vpredict` 计算。
 
-**每个环境一个性状**（各环境方差不同，每两个环境一个 rg）：把每个环境中的性状当作不同性状，见[同一性状在不同群体中](same-trait-across-groups-zh.html)。
+**每个环境一个性状**（各环境方差不同，每两个环境一个 r~g~）：把每个环境中的性状当作不同性状，见[同一性状在不同群体中](same-trait-across-groups-zh.html)。
 
 **环境很多时**（5 个以上）：通常用因子分析模型（`fa()`）；mintyrasr 不构建，请直接用 `asreml()`。
 
 ## 两性状模型加其他随机项
 
-每个额外随机项使用 `random_cov`，同时进入性状的方差（h2）和协方差（rp）：
+每个额外随机项使用 `random_cov`，同时进入性状的方差（h²）和协方差（r~p~）：
 
 ```{r}
 asr_gblup(pairs, ginv = ginv, fixed = ~ hhys, random = ~ litter, random_cov = "us")

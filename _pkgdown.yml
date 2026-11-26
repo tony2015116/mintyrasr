@@ -1,31 +1,24 @@
 url: https://tony2015116.github.io/mintyrasr/
 
+# Same look as the mintyr site: Bootstrap 3 + cosmo, dark code blocks
 template:
-  bootstrap: 5
-  bootswatch: flatly
-  theme: a11y-light
+  #bootstrap: 5
+  bootswatch: cosmo
+  theme: arrow-dark            # syntax highlighting of code blocks
 
 home:
-  title: "mintyrasr: mintyr GBLUP scenarios directly in ASReml-R"
+  title: "mintyrasr: mintyr GBLUP Scenarios Directly in ASReml-R"
   description: >
-    GBLUP parameter estimation and cross-validation with ASReml-R on the
-    nested data built by mintyr: genetic parameters that follow the model,
-    correct LRTs, and PA / accuracy / slope per fold.
+    Fit single- and two-trait GBLUP models with ASReml-R to the nested
+    parameter-estimation and cross-validation data built by mintyr:
+    genetic parameters that follow the model, correct LRTs, and PA /
+    accuracy / slope per fold - no input files to export.
 
 navbar:
   structure:
-    left:  [intro, reference, articles, zh, cheatsheet, news]
-    right: [search, github]
+    left:  [intro, reference, articles, cheatsheet, news]
+    right: [search, github, discussions]
   components:
-    zh:
-      text: 中文
-      menu:
-      - text: 入门
-        href: articles/mintyrasr-zh.html
-      - text: 模型与遗传参数
-        href: articles/models-zh.html
-      - text: 速查表
-        href: cheatsheet-zh.html
     cheatsheet:
       text: Cheatsheet
       icon: fas fa-file-alt
@@ -39,16 +32,23 @@ navbar:
       icon: fab fa-github fa-lg
       href: https://github.com/tony2015116/mintyrasr
       aria-label: GitHub
+    discussions:
+      icon: fas fa-users fa-lg
+      href: https://github.com/tony2015116/mintyrasr/discussions
+      aria-label: Discussions
 
+# vignettes/mintyrasr.Rmd is the "Get started" page; every article has an
+# English and a Chinese version, listed together (as in mintyr).
 articles:
-- title: English
-  navbar: ~
+- title: Get started
+  navbar: Get started
   contents:
   - mintyrasr
-  - articles/models
-- title: 中文
-  contents:
   - articles/mintyrasr-zh
+- title: Models and genetic parameters
+  navbar: Models and genetic parameters
+  contents:
+  - articles/models
   - articles/models-zh
 
 reference:

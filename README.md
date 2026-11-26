@@ -1,4 +1,4 @@
-# mintyrasr
+# mintyrasr <a href='https://tony2015116.github.io/mintyrasr/'><img src='man/figures/logo.svg' alt="mintyrasr package logo" width="120" align="right" /></a>
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/tony2015116/mintyrasr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/tony2015116/mintyrasr/actions/workflows/R-CMD-check.yaml)

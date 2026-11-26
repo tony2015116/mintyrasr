@@ -69,7 +69,7 @@ def page(lang, t):
 <div class="wrap">
 
 <header class="top">
-  <div></div>
+  <img src="reference/figures/logo.svg" alt="mintyrasr logo" onerror="this.style.display='none'">
   <div>
     <h1>{t['h1']} <span class="ver">v{VERSION}</span></h1>
     <p>{t['lead']}</p>

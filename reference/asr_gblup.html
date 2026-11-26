@@ -10,7 +10,7 @@ components handled as set by cv_vc;
 predicts GEBVs of the validation individuals (all of them: they have
 no own record, so a low reliability is expected and not filtered by
 default) and returns per fold the predictive ability
-pa = r(y, GEBV), the accuracy pa / sqrt(h2) (h2 from the full data,
+pa = r(y, GEBV), the accuracy pa / &amp;radic;h&amp;sup2; (h&amp;sup2; from the full data,
 Dekkers 2007) and the slope b(y ~ GEBV);
 summarises them over folds (n, mean, sd, se), returns the GEBVs of all
 individuals from the full-data fit with their reliability (flag
@@ -24,13 +24,13 @@ stopping the loop; fits that do not converge are first continued with
 update() (max_update), and are then skipped (nonconv = &quot;skip&quot;) or
 kept. A progress line per fit shows status, iterations, time and the
 estimated time left.
-h2, rg and rp are built from the names of the variance components,
+h&amp;sup2;, rg and rp are built from the names of the variance components,
 not from fixed V positions, so they stay correct when random effects
 are added (random = ~ ide(id) + litter) or covariance structures change
 (us, idh/diag, corh, corgh):
-h2 = Va / (all variances of the trait), rg = Cov_a / sqrt(Va1 Va2)
+h&amp;sup2; = Va / (all variances of the trait), rg = Cova / &amp;radic;(Va,1 Va,2)
 (the correlation itself for corh/corgh), rp = sum of all covariances /
-sqrt(Vp1 Vp2). The vc_index table shows which V each component is and
+&amp;radic;(Vp,1 Vp,2). The vc_index table shows which V each component is and
 param$formulas the formulas used. V numbers follow fit$vparameters,
 the order vpredict() uses. Components fixed at the boundary (bound B)
 are reported with a warning and in param$boundary. fa() / rr() terms and models with
@@ -56,7 +56,7 @@ two-trait model (layout of mintyr::w2l_nest() / mintyr::c2p_nest())."><meta prop
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">mintyrasr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.4</span>
       </span>
     </div>
 
@@ -93,7 +93,7 @@ two-trait model (layout of mintyr::w2l_nest() / mintyr::c2p_nest())."><meta prop
       <a href="../articles/relationship-matrices-zh.html">系谱、基因组与一步法：A、G 和 H</a>
     </li>
     <li>
-      <a href="../articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G x E</a>
+      <a href="../articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G×E</a>
     </li>
     <li>
       <a href="../articles/other-models-zh.html">动物模型之外：重复力、母体效应与基因型×环境互作</a>
@@ -167,14 +167,14 @@ two-trait model (layout of mintyr::w2l_nest() / mintyr::c2p_nest())."><meta prop
     <p><code>asr_gblup()</code> runs the whole GBLUP workflow for one scenario directly in R,
 so no input files have to be exported for ASReml:</p><ol><li><p>fits the model to every data set in <code>param</code>: variance components,
 heritability and, for two-trait models, genetic / phenotypic
-correlations plus an LRT of rg = 0 (<code>idh(trait)</code> vs the full genetic
+correlations plus an LRT of r<sub>g</sub> = 0 (<code>idh(trait)</code> vs the full genetic
 structure, <code>boundary = FALSE</code>);</p></li>
 <li><p>refits the model to every training set in <code>cv</code>, with the variance
 components handled as set by <code>cv_vc</code>;</p></li>
 <li><p>predicts GEBVs of the validation individuals (all of them: they have
 no own record, so a low reliability is expected and not filtered by
 default) and returns per fold the predictive ability
-<code>pa = r(y, GEBV)</code>, the accuracy <code>pa / sqrt(h2)</code> (h2 from the full data,
+<code>pa = r(y, GEBV)</code>, the accuracy pa / √h² (h² from the full data,
 Dekkers 2007) and the slope <code>b(y ~ GEBV)</code>;</p></li>
 <li><p>summarises them over folds (n, mean, sd, se), returns the GEBVs of all
 individuals from the full-data fit with their reliability (flag
@@ -186,13 +186,13 @@ stopping the loop; fits that do not converge are first continued with
 <code><a href="https://rdrr.io/r/stats/update.html" class="external-link">update()</a></code> (<code>max_update</code>), and are then skipped (<code>nonconv = "skip"</code>) or
 kept. A progress line per fit shows status, iterations, time and the
 estimated time left.</p>
-<p>h2, rg and rp are built from the <strong>names</strong> of the variance components,
+<p>h², r<sub>g</sub> and r<sub>p</sub> are built from the <strong>names</strong> of the variance components,
 not from fixed <code>V</code> positions, so they stay correct when random effects
 are added (<code>random = ~ ide(id) + litter</code>) or covariance structures change
 (<code>us</code>, <code>idh</code>/<code>diag</code>, <code>corh</code>, <code>corgh</code>):
-h2 = Va / (all variances of the trait), rg = Cov_a / sqrt(Va1 Va2)
-(the correlation itself for <code>corh</code>/<code>corgh</code>), rp = sum of all covariances /
-sqrt(Vp1 Vp2). The <code>vc_index</code> table shows which <code>V</code> each component is and
+h² = V<sub>a</sub> / (all variances of the trait), r<sub>g</sub> = Cov<sub>a</sub> / √(V<sub>a,1</sub> V<sub>a,2</sub>)
+(the correlation itself for <code>corh</code>/<code>corgh</code>), r<sub>p</sub> = sum of all covariances /
+√(V<sub>p,1</sub> V<sub>p,2</sub>). The <code>vc_index</code> table shows which <code>V</code> each component is and
 <code>param$formulas</code> the formulas used. <code>V</code> numbers follow <code>fit$vparameters</code>,
 the order <code>vpredict()</code> uses. Components fixed at the boundary (bound <code>B</code>)
 are reported with a warning and in <code>param$boundary</code>. <code>fa()</code> / <code>rr()</code> terms and models with
@@ -260,9 +260,9 @@ Each row is matched to the row of <code>param</code> that shares its outer colum
 
 
 <dt id="arg-ginv">ginv<a class="anchor" aria-label="anchor" href="#arg-ginv"></a></dt>
-<dd><p>Inverse relationship matrix as used by <code>vm()</code>: A^-1 for
-pedigree BLUP (<code>ainverse(ped)</code>), G^-1 for GBLUP
-(<code>G.inverse(G, sparseform = TRUE)$Ginv.sparse</code>) or H^-1 for single-step
+<dd><p>Inverse relationship matrix as used by <code>vm()</code>: A<sup>−1</sup> for
+pedigree BLUP (<code>ainverse(ped)</code>), G<sup>−1</sup> for GBLUP
+(<code>G.inverse(G, sparseform = TRUE)$Ginv.sparse</code>) or H<sup>−1</sup> for single-step
 GBLUP (<code>H.inverse(...)</code>). It must carry <code>attr(, "INVERSE") = TRUE</code>,
 otherwise <code>vm()</code> takes it as the relationship matrix itself (a warning is
 given). With <code>ainverse()</code>, F is taken from its <code>inbreeding</code> attribute when
@@ -278,7 +278,7 @@ two-trait models every term is nested in trait (<code>trait + trait:hhys</code>)
 <dd><p>Optional one-sided formula of further random effects, e.g.
 <code>~ ide(id)</code> (permanent environment, repeated records), <code>~ litter + pen</code>,
 <code>~ vm(dam, ginv) + ide(dam)</code> (maternal genetic and permanent maternal
-environment), <code>~ vm(id, ginv):herd</code> (genotype x herd interaction; the
+environment), <code>~ vm(id, ginv):herd</code> (genotype × herd interaction; the
 factor is given the variance structure <code>idv(herd)</code> ASReml needs). In
 two-trait models each term gets the structure <code>random_cov</code>. Each term is
 also reported as a proportion of the phenotypic variance
@@ -340,7 +340,7 @@ fit (<code>$gebv</code>): sets <code>reliable = rel &gt;= min_rel</code>; no row
 <dt id="arg-min-n">min_n<a class="anchor" aria-label="anchor" href="#arg-min-n"></a></dt>
 <dd><p>Minimum number of validation individuals with a GEBV and a
 record for PA, accuracy and slope of a fold; fewer gives <code>NA</code>
-(<code>n</code> still shows the number). With a low h2 the reliability filter can
+(<code>n</code> still shows the number). With a low h² the reliability filter can
 leave only a handful of individuals, whose PA and slope are noise.</p></dd>
 
 
@@ -351,7 +351,7 @@ upwards; <code>TRUE</code> reproduces the original scripts.</p></dd>
 
 
 <dt id="arg-test-rg">test_rg<a class="anchor" aria-label="anchor" href="#arg-test-rg"></a></dt>
-<dd><p>Two-trait models only: LRT of rg = 0 (<code>idh(trait)</code> genetic
+<dd><p>Two-trait models only: LRT of r<sub>g</sub> = 0 (<code>idh(trait)</code> genetic
 structure, other structures unchanged, <code>boundary = FALSE</code>). If both
 models end up with the same number of free parameters (df = 0, e.g. a
 restrained covariance), <code>rg_p</code> is <code>NA</code> with a warning.</p></dd>
@@ -361,13 +361,13 @@ restrained covariance), <code>rg_p</code> is <code>NA</code> with a warning.</p>
 <dd><p>Two-trait models only: LRT of <em>all</em> covariances = 0
 (<code>idh</code> for the genetic, extra random and residual terms; <code>df</code> = number
 of covariance / correlation parameters). This tests whether the traits
-are correlated at all, not rp = 0 as such.</p></dd>
+are correlated at all, not r<sub>p</sub> = 0 as such.</p></dd>
 
 
 <dt id="arg-rp">rp<a class="anchor" aria-label="anchor" href="#arg-rp"></a></dt>
 <dd><p>Compute the phenotypic correlation. Set <code>FALSE</code> when no
 individual has records for both traits (e.g. one trait in two herds):
-the residual covariance is then not estimable and rp is not meaningful.</p></dd>
+the residual covariance is then not estimable and r<sub>p</sub> is not meaningful.</p></dd>
 
 
 <dt id="arg-na-x">na_x<a class="anchor" aria-label="anchor" href="#arg-na-x"></a></dt>
@@ -378,8 +378,8 @@ matrix - centre numeric covariates first; ASReml's own default is <code>"fail"</
 
 <dt id="arg-dense">dense<a class="anchor" aria-label="anchor" href="#arg-dense"></a></dt>
 <dd><p>Put the relationship term in <code>dense</code>. <code>"auto"</code> (default):
-yes for a (nearly) full inverse such as G^-1 or H^-1, no for a sparse
-one such as A^-1 from <code>ainverse()</code>, where <code>dense</code> would cost much memory.</p></dd>
+yes for a (nearly) full inverse such as G<sup>−1</sup> or H<sup>−1</sup>, no for a sparse
+one such as A<sup>−1</sup> from <code>ainverse()</code>, where <code>dense</code> would cost much memory.</p></dd>
 
 
 <dt id="arg-maxit">maxit<a class="anchor" aria-label="anchor" href="#arg-maxit"></a></dt>
@@ -389,7 +389,7 @@ default is 13; two-trait GBLUP usually needs more.</p></dd>
 
 <dt id="arg-workspace">workspace<a class="anchor" aria-label="anchor" href="#arg-workspace"></a></dt>
 <dd><p>Passed to <code>asreml()</code>. <code>"auto"</code> (default): estimated from the
-size of the dense part (individuals x traits when the relationship term
+size of the dense part (individuals × traits when the relationship term
 is in <code>dense</code>), at least <code>"512mb"</code>. ASReml reserves the whole workspace
 for every fit, so a large fixed value (e.g. <code>"30Gb"</code>) slows every fit
 down and can exhaust the memory of the computer.</p></dd>
@@ -444,7 +444,7 @@ fits (<code>gebv</code>: gebv, pev, inb (F), rel, reliable).</p></dd>
     <div id="value">
     <h2>Value</h2>
     <p>A list of class <code>asr_gblup</code>:</p><ul><li><p><code>varcomp</code>, <code>vc_index</code>: variance components and which <code>V</code> is which;</p></li>
-<li><p><code>param</code>: h2, rg, rp (+ SE), <code>formulas</code>, <code>status</code>, <code>converge</code>, <code>updates</code>,
+<li><p><code>param</code>: <code>h2</code>, <code>rg</code>, <code>rp</code> (+ SE), <code>formulas</code>, <code>status</code>, <code>converge</code>, <code>updates</code>,
 <code>iterations</code>, <code>loglik</code>, <code>boundary</code>, tests;</p></li>
 <li><p><code>accuracy</code>: one row per fold and trait: <code>status</code>, <code>n</code>, <code>pa</code>, <code>accuracy</code>,
 <code>slope</code>, <code>va</code>, <code>h2_full</code>, <code>cv_converge</code>, <code>cv_updates</code>, <code>cv_iter</code> (length

@@ -39,7 +39,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">mintyrasr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.4</span>
       </span>
     </div>
 
@@ -78,7 +78,7 @@
       <a href="../articles/relationship-matrices-zh.html">系谱、基因组与一步法：A、G 和 H</a>
     </li>
     <li>
-      <a href="../articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G x E</a>
+      <a href="../articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G×E</a>
     </li>
     <li>
       <a href="../articles/other-models-zh.html">动物模型之外：重复力、母体效应与基因型×环境互作</a>
@@ -164,10 +164,10 @@ population</h1>
     
     
 <p><a href="correlations-between-traits-zh.html">中文版</a></p>
-<p>Two-trait models give the genetic correlation (rg) and the phenotypic
-correlation (rp) between two traits measured on the same animals. With
-several populations, they are estimated for every pair of traits in
-every population.</p>
+<p>Two-trait models give the genetic correlation (r<sub>g</sub>) and the
+phenotypic correlation (r<sub>p</sub>) between two traits measured on
+the same animals. With several populations, they are estimated for every
+pair of traits in every population.</p>
 <div class="section level2">
 <h2 id="data-and-trait-pairs">Data and trait pairs<a class="anchor" aria-label="anchor" href="#data-and-trait-pairs"></a>
 </h2>
@@ -206,17 +206,19 @@ use the trait names.</p>
 <td>
 <code>rg</code>, <code>rg_se</code>
 </td>
-<td>genetic correlation Cov_a / sqrt(Va1 Va2)</td>
+<td>genetic correlation Cov<sub>a</sub> / √(V<sub>a,1</sub>
+V<sub>a,2</sub>)</td>
 </tr>
 <tr class="even">
 <td>
 <code>rp</code>, <code>rp_se</code>
 </td>
-<td>phenotypic correlation: all covariances / sqrt(Vp1 Vp2)</td>
+<td>phenotypic correlation: all covariances / √(V<sub>p,1</sub>
+V<sub>p,2</sub>)</td>
 </tr>
 <tr class="odd">
 <td><code>rg_p</code></td>
-<td>LRT of rg = 0: <code>us(trait)</code> against
+<td>LRT of r<sub>g</sub> = 0: <code>us(trait)</code> against
 <code>idh(trait)</code> for the genetic term,
 <code>boundary = FALSE</code>
 </td>
@@ -237,7 +239,7 @@ traits correlated at all</td>
 <p>The model is <code>cbind(value1, value2) ~ trait + trait:hhys</code>,
 <code>us(trait):vm(id, ginv)</code>, <code>units:us(trait)</code>. The
 residual covariance needs animals with records of both traits; it is
-part of rp.</p>
+part of r<sub>p</sub>.</p>
 </div>
 <div class="section level2">
 <h2 id="all-populations-together">All populations together<a class="anchor" aria-label="anchor" href="#all-populations-together"></a>
@@ -270,7 +272,7 @@ part of rp.</p>
 <h2 id="when-a-model-does-not-converge">When a model does not converge<a class="anchor" aria-label="anchor" href="#when-a-model-does-not-converge"></a>
 </h2>
 <ul>
-<li>rg close to +-1 or traits with few joint records: try
+<li>r<sub>g</sub> close to ±1 or traits with few joint records: try
 <code>genetic_cov = "corgh"</code> (the correlation is a parameter of
 its own and its SE comes directly).</li>
 <li>More iterations: <code>max_update</code> (default 2) continues with

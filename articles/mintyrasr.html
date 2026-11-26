@@ -40,7 +40,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">mintyrasr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.4</span>
       </span>
     </div>
 
@@ -79,7 +79,7 @@
       <a href="../articles/relationship-matrices-zh.html">系谱、基因组与一步法：A、G 和 H</a>
     </li>
     <li>
-      <a href="../articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G x E</a>
+      <a href="../articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G×E</a>
     </li>
     <li>
       <a href="../articles/other-models-zh.html">动物模型之外：重复力、母体效应与基因型×环境互作</a>
@@ -173,12 +173,13 @@ ASReml-R 4.</p>
 <p>mintyr prepares the data for the usual comparison of genomic
 prediction models: for every scenario a nested table for
 <strong>parameter estimation</strong> (all records) and a table of
-<strong>training / validation sets</strong> (one row per repeat x fold),
+<strong>training / validation sets</strong> (one row per repeat × fold),
 all validated on the same individuals. mintyrasr takes both tables and,
 for every row:</p>
 <ol style="list-style-type: decimal">
-<li>fits the model to the full data: variance components, h2 and, for
-two traits, rg, rp and an LRT of rg = 0;</li>
+<li>fits the model to the full data: variance components, h² and, for
+two traits, r<sub>g</sub>, r<sub>p</sub> and an LRT of r<sub>g</sub> =
+0;</li>
 <li>refits it to every training set (variance components fixed,
 warm-started or re-estimated);</li>
 <li>predicts the GEBVs of the validation individuals and computes their
@@ -231,9 +232,9 @@ matrix in a form <code>vm()</code> accepts. It must carry
 <code>vm()</code> treats it as G itself (mintyrasr warns);</li>
 <li>
 <strong>inbreeding</strong> (optional): a data.frame
-<code>(id, F)</code> for the reliability
-<code>1 - PEV / ((1 + F) Va)</code>. For GBLUP,
-<code>F = diag(G) - 1</code> is common. Without it, F = 0 is used.</li>
+<code>(id, F)</code> for the reliability 1 − PEV / ((1 + F)
+V<sub>a</sub>). For GBLUP, <code>F = diag(G) - 1</code> is common.
+Without it, F = 0 is used.</li>
 </ul>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">asreml</span><span class="op">)</span></span>
@@ -272,7 +273,7 @@ matrix in a form <code>vm()</code> accepts. It must carry
 <tr class="odd">
 <td><code>st_sp</code></td>
 <td>single-trait, single group</td>
-<td>trait x group</td>
+<td>trait × group</td>
 <td>target group</td>
 </tr>
 <tr class="even">
@@ -284,7 +285,7 @@ matrix in a form <code>vm()</code> accepts. It must carry
 <tr class="odd">
 <td><code>mt_sp</code></td>
 <td>two-trait, single group</td>
-<td>trait pair x group</td>
+<td>trait pair × group</td>
 <td>target group</td>
 </tr>
 <tr class="even">
@@ -313,9 +314,9 @@ matrix in a form <code>vm()</code> accepts. It must carry
 <span><span class="va">res</span><span class="op">$</span><span class="va">st_sp</span><span class="op">$</span><span class="va">summary</span></span>
 <span><span class="va">res</span><span class="op">$</span><span class="va">mt_sp</span><span class="op">$</span><span class="va">param</span></span></code></pre></div>
 <p>Add <code>"mt_bt"</code> to <code>scenarios</code> for one trait
-treated as a different trait in each of two groups (G x E). It is fitted
-with a <code>diag</code> residual and without rp, because no individual
-has records in both groups:</p>
+treated as a different trait in each of two groups (G×E). It is fitted
+with a <code>diag</code> residual and without r<sub>p</sub>, because no
+individual has records in both groups:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">res_bt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/asr_scenarios.html">asr_scenarios</a></span><span class="op">(</span><span class="va">sc</span>, <span class="va">ginv</span>, scenarios <span class="op">=</span> <span class="st">"mt_bt"</span>, fixed <span class="op">=</span> <span class="op">~</span> <span class="va">hhys</span>,</span>
 <span>                        genetic_cov <span class="op">=</span> <span class="st">"corgh"</span>, inbreeding <span class="op">=</span> <span class="va">inbreeding</span><span class="op">)</span></span>
@@ -372,15 +373,17 @@ random / residual), kind (var / cov / cor), traits, used</td>
 </tr>
 <tr class="odd">
 <td><code>param</code></td>
-<td>h2 (two traits: per trait), rg, rp with SE; <code>formulas</code>
-used; <code>status</code>, <code>converge</code>, <code>updates</code>,
+<td>
+<code>h2</code> (two traits: per trait), <code>rg</code>,
+<code>rp</code> with SE; <code>formulas</code> used;
+<code>status</code>, <code>converge</code>, <code>updates</code>,
 <code>iterations</code>, <code>loglik</code>, <code>boundary</code>;
 <code>rg_lrt</code>, <code>rg_p</code> (and <code>cov_*</code> with
 <code>test_rp = TRUE</code>)</td>
 </tr>
 <tr class="even">
 <td><code>accuracy</code></td>
-<td>per repeat x fold x trait: <code>status</code>, <code>n</code>,
+<td>per repeat × fold × trait: <code>status</code>, <code>n</code>,
 <code>pa</code>, <code>accuracy</code>, <code>slope</code>,
 <code>va</code>, <code>h2_full</code>, <code>cv_converge</code>,
 <code>cv_updates</code>, <code>cv_iter</code>
@@ -418,7 +421,7 @@ with time and label</td>
 <code>pa</code> (predictive ability) = r(y, GEBV) on the validation
 individuals;</li>
 <li>
-<code>accuracy</code> = pa / sqrt(h2), with h2 from the full data
+<code>accuracy</code> = pa / √h², with h² from the full data
 (Dekkers 2007);</li>
 <li>
 <code>slope</code> = b(y ~ GEBV); 1 means no inflation or deflation

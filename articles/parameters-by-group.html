@@ -39,7 +39,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">mintyrasr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.4</span>
       </span>
     </div>
 
@@ -78,7 +78,7 @@
       <a href="../articles/relationship-matrices-zh.html">系谱、基因组与一步法：A、G 和 H</a>
     </li>
     <li>
-      <a href="../articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G x E</a>
+      <a href="../articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G×E</a>
     </li>
     <li>
       <a href="../articles/other-models-zh.html">动物模型之外：重复力、母体效应与基因型×环境互作</a>
@@ -164,7 +164,7 @@
     
 <p><a href="parameters-by-group-zh.html">中文版</a></p>
 <p>When the data hold several populations, the genetic parameters often
-differ between them. The usual table is “h2 (SE) of every trait in every
+differ between them. The usual table is “h² (SE) of every trait in every
 group”. With mintyrasr this is one nested table and one call; no
 cross-validation is needed (<code>cv = NULL</code>, the default).</p>
 <div class="section level2">
@@ -213,7 +213,7 @@ which is nested in herd):</p>
 <span><span class="va">res_all</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/asr_gblup.html">asr_gblup</a></span><span class="op">(</span><span class="va">all</span>, ginv <span class="op">=</span> <span class="va">ginv</span>, fixed <span class="op">=</span> <span class="op">~</span> <span class="va">hhys</span> <span class="op">+</span> <span class="va">sex</span>, inbreeding <span class="op">=</span> <span class="va">inbreeding</span><span class="op">)</span></span>
 <span><span class="va">res_all</span><span class="op">$</span><span class="va">param</span><span class="op">[</span>, <span class="fu">.</span><span class="op">(</span><span class="va">name</span>, <span class="va">h2</span>, <span class="va">h2_se</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <p>To test whether the genetic variance differs between groups, or how
-well the groups are genetically connected, see the G x E part of <a href="other-models.html">Beyond the animal model</a> and <a href="same-trait-across-groups.html">The same trait in different
+well the groups are genetically connected, see the G×E part of <a href="other-models.html">Beyond the animal model</a> and <a href="same-trait-across-groups.html">The same trait in different
 populations</a>.</p>
 </div>
 <div class="section level2">
@@ -229,7 +229,7 @@ between traits in each population</a>.</p>
 <ul>
 <li>
 <strong>Group size.</strong> Small groups give large SEs and
-estimates at the boundary (h2 = 0). Check <code>status</code>,
+estimates at the boundary (h² = 0). Check <code>status</code>,
 <code>boundary</code> and <code>res$log</code>; a component fixed at the
 boundary is listed there.</li>
 <li>

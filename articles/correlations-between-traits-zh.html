@@ -39,7 +39,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">mintyrasr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.4</span>
       </span>
     </div>
 
@@ -78,7 +78,7 @@
       <a href="../articles/relationship-matrices-zh.html">系谱、基因组与一步法：A、G 和 H</a>
     </li>
     <li>
-      <a href="../articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G x E</a>
+      <a href="../articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G×E</a>
     </li>
     <li>
       <a href="../articles/other-models-zh.html">动物模型之外：重复力、母体效应与基因型×环境互作</a>
@@ -163,7 +163,7 @@
     
     
 <p><a href="correlations-between-traits.html">English version</a></p>
-<p>两性状模型给出在同一批个体上测定的两个性状之间的遗传相关（rg）和表型相关（rp）。有多个群体时，对每个群体中的每对性状分别估计。</p>
+<p>两性状模型给出在同一批个体上测定的两个性状之间的遗传相关（r<sub>g</sub>）和表型相关（r<sub>p</sub>）。有多个群体时，对每个群体中的每对性状分别估计。</p>
 <div class="section level2">
 <h2 id="数据与性状对">数据与性状对<a class="anchor" aria-label="anchor" href="#%E6%95%B0%E6%8D%AE%E4%B8%8E%E6%80%A7%E7%8A%B6%E5%AF%B9"></a>
 </h2>
@@ -202,17 +202,17 @@ adg，<code>value2</code> 是 bf。<code>param</code> 表保留
 <td>
 <code>rg</code>、<code>rg_se</code>
 </td>
-<td>遗传相关 Cov_a / sqrt(Va1 Va2)</td>
+<td>遗传相关 Cov<sub>a</sub> / √(V<sub>a,1</sub> V<sub>a,2</sub>)</td>
 </tr>
 <tr class="even">
 <td>
 <code>rp</code>、<code>rp_se</code>
 </td>
-<td>表型相关：所有协方差之和 / sqrt(Vp1 Vp2)</td>
+<td>表型相关：所有协方差之和 / √(V<sub>p,1</sub> V<sub>p,2</sub>)</td>
 </tr>
 <tr class="odd">
 <td><code>rg_p</code></td>
-<td>rg = 0 的似然比检验：遗传项 <code>us(trait)</code> 对比
+<td>r<sub>g</sub> = 0 的似然比检验：遗传项 <code>us(trait)</code> 对比
 <code>idh(trait)</code>，<code>boundary = FALSE</code>
 </td>
 </tr>
@@ -231,7 +231,7 @@ adg，<code>value2</code> 是 bf。<code>param</code> 表保留
 </table>
 <p>模型为
 <code>cbind(value1, value2) ~ trait + trait:hhys</code>、<code>us(trait):vm(id, ginv)</code>、<code>units:us(trait)</code>。残差协方差需要有个体同时有两个性状的记录；它是
-rp 的一部分。</p>
+r<sub>p</sub> 的一部分。</p>
 </div>
 <div class="section level2">
 <h2 id="所有群体合并">所有群体合并<a class="anchor" aria-label="anchor" href="#%E6%89%80%E6%9C%89%E7%BE%A4%E4%BD%93%E5%90%88%E5%B9%B6"></a>
@@ -264,7 +264,7 @@ rp 的一部分。</p>
 <h2 id="模型不收敛时">模型不收敛时<a class="anchor" aria-label="anchor" href="#%E6%A8%A1%E5%9E%8B%E4%B8%8D%E6%94%B6%E6%95%9B%E6%97%B6"></a>
 </h2>
 <ul>
-<li>rg 接近 ±1 或两个性状共同记录很少：试试
+<li>r<sub>g</sub> 接近 ±1 或两个性状共同记录很少：试试
 <code>genetic_cov = "corgh"</code>（相关系数本身是一个参数，SE
 直接给出）。</li>
 <li>增加迭代：<code>max_update</code>（默认 2）用 <code><a href="https://rdrr.io/r/stats/update.html" class="external-link">update()</a></code>

@@ -39,7 +39,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">mintyrasr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.4</span>
       </span>
     </div>
 
@@ -78,7 +78,7 @@
       <a href="../articles/relationship-matrices-zh.html">系谱、基因组与一步法：A、G 和 H</a>
     </li>
     <li>
-      <a href="../articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G x E</a>
+      <a href="../articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G×E</a>
     </li>
     <li>
       <a href="../articles/other-models-zh.html">动物模型之外：重复力、母体效应与基因型×环境互作</a>
@@ -166,7 +166,7 @@
 <p>Is growth in herd nls genetically the same trait as growth in herd
 bfs? If the genetic correlation between the two is high (say above 0.8),
 the best animals are the same in both herds; a lower value means
-re-ranking - genotype x environment interaction. The trait in each
+re-ranking - genotype × environment interaction. The trait in each
 population is treated as a separate trait in a two-trait model.</p>
 <div class="section level2">
 <h2 id="data-one-column-per-population">Data: one column per population<a class="anchor" aria-label="anchor" href="#data-one-column-per-population"></a>
@@ -204,11 +204,12 @@ in each population.</li>
 <code>rg</code>: genetic correlation between the populations. With
 <code>genetic_cov = "corgh"</code> it is a parameter of the model and
 its SE comes directly; <code>"us"</code> gives the same value through
-Cov / sqrt(Va1 Va2).</li>
+Cov<sub>a</sub> / √(V<sub>a,1</sub> V<sub>a,2</sub>).</li>
 <li>
-<code>rg_p</code>: LRT of rg = 0. The more interesting question is
-usually whether rg is below 1: compare the model with a correlation
-fixed close to 1 in <code>asreml()</code> (a boundary test).</li>
+<code>rg_p</code>: LRT of r<sub>g</sub> = 0. The more interesting
+question is usually whether r<sub>g</sub> is below 1: compare the model
+with a correlation fixed close to 1 in <code>asreml()</code> (a boundary
+test).</li>
 </ul>
 </div>
 <div class="section level2">
@@ -218,8 +219,8 @@ fixed close to 1 in <code>asreml()</code> (a boundary test).</li>
 <strong>same individual</strong>. An animal is tested in one herd only,
 so its residuals in the two herds can never be observed together: the
 residual covariance is not estimable and is left out
-(<code>residual_cov = "diag"</code>), and rp - which needs it - is not
-defined (<code>rp = FALSE</code>).
+(<code>residual_cov = "diag"</code>), and r<sub>p</sub> - which needs it
+- is not defined (<code>rp = FALSE</code>).
 <code>asr_scenarios(scenarios = "mt_bt")</code> sets both for you.</p>
 <p>Only if the same animals have records in both populations (e.g. the
 same animals tested in two environments) can you use
@@ -228,14 +229,14 @@ same animals tested in two environments) can you use
 <div class="section level2">
 <h2 id="what-the-data-must-allow">What the data must allow<a class="anchor" aria-label="anchor" href="#what-the-data-must-allow"></a>
 </h2>
-<p>rg between populations is estimated only from animals that are
-related across the populations: common sires, related dams, genomic
+<p>r<sub>g</sub> between populations is estimated only from animals that
+are related across the populations: common sires, related dams, genomic
 relationships. With weak ties the likelihood is flat:</p>
 <ul>
 <li>with <code>us</code>, the covariance stays near 0 and ASReml reports
 it as restrained; the LRT then has df = 0 and mintyrasr gives
 <code>rg_p = NA</code> with a log entry;</li>
-<li>with <code>corgh</code>, the correlation runs to the boundary (+-1)
+<li>with <code>corgh</code>, the correlation runs to the boundary (±1)
 without SE; it is listed in <code>boundary</code> and in
 <code>res$log</code>.</li>
 </ul>

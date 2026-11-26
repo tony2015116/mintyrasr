@@ -39,7 +39,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">mintyrasr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.4</span>
       </span>
     </div>
 
@@ -78,7 +78,7 @@
       <a href="../articles/relationship-matrices-zh.html">系谱、基因组与一步法：A、G 和 H</a>
     </li>
     <li>
-      <a href="../articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G x E</a>
+      <a href="../articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G×E</a>
     </li>
     <li>
       <a href="../articles/other-models-zh.html">动物模型之外：重复力、母体效应与基因型×环境互作</a>
@@ -164,7 +164,7 @@
     
 <p><a href="parameters-by-group.html">English version</a></p>
 <p>数据中有多个群体时，各群体的遗传参数往往不同。常见的结果表是”每个群体、每个性状的
-h2（SE）“。用 mintyrasr
+h²（SE）“。用 mintyrasr
 只需一张嵌套表和一次调用，不需要交叉验证（<code>cv = NULL</code>，默认值）。</p>
 <div class="section level2">
 <h2 id="数据">数据<a class="anchor" aria-label="anchor" href="#%E6%95%B0%E6%8D%AE"></a>
@@ -221,7 +221,7 @@ h2（SE）“。用 mintyrasr
 </h2>
 <ul>
 <li>
-<strong>群体大小。</strong> 小群体的 SE 大，估计值容易落在边界上（h2
+<strong>群体大小。</strong> 小群体的 SE 大，估计值容易落在边界上（h²
 = 0）。请检查 <code>status</code>、<code>boundary</code> 和
 <code>res$log</code>；落在边界上的组分会列在那里。</li>
 <li>

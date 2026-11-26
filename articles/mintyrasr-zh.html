@@ -39,7 +39,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">mintyrasr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.4</span>
       </span>
     </div>
 
@@ -78,7 +78,7 @@
       <a href="../articles/relationship-matrices-zh.html">系谱、基因组与一步法：A、G 和 H</a>
     </li>
     <li>
-      <a href="../articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G x E</a>
+      <a href="../articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G×E</a>
     </li>
     <li>
       <a href="../articles/other-models-zh.html">动物模型之外：重复力、母体效应与基因型×环境互作</a>
@@ -174,8 +174,8 @@
 折”一行），所有场景在同一批个体上验证。mintyrasr
 接过这两张表，对每一行：</p>
 <ol style="list-style-type: decimal">
-<li>用全部数据拟合模型：方差组分、h2；两性状再加 rg、rp 和 rg = 0
-的似然比检验；</li>
+<li>用全部数据拟合模型：方差组分、h²；两性状再加
+r<sub>g</sub>、r<sub>p</sub> 和 r<sub>g</sub> = 0 的似然比检验；</li>
 <li>用每个训练集重新拟合（方差组分固定、以全数据为初值重估，或完全重估）；</li>
 <li>预测验证个体的 GEBV，计算可靠性、预测能力、准确性和回归系数；</li>
 <li>按折汇总，每个场景写一个 Excel 工作簿。</li>
@@ -224,9 +224,9 @@ ID、分组列（场、品系……）、固定效应和性状；</li>
 会把它当成 G 本身（mintyrasr 会警告）；</li>
 <li>
 <strong>近交系数</strong>（可选）：数据框
-<code>(id, F)</code>，用于可靠性
-<code>1 - PEV / ((1 + F) Va)</code>。GBLUP 常用
-<code>F = diag(G) - 1</code>；不提供时 F = 0。</li>
+<code>(id, F)</code>，用于可靠性 1 − PEV / ((1 + F)
+V<sub>a</sub>)。GBLUP 常用 <code>F = diag(G) - 1</code>；不提供时 F =
+0。</li>
 </ul>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">asreml</span><span class="op">)</span></span>
@@ -307,7 +307,7 @@ ID、分组列（场、品系……）、固定效应和性状；</li>
 <span><span class="va">res</span><span class="op">$</span><span class="va">mt_sp</span><span class="op">$</span><span class="va">param</span></span></code></pre></div>
 <p>在 <code>scenarios</code> 中加入
 <code>"mt_bt"</code>，就是把同一性状在两个群体当作两个性状（G×E）。没有个体同时有两个群体的记录，所以自动用
-<code>diag</code> 残差，不算 rp：</p>
+<code>diag</code> 残差，不算 r<sub>p</sub>：</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">res_bt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/asr_scenarios.html">asr_scenarios</a></span><span class="op">(</span><span class="va">sc</span>, <span class="va">ginv</span>, scenarios <span class="op">=</span> <span class="st">"mt_bt"</span>, fixed <span class="op">=</span> <span class="op">~</span> <span class="va">hhys</span>,</span>
 <span>                        genetic_cov <span class="op">=</span> <span class="st">"corgh"</span>, inbreeding <span class="op">=</span> <span class="va">inbreeding</span><span class="op">)</span></span>
@@ -361,7 +361,9 @@ residual）、类型（var / cov / cor）、性状、是否使用</td>
 </tr>
 <tr class="odd">
 <td><code>param</code></td>
-<td>h2（两性状分性状）、rg、rp 及 SE；实际用的
+<td>
+<code>h2</code>（两性状分性状）、<code>rg</code>、<code>rp</code> 及
+SE；实际用的
 <code>formulas</code>；<code>status</code>、<code>converge</code>、<code>updates</code>、<code>iterations</code>、<code>loglik</code>、<code>boundary</code>；<code>rg_lrt</code>、<code>rg_p</code>（<code>test_rp = TRUE</code>
 时还有 <code>cov_*</code>）</td>
 </tr>
@@ -400,7 +402,7 @@ n、mean、sd、se</td>
 <li>
 <code>pa</code>（预测能力）= 验证个体的 r(y, GEBV)；</li>
 <li>
-<code>accuracy</code>（准确性）= pa / sqrt(h2)，h2
+<code>accuracy</code>（准确性）= pa / √h²，h²
 用全数据估计值（Dekkers 2007）；</li>
 <li>
 <code>slope</code> = b(y ~ GEBV)，等于 1 表示 GEBV

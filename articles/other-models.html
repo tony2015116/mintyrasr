@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Beyond the animal model: repeatability, maternal effects and G x E • mintyrasr</title>
+<title>Beyond the animal model: repeatability, maternal effects and G×E • mintyrasr</title>
 <!-- favicons --><link rel="icon" type="image/png" sizes="48x48" href="../favicon-48x48.png">
 <link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
 <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
 <!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
 <script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
-<meta property="og:title" content="Beyond the animal model: repeatability, maternal effects and G x E">
+<meta property="og:title" content="Beyond the animal model: repeatability, maternal effects and G×E">
 <meta property="og:description" content="Permanent environment, litter, maternal genetic and maternal environment effects, and genotype x environment interaction - with the variance proportions mintyrasr reports for each.">
 <meta property="og:image" content="https://tony2015116.github.io/mintyrasr/logo.svg">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
@@ -39,7 +39,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">mintyrasr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.4</span>
       </span>
     </div>
 
@@ -78,7 +78,7 @@
       <a href="../articles/relationship-matrices-zh.html">系谱、基因组与一步法：A、G 和 H</a>
     </li>
     <li>
-      <a href="../articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G x E</a>
+      <a href="../articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G×E</a>
     </li>
     <li>
       <a href="../articles/other-models-zh.html">动物模型之外：重复力、母体效应与基因型×环境互作</a>
@@ -153,7 +153,7 @@
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Beyond the animal model: repeatability, maternal
-effects and G x E</h1>
+effects and G×E</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/tony2015116/mintyrasr/blob/main/vignettes/articles/other-models.Rmd" class="external-link"><code>vignettes/articles/other-models.Rmd</code></a></small>
@@ -183,23 +183,25 @@ reports:</p>
 <tr class="odd">
 <td>
 <code>h2</code> (<code>h2_&lt;trait&gt;</code>)</td>
-<td>Va / Vp, where Vp is the sum of <strong>all</strong> variances:
-genetic, every extra term, residual</td>
+<td>V<sub>a</sub> / V<sub>p</sub>, where V<sub>p</sub> is the sum of
+<strong>all</strong> variances: genetic, every extra term, residual</td>
 </tr>
 <tr class="even">
 <td><code>prop_&lt;term&gt;</code></td>
-<td>variance of that term / Vp, e.g. <code>prop_litter</code> (c²),
-<code>prop_ide_id</code> (pe²), <code>prop_vm_dam_ginv</code> (m²)</td>
+<td>variance of that term / V<sub>p</sub>, e.g. <code>prop_litter</code>
+(c²), <code>prop_ide_id</code> (pe²), <code>prop_vm_dam_ginv</code>
+(m²)</td>
 </tr>
 <tr class="odd">
 <td><code>rep</code></td>
-<td>repeatability (Va + Vpe) / Vp, when <code>ide(&lt;id&gt;)</code> is
-in the model</td>
+<td>repeatability (V<sub>a</sub> + V<sub>pe</sub>) / V<sub>p</sub>, when
+<code>ide(&lt;id&gt;)</code> is in the model</td>
 </tr>
 <tr class="even">
 <td><code>rB_&lt;X&gt;</code></td>
-<td>type-B genetic correlation Va / (Va + V_GxX), when
-<code>vm(&lt;id&gt;, ginv):X</code> is in the model</td>
+<td>type-B genetic correlation V<sub>a</sub> / (V<sub>a</sub> +
+V<sub>G×X</sub>), when <code>vm(&lt;id&gt;, ginv):X</code> is in the
+model</td>
 </tr>
 </tbody>
 </table>
@@ -210,7 +212,7 @@ the <code>vc_index</code> table of a first run.</p>
 <h2 id="repeated-records-repeatability">Repeated records: repeatability<a class="anchor" aria-label="anchor" href="#repeated-records-repeatability"></a>
 </h2>
 <p>Animals with several records (parities, test days) need a permanent
-environment effect; without it h2 is inflated:</p>
+environment effect; without it h² is inflated:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">nest</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://tony2015116.github.io/mintyr/reference/w2l_nest.html" class="external-link">w2l_nest</a></span><span class="op">(</span><span class="va">pheno_rep</span>, cols <span class="op">=</span> <span class="st">"litter_size"</span>, out_type <span class="op">=</span> <span class="st">"df"</span><span class="op">)</span></span>
 <span><span class="va">res</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/asr_gblup.html">asr_gblup</a></span><span class="op">(</span><span class="va">nest</span>, ginv <span class="op">=</span> <span class="va">ginv</span>, fixed <span class="op">=</span> <span class="op">~</span> <span class="va">parity</span> <span class="op">+</span> <span class="va">hys</span>, random <span class="op">=</span> <span class="op">~</span> <span class="fu">ide</span><span class="op">(</span><span class="va">id</span><span class="op">)</span><span class="op">)</span></span>
@@ -237,8 +239,8 @@ animal would stay in the training set.</p>
 <h2 id="maternal-effects">Maternal effects<a class="anchor" aria-label="anchor" href="#maternal-effects"></a>
 </h2>
 <p>The dam’s genetic effect needs the dams in the relationship matrix,
-which is usually true for A^-1 and H^-1 (pedigree) and for G^-1 only if
-the dams are genotyped. The data need a <code>dam</code> column.</p>
+which is usually true for A⁻¹ and H⁻¹ (pedigree) and for G⁻¹ only if the
+dams are genotyped. The data need a <code>dam</code> column.</p>
 <table class="table">
 <thead><tr class="header">
 <th>model</th>
@@ -249,17 +251,20 @@ the dams are genotyped. The data need a <code>dam</code> column.</p>
 <tr class="odd">
 <td>M1 maternal genetic</td>
 <td><code>~ vm(dam, ginv)</code></td>
-<td>Va, Vm, Ve</td>
+<td>V<sub>a</sub>, V<sub>m</sub>, V<sub>e</sub>
+</td>
 </tr>
 <tr class="even">
 <td>M2 maternal environment</td>
 <td><code>~ ide(dam)</code></td>
-<td>Va, Vc, Ve</td>
+<td>V<sub>a</sub>, V<sub>c</sub>, V<sub>e</sub>
+</td>
 </tr>
 <tr class="odd">
 <td>M3 both</td>
 <td><code>~ vm(dam, ginv) + ide(dam)</code></td>
-<td>Va, Vm, Vc, Ve</td>
+<td>V<sub>a</sub>, V<sub>m</sub>, V<sub>c</sub>, V<sub>e</sub>
+</td>
 </tr>
 </tbody>
 </table>
@@ -284,7 +289,8 @@ needs
 <code>str(~ vm(id, ainv) + vm(dam, ainv), ~ us(2):vm(id, ainv))</code>,
 which replaces the direct genetic term. mintyrasr does not build it; fit
 it with <code>asreml()</code> and use the formulas of the ASReml-R
-cookbook (with V1 = Va, V2 = Cov(a,m), V3 = Vm, V4 = Vc, V5 = Ve):</p>
+cookbook (with V1 = V<sub>a</sub>, V2 = Cov(a,m), V3 = V<sub>m</sub>, V4
+= V<sub>c</sub>, V5 = V<sub>e</sub>):</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">m4</span> <span class="op">&lt;-</span> <span class="fu">asreml</span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">sex</span> <span class="op">+</span> <span class="va">hys</span>,</span>
 <span>             random <span class="op">=</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="op">~</span> <span class="fu">vm</span><span class="op">(</span><span class="va">id</span>, <span class="va">ainv</span><span class="op">)</span> <span class="op">+</span> <span class="fu">vm</span><span class="op">(</span><span class="va">dam</span>, <span class="va">ainv</span><span class="op">)</span>, <span class="op">~</span> <span class="fu">us</span><span class="op">(</span><span class="fl">2</span><span class="op">)</span><span class="op">:</span><span class="fu">vm</span><span class="op">(</span><span class="va">id</span>, <span class="va">ainv</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu">ide</span><span class="op">(</span><span class="va">dam</span><span class="op">)</span>,</span>
@@ -295,10 +301,10 @@ cookbook (with V1 = Va, V2 = Cov(a,m), V3 = Vm, V4 = Vc, V5 = Ve):</p>
 <span><span class="fu">vpredict</span><span class="op">(</span><span class="va">m4</span>, <span class="va">h2_T</span> <span class="op">~</span> <span class="op">(</span><span class="va">V1</span> <span class="op">+</span> <span class="fl">1.5</span> <span class="op">*</span> <span class="va">V2</span> <span class="op">+</span> <span class="fl">0.5</span> <span class="op">*</span> <span class="va">V3</span><span class="op">)</span> <span class="op">/</span> <span class="op">(</span><span class="va">V1</span> <span class="op">+</span> <span class="va">V2</span> <span class="op">+</span> <span class="va">V3</span> <span class="op">+</span> <span class="va">V4</span> <span class="op">+</span> <span class="va">V5</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="genotype-x-environment">Genotype x environment<a class="anchor" aria-label="anchor" href="#genotype-x-environment"></a>
+<h2 id="genotype-environment">Genotype × environment<a class="anchor" aria-label="anchor" href="#genotype-environment"></a>
 </h2>
 <p><strong>Compound symmetry</strong> (one genetic variance plus a
-genotype x environment variance; works with many environments, assumes
+genotype × environment variance; works with many environments, assumes
 the same genetic variance and the same correlation between all pairs of
 environments):</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
@@ -310,12 +316,14 @@ environments):</p>
 <code>vm()</code>; mintyrasr writes <code>vm(id, ginv):test_herd</code>
 as <code>vm(id, relmat):idv(test_herd)</code> for you (you can also
 write the <code>idv()</code> yourself).</p>
-<p><code>rB_test_herd</code> = Va / (Va + V_GxE) is the genetic
-correlation between herds. <code>h2</code> uses Vp = Va + V_GxE + Ve;
-the heritability within one herd is (Va + V_GxE) / Vp, available through
+<p><code>rB_test_herd</code> = V<sub>a</sub> / (V<sub>a</sub> +
+V<sub>G×E</sub>) is the genetic correlation between herds.
+<code>h2</code> uses V<sub>p</sub> = V<sub>a</sub> + V<sub>G×E</sub> +
+V<sub>e</sub>; the heritability within one herd is (V<sub>a</sub> +
+V<sub>G×E</sub>) / V<sub>p</sub>, available through
 <code>vpredict</code>.</p>
 <p><strong>One trait per environment</strong> (heterogeneous variances,
-an rg for each pair of environments): treat the trait in each
+an r<sub>g</sub> for each pair of environments): treat the trait in each
 environment as a separate trait. See <a href="same-trait-across-groups.html">The same trait in different
 populations</a>.</p>
 <p><strong>Many environments</strong> (5 or more): factor-analytic
@@ -326,7 +334,7 @@ mintyrasr - fit them with <code>asreml()</code>.</p>
 <h2 id="two-trait-models-with-extra-terms">Two-trait models with extra terms<a class="anchor" aria-label="anchor" href="#two-trait-models-with-extra-terms"></a>
 </h2>
 <p>Every extra term gets <code>random_cov</code> and enters both the
-variances (h2) and the covariances (rp) of the traits:</p>
+variances (h²) and the covariances (r<sub>p</sub>) of the traits:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/asr_gblup.html">asr_gblup</a></span><span class="op">(</span><span class="va">pairs</span>, ginv <span class="op">=</span> <span class="va">ginv</span>, fixed <span class="op">=</span> <span class="op">~</span> <span class="va">hhys</span>, random <span class="op">=</span> <span class="op">~</span> <span class="va">litter</span>, random_cov <span class="op">=</span> <span class="st">"us"</span><span class="op">)</span></span>
 <span><span class="co"># prop_litter_value1, prop_litter_value2; rp includes the litter covariance</span></span></code></pre></div>

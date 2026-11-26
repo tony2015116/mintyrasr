@@ -39,7 +39,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">mintyrasr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.4</span>
       </span>
     </div>
 
@@ -78,7 +78,7 @@
       <a href="../articles/relationship-matrices-zh.html">系谱、基因组与一步法：A、G 和 H</a>
     </li>
     <li>
-      <a href="../articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G x E</a>
+      <a href="../articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G×E</a>
     </li>
     <li>
       <a href="../articles/other-models-zh.html">动物模型之外：重复力、母体效应与基因型×环境互作</a>
@@ -198,11 +198,11 @@ ID，固定效应需要另外并回。）</p>
 <code>h2_nls</code>、<code>h2_bfs</code>：该性状在各群体中的遗传力。</li>
 <li>
 <code>rg</code>：群体间的遗传相关。<code>genetic_cov = "corgh"</code>
-时它是模型的一个参数，SE 直接给出；<code>"us"</code> 通过 Cov / sqrt(Va1
-Va2) 得到同样的值。</li>
+时它是模型的一个参数，SE 直接给出；<code>"us"</code> 通过
+Cov<sub>a</sub> / √(V<sub>a,1</sub> V<sub>a,2</sub>) 得到同样的值。</li>
 <li>
-<code>rg_p</code>：rg = 0 的似然比检验。通常更关心的是 rg 是否小于
-1：在 <code>asreml()</code> 中把相关固定为接近 1
+<code>rg_p</code>：r<sub>g</sub> = 0 的似然比检验。通常更关心的是
+r<sub>g</sub> 是否小于 1：在 <code>asreml()</code> 中把相关固定为接近 1
 的值再比较（边界检验）。</li>
 </ul>
 </div>
@@ -210,7 +210,7 @@ Va2) 得到同样的值。</li>
 <h2 id="为什么这里没有表型相关">为什么这里没有表型相关<a class="anchor" aria-label="anchor" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%BF%99%E9%87%8C%E6%B2%A1%E6%9C%89%E8%A1%A8%E5%9E%8B%E7%9B%B8%E5%85%B3"></a>
 </h2>
 <p>表型相关要求两个性状在<strong>同一个体</strong>上测定。每个个体只在一个场测定，它在两个场的残差永远不可能同时观测到：残差协方差无法估计，所以去掉（<code>residual_cov = "diag"</code>）；需要它的
-rp
+r<sub>p</sub>
 也就没有定义（<code>rp = FALSE</code>）。<code>asr_scenarios(scenarios = "mt_bt")</code>
 会自动这样设置。</p>
 <p>只有同一批个体在两个群体都有记录时（例如同一批个体在两种环境下测定），才可以用
@@ -219,7 +219,7 @@ rp
 <div class="section level2">
 <h2 id="数据需要满足的条件">数据需要满足的条件<a class="anchor" aria-label="anchor" href="#%E6%95%B0%E6%8D%AE%E9%9C%80%E8%A6%81%E6%BB%A1%E8%B6%B3%E7%9A%84%E6%9D%A1%E4%BB%B6"></a>
 </h2>
-<p>群体间的 rg
+<p>群体间的 r<sub>g</sub>
 只能从跨群体相关的个体中估计：共同的公畜、有亲缘的母畜、基因组关系。联系很弱时似然函数很平：</p>
 <ul>
 <li>用 <code>us</code> 时，协方差停在 0 附近，ASReml

@@ -39,7 +39,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">mintyrasr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.4</span>
       </span>
     </div>
 
@@ -78,7 +78,7 @@
       <a href="../articles/relationship-matrices-zh.html">系谱、基因组与一步法：A、G 和 H</a>
     </li>
     <li>
-      <a href="../articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G x E</a>
+      <a href="../articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G×E</a>
     </li>
     <li>
       <a href="../articles/other-models-zh.html">动物模型之外：重复力、母体效应与基因型×环境互作</a>
@@ -225,7 +225,7 @@
 G⁻¹ 或 H⁻¹，关系项放进 <code>dense</code>；对稀疏的 A⁻¹
 不放，否则会占用大量内存。选择结果显示在第一行进度信息里。</li>
 <li>
-<strong>可靠性 <code>1 - PEV / ((1 + F) Va)</code>
+<strong>可靠性 1 − PEV / ((1 + F) V<sub>a</sub>)
 中的近交系数</strong>：用 <code>ainverse()</code> 且
 <code>inbreeding = NULL</code> 时，F 自动取自它的
 <code>inbreeding</code> 属性。G 用 <code>diag(G) - 1</code>；H 通常用
@@ -276,7 +276,8 @@ G⁻¹ 或 H⁻¹，关系项放进 <code>dense</code>；对稀疏的 A⁻¹
 <strong>ID 必须一致</strong>：表型、系谱和基因型中的 ID
 要对得上；有表型但不在矩阵中的个体，mintyrasr 会警告。</li>
 <li>
-<strong>ssGBLUP 需要相容的 G</strong>：构建 H 之前先把 G 与 A22
+<strong>ssGBLUP 需要相容的 G</strong>：构建 H 之前先把 G 与
+A<sub>22</sub>
 对齐（尺度和水平），否则基因组部分与系谱部分不匹配，预测有偏，表现为回归系数明显偏离
 1。</li>
 </ul>

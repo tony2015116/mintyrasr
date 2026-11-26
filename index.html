@@ -40,7 +40,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">mintyrasr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.4</span>
       </span>
     </div>
 
@@ -79,7 +79,7 @@
       <a href="articles/relationship-matrices-zh.html">系谱、基因组与一步法：A、G 和 H</a>
     </li>
     <li>
-      <a href="articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G x E</a>
+      <a href="articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G×E</a>
     </li>
     <li>
       <a href="articles/other-models-zh.html">动物模型之外：重复力、母体效应与基因型×环境互作</a>
@@ -166,21 +166,21 @@
 <pre><code>phenotypes ─► mintyr::cv_scenarios() ─► asr_scenarios() / asr_gblup() ─► varcomp · h2 · rg · rp · PA · accuracy · slope ─► xlsx</code></pre>
 <ul>
 <li>
-<strong>Four (five) scenarios in one call</strong>: single-trait / two-trait x single group / groups combined, plus one trait as a different trait per group (<code>mt_bt</code>, G x E).</li>
+<strong>Four (five) scenarios in one call</strong>: single-trait / two-trait × single group / groups combined, plus one trait as a different trait per group (<code>mt_bt</code>, G×E).</li>
 <li>
-<strong>Genetic parameters that follow the model</strong>: h2, rg and rp are built from the <em>names</em> of the variance components, not from fixed <code>V1</code>, <code>V2</code>, … positions, so they stay right when you add random effects (<code>~ ide(id) + litter</code>) or change structures (<code>us</code>, <code>idh</code>, <code>corv</code>, <code>corh</code>, <code>corgh</code>). The <code>vc_index</code> table shows which <code>V</code> is which component.</li>
+<strong>Genetic parameters that follow the model</strong>: h², r<sub>g</sub> and r<sub>p</sub> are built from the <em>names</em> of the variance components, not from fixed <code>V1</code>, <code>V2</code>, … positions, so they stay right when you add random effects (<code>~ ide(id) + litter</code>) or change structures (<code>us</code>, <code>idh</code>, <code>corv</code>, <code>corh</code>, <code>corgh</code>). The <code>vc_index</code> table shows which <code>V</code> is which component.</li>
 <li>
-<strong>Correct tests</strong>: LRT of rg = 0 against <code>idh(trait)</code> with <code>boundary = FALSE</code>; optional joint test of all covariances.</li>
+<strong>Correct tests</strong>: LRT of r<sub>g</sub> = 0 against <code>idh(trait)</code> with <code>boundary = FALSE</code>; optional joint test of all covariances.</li>
 <li>
 <strong>Three ways to treat variance components in cross-validation</strong>: fixed at the full-data estimates (fast), warm-started, or re-estimated per fold (no leakage).</li>
 <li>
-<strong>Per fold</strong>: predictive ability <code>r(y, GEBV)</code>, accuracy <code>PA / sqrt(h2)</code>, slope <code>b(y ~ GEBV)</code> on all validation individuals (no reliability filter); final GEBVs with reliability <code>1 - PEV / ((1 + F) Va)</code>.</li>
+<strong>Per fold</strong>: predictive ability <code>r(y, GEBV)</code>, accuracy PA / √h², slope <code>b(y ~ GEBV)</code> on all validation individuals (no reliability filter); final GEBVs with reliability 1 − PEV / ((1 + F) V<sub>a</sub>).</li>
 <li>
-<strong>Pedigree, genomic or single-step</strong>: pass A^-1, G^-1 or H^-1; compare them on the same folds with <code><a href="reference/asr_compare.html">asr_compare()</a></code>.</li>
+<strong>Pedigree, genomic or single-step</strong>: pass A⁻¹, G⁻¹ or H⁻¹; compare them on the same folds with <code><a href="reference/asr_compare.html">asr_compare()</a></code>.</li>
 <li>
-<strong>More than the animal model</strong>: repeatability, litter, maternal genetic and environment effects, G x E, with their variance proportions.</li>
+<strong>More than the animal model</strong>: repeatability, litter, maternal genetic and environment effects, G×E, with their variance proportions.</li>
 <li>
-<strong>Parameters only</strong>: <code>cv = NULL</code> gives h2, rg, rp for every group or trait pair without cross-validation.</li>
+<strong>Parameters only</strong>: <code>cv = NULL</code> gives h², r<sub>g</sub>, r<sub>p</sub> for every group or trait pair without cross-validation.</li>
 <li>
 <strong>Safe long runs</strong>: progress and time left, <code><a href="https://rdrr.io/r/stats/update.html" class="external-link">update()</a></code> for fits that have not converged, non-converged fits skipped and every problem recorded in <code>$log</code> without stopping the loop.</li>
 </ul>
@@ -213,7 +213,7 @@
 <li><a href="https://tony2015116.github.io/mintyrasr/articles/mintyrasr.html">Get started</a></li>
 <li><a href="https://tony2015116.github.io/mintyrasr/articles/models.html">Models and genetic parameters</a></li>
 <li><a href="https://tony2015116.github.io/mintyrasr/articles/relationship-matrices.html">Pedigree, genomic and single-step</a></li>
-<li><a href="https://tony2015116.github.io/mintyrasr/articles/other-models.html">Repeatability, maternal effects and G x E</a></li>
+<li><a href="https://tony2015116.github.io/mintyrasr/articles/other-models.html">Repeatability, maternal effects and G×E</a></li>
 <li><a href="https://tony2015116.github.io/mintyrasr/articles/parameters-by-group.html">Genetic parameters for each group</a></li>
 <li><a href="https://tony2015116.github.io/mintyrasr/articles/correlations-between-traits.html">Correlations between traits in each population</a></li>
 <li><a href="https://tony2015116.github.io/mintyrasr/articles/same-trait-across-groups.html">The same trait in different populations</a></li>
@@ -226,13 +226,13 @@
 <p><strong>mintyrasr</strong> 直接在 <a href="https://tony2015116.github.io/mintyr/" class="external-link">mintyr</a> 生成的嵌套数据上，用 ASReml-R 完成 GBLUP 参数估计和交叉验证，无需导出任何输入文件。</p>
 <ul>
 <li><p><strong>一次跑完所有场景</strong>：单性状 / 两性状 × 单群体 / 多群体，以及同一性状在不同群体当作不同性状（<code>mt_bt</code>，G×E）。</p></li>
-<li><p><strong>遗传参数跟着模型走</strong>：h2、rg、rp 按方差组分的<em>名字</em>自动生成 vpredict 公式，不再写死 <code>V1</code>、<code>V2</code>……； 加随机效应（<code>~ ide(id) + litter</code>）或换结构（<code>us</code>、<code>idh</code>、<code>corv</code>、<code>corh</code>、<code>corgh</code>）都不会算错，<code>vc_index</code> 表列出每个 V 对应的组分。</p></li>
-<li><p><strong>检验正确</strong>：rg = 0 用 <code>idh(trait)</code> 对照、<code>boundary = FALSE</code>；可选所有协方差的联合检验。</p></li>
+<li><p><strong>遗传参数跟着模型走</strong>：h²、r<sub>g</sub>、r<sub>p</sub> 按方差组分的<em>名字</em>自动生成 vpredict 公式，不再写死 <code>V1</code>、<code>V2</code>……； 加随机效应（<code>~ ide(id) + litter</code>）或换结构（<code>us</code>、<code>idh</code>、<code>corv</code>、<code>corh</code>、<code>corgh</code>）都不会算错，<code>vc_index</code> 表列出每个 V 对应的组分。</p></li>
+<li><p><strong>检验正确</strong>：r<sub>g</sub> = 0 用 <code>idh(trait)</code> 对照、<code>boundary = FALSE</code>；可选所有协方差的联合检验。</p></li>
 <li><p><strong>交叉验证中方差组分三种处理</strong>：固定为全数据估计值（快）、以全数据为初值重估、每折完全重估（无信息泄漏）。</p></li>
-<li><p><strong>每折输出</strong>：在全部验证个体上（不按可靠性过滤）计算预测能力 <code>r(y, GEBV)</code>、准确性 <code>PA / sqrt(h2)</code>、回归系数 <code>b(y ~ GEBV)</code>；最终 GEBV 附可靠性 <code>1 - PEV / ((1 + F) Va)</code>。</p></li>
+<li><p><strong>每折输出</strong>：在全部验证个体上（不按可靠性过滤）计算预测能力 <code>r(y, GEBV)</code>、准确性 PA / √h²、回归系数 <code>b(y ~ GEBV)</code>；最终 GEBV 附可靠性 1 − PEV / ((1 + F) V<sub>a</sub>)。</p></li>
 <li><p><strong>系谱、基因组或一步法</strong>：传入 A⁻¹、G⁻¹ 或 H⁻¹；用 <code><a href="reference/asr_compare.html">asr_compare()</a></code> 在同一套分折上比较。</p></li>
 <li><p><strong>不止动物模型</strong>：重复力、窝效应、母体遗传与母体环境效应、基因型×环境互作，并给出各方差比例。</p></li>
-<li><p><strong>只估计参数</strong>：<code>cv = NULL</code> 时，不做交叉验证，直接给出每个群体或每对性状的 h2、rg、rp。</p></li>
+<li><p><strong>只估计参数</strong>：<code>cv = NULL</code> 时，不做交叉验证，直接给出每个群体或每对性状的 h²、r<sub>g</sub>、r<sub>p</sub>。</p></li>
 <li><p><strong>安全的长时间运行</strong>：显示进度和剩余时间；未收敛模型自动 <code><a href="https://rdrr.io/r/stats/update.html" class="external-link">update()</a></code>；仍不收敛则跳过，所有问题记入 <code>$log</code>，循环不中断。</p></li>
 <li><p><a href="https://tony2015116.github.io/mintyrasr/articles/mintyrasr-zh.html">入门</a></p></li>
 <li><p><a href="https://tony2015116.github.io/mintyrasr/articles/models-zh.html">模型与遗传参数</a></p></li>

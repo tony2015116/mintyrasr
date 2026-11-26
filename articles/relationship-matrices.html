@@ -17,7 +17,7 @@
 <!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
 <script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
 <meta property="og:title" content="Pedigree, genomic and single-step: A, G and H">
-<meta property="og:description" content="The same analyses with pedigree BLUP (A^-1), GBLUP (G^-1) or single-step GBLUP (H^-1), and a paired comparison of the three with asr_compare().">
+<meta property="og:description" content="The same analyses with pedigree BLUP (A⁻¹), GBLUP (G⁻¹) or single-step GBLUP (H⁻¹), and a paired comparison of the three with asr_compare().">
 <meta property="og:image" content="https://tony2015116.github.io/mintyrasr/logo.svg">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
@@ -39,7 +39,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">mintyrasr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.4</span>
       </span>
     </div>
 
@@ -78,7 +78,7 @@
       <a href="../articles/relationship-matrices-zh.html">系谱、基因组与一步法：A、G 和 H</a>
     </li>
     <li>
-      <a href="../articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G x E</a>
+      <a href="../articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G×E</a>
     </li>
     <li>
       <a href="../articles/other-models-zh.html">动物模型之外：重复力、母体效应与基因型×环境互作</a>
@@ -185,19 +185,19 @@ by the matrix you pass:</p>
 <tbody>
 <tr class="odd">
 <td>pedigree BLUP (ABLUP)</td>
-<td>A^-1</td>
+<td>A⁻¹</td>
 <td>pedigree</td>
 <td>everyone in the pedigree</td>
 </tr>
 <tr class="even">
 <td>GBLUP</td>
-<td>G^-1</td>
+<td>G⁻¹</td>
 <td>genotypes</td>
 <td>genotyped individuals</td>
 </tr>
 <tr class="odd">
 <td>single-step GBLUP (ssGBLUP)</td>
-<td>H^-1</td>
+<td>H⁻¹</td>
 <td>pedigree + genotypes</td>
 <td>everyone in the pedigree</td>
 </tr>
@@ -234,15 +234,15 @@ the relationship matrix itself.</p>
 <ul>
 <li>
 <strong><code>dense = "auto"</code></strong>: the relationship term
-goes into <code>dense</code> for a (nearly) full inverse such as G^-1 or
-H^-1, and not for a sparse A^-1, where it would cost a lot of memory.
-The choice is shown in the first progress line.</li>
+goes into <code>dense</code> for a (nearly) full inverse such as G⁻¹ or
+H⁻¹, and not for a sparse A⁻¹, where it would cost a lot of memory. The
+choice is shown in the first progress line.</li>
 <li>
-<strong>Inbreeding for the reliability</strong>
-<code>1 - PEV / ((1 + F) Va)</code>: with <code>ainverse()</code> F is
-taken from its <code>inbreeding</code> attribute when
-<code>inbreeding = NULL</code>. For G use <code>diag(G) - 1</code>; for
-H the pedigree F of <code>ainverse()</code> is the usual choice.</li>
+<strong>Inbreeding for the reliability</strong> 1 − PEV / ((1 + F)
+V<sub>a</sub>): with <code>ainverse()</code> F is taken from its
+<code>inbreeding</code> attribute when <code>inbreeding = NULL</code>.
+For G use <code>diag(G) - 1</code>; for H the pedigree F of
+<code>ainverse()</code> is the usual choice.</li>
 <li>The output file names carry the name of the matrix object
 (<code>st_sp_ainv.xlsx</code>, <code>st_sp_ginv.xlsx</code>, …), or the
 method name in <code><a href="../reference/asr_compare.html">asr_compare()</a></code>.</li>
@@ -293,10 +293,10 @@ non-genotyped animals with records in the training sets.</li>
 and the genotypes; mintyrasr warns about phenotyped individuals that are
 not in the matrix.</li>
 <li>
-<strong>ssGBLUP needs a compatible G</strong>: align G to A22 (scale
-and level) before building H, otherwise the genomic and pedigree parts
-do not fit together and predictions are biased - visible as a slope far
-from 1.</li>
+<strong>ssGBLUP needs a compatible G</strong>: align G to
+A<sub>22</sub> (scale and level) before building H, otherwise the
+genomic and pedigree parts do not fit together and predictions are
+biased - visible as a slope far from 1.</li>
 </ul>
 </div>
   </div>

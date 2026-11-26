@@ -210,3 +210,15 @@ test_that("random terms such as maternal effects run end to end", {
                  random = ~ vm(dam, ginv) + ide(dam), verbose = FALSE)
   expect_true(all(c("h2", "prop_vm_dam_ginv", "prop_ide_dam") %in% names(r$param)))
 })
+
+test_that("a ginv-class A^-1 from ainverse() is used under another name (no crash)", {
+  skip_if_no_mock()
+  s <- sim_data()
+  ids <- rownames(s$ginv)
+  ainv <- structure(cbind(seq_along(ids), seq_along(ids), 1), class = c("matrix", "array", "ginv"),
+                    rowNames = ids, inbreeding = rep(0, length(ids)), tbv = attr(s$ginv, "tbv"))
+  nest <- data.table::data.table(name = "adg", data = list(s$pheno[, c("id", "hhys", "adg")]))
+  expect_no_warning(r <- asr_gblup(nest, ginv = ainv, traits = "adg", fixed = ~ hhys, verbose = FALSE))
+  expect_equal(r$param$status, "ok")
+  expect_true(any(grepl("vm(id, relmat)", r$vc_index$item, fixed = TRUE)))
+})

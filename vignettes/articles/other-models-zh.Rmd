@@ -31,7 +31,7 @@ res  <- asr_gblup(nest, ginv = ginv, fixed = ~ parity + hys, random = ~ ide(id))
 res$param[, .(h2, h2_se, prop_ide_id, rep, rep_se)]
 ```
 
-`ide(id)` 与 `vm(id, ginv)` 用同样的水平，但不带亲缘关系。
+`ide(id)` 与遗传项用同样的水平，但不带亲缘关系。
 
 **有重复记录时的交叉验证**：同一个体的所有记录必须在同一折。`cv_scenarios(..., id = "id")` 会这样分；`nest_cv()` 按行分折，验证个体的其他记录会留在训练集里。
 
@@ -67,7 +67,7 @@ asr_gblup(nest, ginv = ainv, fixed = ~ sex + hys, random = ~ vm(dam, ginv) + ide
           vpredict = list(h2_T = h2_T ~ (V1 + 0.5 * V2) / (V1 + V2 + V3 + V4)))
 ```
 
-在 `random` 中，关系矩阵始终写作 `ginv`，不论传入的对象叫什么（上例为 `ainv`）。`vm(dam, ginv)` 不会被当作直接遗传项：`h2`、GEBV 和可靠性只使用 `vm(id, ginv)`。
+在 `random` 中，关系矩阵始终写作 `ginv`，不论传入的对象叫什么（上例为 `ainv`）。`vm(dam, ginv)` 不会被当作直接遗传项：`h2`、GEBV 和可靠性只使用直接遗传项 `vm(id, relmat)`（模型内部矩阵称为 `relmat`）。
 
 **M4——直接效应与母体效应的协方差**需要 `str(~ vm(id, ainv) + vm(dam, ainv), ~ us(2):vm(id, ainv))`，它会取代直接遗传项。mintyrasr 不构建这个模型；请直接用 `asreml()` 拟合，并使用 ASReml-R 手册中的公式（V1 = Va、V2 = Cov(a,m)、V3 = Vm、V4 = Vc、V5 = Ve）：
 

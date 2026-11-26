@@ -12,7 +12,8 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 [中文版](relationship-matrices-zh.html)
 
 Every function of mintyrasr takes the inverse relationship matrix in the
-argument `ginv` and puts it into `vm(id, ginv)`. Which information the model
+argument `ginv` and puts it into `vm(id, relmat)` (inside the model it is called
+`relmat`). Which information the model
 uses is decided only by the matrix you pass:
 
 | method | matrix | built from | individuals with a prediction |

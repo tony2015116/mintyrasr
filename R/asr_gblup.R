@@ -120,9 +120,13 @@
 #' @param dense Put the relationship term in `dense`. `"auto"` (default):
 #'   yes for a (nearly) full inverse such as G^-1 or H^-1, no for a sparse
 #'   one such as A^-1 from `ainverse()`, where `dense` would cost much memory.
-#' @param maxit,workspace Passed to `asreml()` (maxit is 1 for `cv_vc = "fixed"`).
-#'   ASReml's own defaults are 13 and `"128mb"`; two-trait GBLUP usually
-#'   needs more.
+#' @param maxit Passed to `asreml()` (1 for `cv_vc = "fixed"`). ASReml's own
+#'   default is 13; two-trait GBLUP usually needs more.
+#' @param workspace Passed to `asreml()`. `"auto"` (default): estimated from the
+#'   size of the dense part (individuals x traits when the relationship term
+#'   is in `dense`), at least `"512mb"`. ASReml reserves the whole workspace
+#'   for every fit, so a large fixed value (e.g. `"30Gb"`) slows every fit
+#'   down and can exhaust the memory of the computer.
 #' @param max_update Number of `update()` calls (continue iterating from the
 #'   current estimates) on a fit that has not converged; recorded in
 #'   `param$updates` and `accuracy$cv_updates`.
@@ -181,7 +185,7 @@ asr_gblup <- function(param, cv = NULL, ginv, fixed = ~ 1, random = NULL, id = "
                       inbreeding = NULL, cv_min_rel = -Inf, min_rel = 0.05, min_n = 10L,
                       neg_to_na = FALSE, test_rg = TRUE, test_rp = FALSE, rp = TRUE,
                       na_x = c("include", "fail", "omit"), dense = "auto", maxit = 100L,
-                      workspace = "30Gb", max_update = 2L, nonconv = c("skip", "keep"),
+                      workspace = "auto", max_update = 2L, nonconv = c("skip", "keep"),
                       asreml_args = list(), asreml_trace = FALSE, on_error = c("warn", "stop"),
                       keep_pred = TRUE, keep_gebv = TRUE, path = NULL, verbose = TRUE) {
   on_error <- match.arg(on_error)
@@ -261,6 +265,7 @@ asr_gblup <- function(param, cv = NULL, ginv, fixed = ~ 1, random = NULL, id = "
   if (identical(dense, "auto")) dense <- .is_dense(ginv)
   if (!is.logical(dense) || length(dense) != 1L)
     stop("`dense` must be TRUE, FALSE or \"auto\".", call. = FALSE)
+  if (identical(workspace, "auto")) workspace <- .auto_workspace(ginv, length(resp), dense)
 
   # ASReml's iteration monitor floods the console in long runs: off while we run
   if (!asreml_trace) {
@@ -298,14 +303,14 @@ asr_gblup <- function(param, cv = NULL, ginv, fixed = ~ 1, random = NULL, id = "
                genetic_cov = genetic_cov, random_cov = random_cov, residual_cov = residual_cov,
                dense = dense, na_x = na_x, workspace = workspace, max_update = max_update,
                asreml_args = asreml_args)
-  fit1 <- function(d, ...) .asr_fit(d, spec = spec, ginv = ginv, ...)
+  fit1 <- function(d, ...) .asr_fit(d, spec = spec, relmat = ginv, ...)
 
   np <- nrow(P); nc <- if (is.null(C)) 0L else nrow(C)
   t_start <- Sys.time()
   say <- function(...) if (verbose) message(...)
-  say(sprintf("asr_gblup: %s model | %d parameter fit(s) + %d CV fit(s)%s | dense = %s",
+  say(sprintf("asr_gblup: %s model | %d parameter fit(s) + %d CV fit(s)%s | dense = %s | workspace = %s",
               if (type == "mt") "two-trait" else "single-trait", np, nc,
-              if (nc) sprintf(" | cv_vc = \"%s\"", cv_vc) else "", dense))
+              if (nc) sprintf(" | cv_vc = \"%s\"", cv_vc) else "", dense, workspace))
   fit_note <- function(fit, t1) {
     if (is.null(fit)) return("FAILED")
     st <- if (conv_ok(fit)) "ok" else "NOT CONVERGED"

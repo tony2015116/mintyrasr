@@ -208,8 +208,10 @@ Done in 31.2 min | param: 4 ok, 0 not converged, 0 failed | cv: ok 60 | 1 log en
 Other notes:
 
 - Fitted models are not kept: memory stays low even with many folds.
-- Two-trait GBLUP needs more than ASReml's defaults (`maxit = 13`,
-  `workspace = "128mb"`); mintyrasr uses `maxit = 100`, `workspace = "30Gb"`.
+- `workspace = "auto"` sizes ASReml's workspace from the number of individuals
+  and traits. ASReml reserves the whole workspace for every fit, so a large
+  fixed value (e.g. `"30Gb"`) slows every fit down - and on a 32 GB computer
+  can run out of memory. `maxit = 100` (ASReml's default is 13).
 - `na_x = "include"` (default, as in many scripts) treats missing covariates
   as 0 - centre numeric covariates first. ASReml's own default is `"fail"`.
 - Further `asreml()` arguments: `asreml_args = list(ai.sing = TRUE)`.

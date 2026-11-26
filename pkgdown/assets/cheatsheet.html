@@ -219,7 +219,7 @@ footer { margin-top: 8px; color: var(--muted); font-size: 12.5px; display: flex;
 <header class="top">
   <img src="reference/figures/logo.svg" alt="mintyrasr logo" onerror="this.style.display='none'">
   <div>
-    <h1>mintyrasr cheatsheet <span class="ver">v0.5.1</span></h1>
+    <h1>mintyrasr cheatsheet <span class="ver">v0.5.2</span></h1>
     <p>GBLUP parameter estimation and cross-validation with <code>ASReml-R</code>, directly on the nested data built by <code>mintyr</code>: genetic parameters that follow the model, correct LRTs, PA / accuracy / slope per fold.</p>
   </div>
   <nav class="links">
@@ -285,7 +285,7 @@ inbreeding &lt;- data.frame(id = rownames(G), F = diag(G) - 1)</code></pre>
     <p>One workbook per scenario: <code>&lt;dir&gt;/&lt;scenario&gt;_&lt;tag&gt;.xlsx</code>. <code>"mt_bt"</code>: diag residual, no rp.</p>
   </div>
   <div class="fn">
-    <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv = NULL, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, cv_min_rel = -Inf, min_rel = 0.05, min_n = 10, neg_to_na = FALSE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = "auto", maxit = 100, workspace = "30Gb", max_update = 2, nonconv = "skip", asreml_args = list(), asreml_trace = FALSE, on_error = "warn", keep_pred = TRUE, keep_gebv = TRUE, path = NULL, verbose = TRUE)</div>
+    <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv = NULL, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, cv_min_rel = -Inf, min_rel = 0.05, min_n = 10, neg_to_na = FALSE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = "auto", maxit = 100, workspace = "auto", max_update = 2, nonconv = "skip", asreml_args = list(), asreml_trace = FALSE, on_error = "warn", keep_pred = TRUE, keep_gebv = TRUE, path = NULL, verbose = TRUE)</div>
     <pre><code>res &lt;- asr_scenarios(sc, ginv, fixed = ~ hhys,
                      inbreeding = inbreeding, dir = "results")
 st &lt;- asr_gblup(sc$st_sp$param, sc$st_sp$cv, ginv,
@@ -303,9 +303,9 @@ asr_compare(sc, list(ABLUP = ainv, GBLUP = ginv, ssGBLUP = hinv),
 <section class="panel st">
   <h2><a href="articles/models.html">Models</a> <small>random effects &amp; structures</small></h2>
   <div class="fn">
-    <pre><code># 1 trait:  value ~ fixed,  ~ vm(id, ginv) + random,  ~ idv(units)
+    <pre><code># 1 trait:  value ~ fixed,  ~ vm(id, relmat) + random,  ~ idv(units)
 # 2 traits: cbind(a, b) ~ trait + trait:fixed,
-#   ~ genetic_cov(trait):vm(id, ginv) + random_cov(trait):random,
+#   ~ genetic_cov(trait):vm(id, relmat) + random_cov(trait):random,
 #   ~ units:residual_cov(trait)
 asr_gblup(..., random = ~ ide(id))            # repeated records: rep
 asr_gblup(..., random = ~ litter, random_cov = "idh")
@@ -399,7 +399,8 @@ asr_gblup(..., random = ~ ide(id),
   <div class="fn">
     <ul>
       <li>warnings: no <code>INVERSE</code> attribute; IDs not in <code>ginv</code>; components at the boundary (<code>B</code>, also <code>param$boundary</code>); <code>gammaPar = TRUE</code>; no convergence</li>
-      <li>ASReml defaults <code>maxit = 13</code>, <code>workspace = "128mb"</code> are too small for two-trait GBLUP</li>
+      <li><code>workspace = "auto"</code>: sized from individuals &times; traits; a fixed large value (e.g. 30Gb) slows every fit</li>
+      <li>inside the model the matrix is <code>relmat</code>: components read <code>vm(id, relmat)</code>; in <code>random</code> write <code>vm(dam, ginv)</code></li>
       <li>one progress line per fit: status, iterations, time, ~time left (ASReml monitor off: <code>asreml_trace = FALSE</code>)</li>
       <li><code>max_update = 2</code> &rarr; <code>update()</code>; still not converged: <code>nonconv = "skip"</code> (CV rows skipped) or <code>"keep"</code></li>
       <li>errors &amp; non-convergence &rarr; <code>status</code> + <code>$log</code>, the loop goes on; rows with status &ne; ok are not in <code>summary</code></li>
@@ -413,7 +414,7 @@ asr_gblup(..., random = ~ ide(id),
 </main>
 
 <footer>
-  <span>mintyrasr 0.5.1 &middot; MIT &middot; Guo Meng</span>
+  <span>mintyrasr 0.5.2 &middot; MIT &middot; Guo Meng</span>
   <span><a href="https://tony2015116.github.io/mintyrasr/">tony2015116.github.io/mintyrasr</a> &middot; <a href="https://tony2015116.github.io/mintyr/">mintyr</a> &middot; <a href="https://github.com/tony2015116/mintyrasr/issues">Issues</a></span>
 </footer>
 </div>

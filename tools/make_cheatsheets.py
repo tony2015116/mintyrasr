@@ -6,7 +6,7 @@ The CSS and the small R highlighter are shared with the mintyr cheatsheet
 """
 import pathlib
 
-VERSION = "0.5.1"
+VERSION = "0.5.2"
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 CSS = (ROOT / "tools" / "cheatsheet.css").read_text(encoding="utf-8")
 
@@ -160,7 +160,7 @@ inbreeding &lt;- data.frame(id = rownames(G), F = diag(G) - 1)</code></pre>
     <p>One workbook per scenario: <code>&lt;dir&gt;/&lt;scenario&gt;_&lt;tag&gt;.xlsx</code>. <code>"mt_bt"</code>: diag residual, no rp.</p>
   </div>
   <div class="fn">
-    <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv = NULL, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, cv_min_rel = -Inf, min_rel = 0.05, min_n = 10, neg_to_na = FALSE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = "auto", maxit = 100, workspace = "30Gb", max_update = 2, nonconv = "skip", asreml_args = list(), asreml_trace = FALSE, on_error = "warn", keep_pred = TRUE, keep_gebv = TRUE, path = NULL, verbose = TRUE)</div>
+    <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv = NULL, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, cv_min_rel = -Inf, min_rel = 0.05, min_n = 10, neg_to_na = FALSE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = "auto", maxit = 100, workspace = "auto", max_update = 2, nonconv = "skip", asreml_args = list(), asreml_trace = FALSE, on_error = "warn", keep_pred = TRUE, keep_gebv = TRUE, path = NULL, verbose = TRUE)</div>
     <pre><code>res &lt;- asr_scenarios(sc, ginv, fixed = ~ hhys,
                      inbreeding = inbreeding, dir = "results")
 st &lt;- asr_gblup(sc$st_sp$param, sc$st_sp$cv, ginv,
@@ -178,9 +178,9 @@ asr_compare(sc, list(ABLUP = ainv, GBLUP = ginv, ssGBLUP = hinv),
 <section class="panel st">
   <h2><a href="articles/models.html">Models</a> <small>random effects &amp; structures</small></h2>
   <div class="fn">
-    <pre><code># 1 trait:  value ~ fixed,  ~ vm(id, ginv) + random,  ~ idv(units)
+    <pre><code># 1 trait:  value ~ fixed,  ~ vm(id, relmat) + random,  ~ idv(units)
 # 2 traits: cbind(a, b) ~ trait + trait:fixed,
-#   ~ genetic_cov(trait):vm(id, ginv) + random_cov(trait):random,
+#   ~ genetic_cov(trait):vm(id, relmat) + random_cov(trait):random,
 #   ~ units:residual_cov(trait)
 asr_gblup(..., random = ~ ide(id))            # repeated records: rep
 asr_gblup(..., random = ~ litter, random_cov = "idh")
@@ -274,7 +274,8 @@ asr_gblup(..., random = ~ ide(id),
   <div class="fn">
     <ul>
       <li>warnings: no <code>INVERSE</code> attribute; IDs not in <code>ginv</code>; components at the boundary (<code>B</code>, also <code>param$boundary</code>); <code>gammaPar = TRUE</code>; no convergence</li>
-      <li>ASReml defaults <code>maxit = 13</code>, <code>workspace = "128mb"</code> are too small for two-trait GBLUP</li>
+      <li><code>workspace = "auto"</code>: sized from individuals &times; traits; a fixed large value (e.g. 30Gb) slows every fit</li>
+      <li>inside the model the matrix is <code>relmat</code>: components read <code>vm(id, relmat)</code>; in <code>random</code> write <code>vm(dam, ginv)</code></li>
       <li>one progress line per fit: status, iterations, time, ~time left (ASReml monitor off: <code>asreml_trace = FALSE</code>)</li>
       <li><code>max_update = 2</code> &rarr; <code>update()</code>; still not converged: <code>nonconv = "skip"</code> (CV rows skipped) or <code>"keep"</code></li>
       <li>errors &amp; non-convergence &rarr; <code>status</code> + <code>$log</code>, the loop goes on; rows with status &ne; ok are not in <code>summary</code></li>
@@ -348,7 +349,7 @@ inbreeding &lt;- data.frame(id = rownames(G), F = diag(G) - 1)</code></pre>
     <p>每个场景一个工作簿：<code>&lt;dir&gt;/&lt;场景&gt;_&lt;tag&gt;.xlsx</code>。<code>"mt_bt"</code>：diag 残差，不算 rp。</p>
   </div>
   <div class="fn">
-    <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv = NULL, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, cv_min_rel = -Inf, min_rel = 0.05, min_n = 10, neg_to_na = FALSE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = "auto", maxit = 100, workspace = "30Gb", max_update = 2, nonconv = "skip", asreml_args = list(), asreml_trace = FALSE, on_error = "warn", keep_pred = TRUE, keep_gebv = TRUE, path = NULL, verbose = TRUE)</div>
+    <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv = NULL, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, cv_min_rel = -Inf, min_rel = 0.05, min_n = 10, neg_to_na = FALSE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = "auto", maxit = 100, workspace = "auto", max_update = 2, nonconv = "skip", asreml_args = list(), asreml_trace = FALSE, on_error = "warn", keep_pred = TRUE, keep_gebv = TRUE, path = NULL, verbose = TRUE)</div>
     <pre><code>res &lt;- asr_scenarios(sc, ginv, fixed = ~ hhys,
                      inbreeding = inbreeding, dir = "results")
 st &lt;- asr_gblup(sc$st_sp$param, sc$st_sp$cv, ginv,
@@ -366,9 +367,9 @@ asr_compare(sc, list(ABLUP = ainv, GBLUP = ginv, ssGBLUP = hinv),
 <section class="panel st">
   <h2><a href="articles/models-zh.html">模型</a> <small>随机效应与方差结构</small></h2>
   <div class="fn">
-    <pre><code># 单性状：value ~ fixed，~ vm(id, ginv) + random，~ idv(units)
+    <pre><code># 单性状：value ~ fixed，~ vm(id, relmat) + random，~ idv(units)
 # 两性状：cbind(a, b) ~ trait + trait:fixed，
-#   ~ genetic_cov(trait):vm(id, ginv) + random_cov(trait):random，
+#   ~ genetic_cov(trait):vm(id, relmat) + random_cov(trait):random，
 #   ~ units:residual_cov(trait)
 asr_gblup(..., random = ~ ide(id))            # 重复记录：rep
 asr_gblup(..., random = ~ litter, random_cov = "idh")
@@ -462,7 +463,8 @@ asr_gblup(..., random = ~ ide(id),
   <div class="fn">
     <ul>
       <li>警告：ginv 无 <code>INVERSE</code> 属性；个体不在 <code>ginv</code> 中；组分在边界上（<code>B</code>，也记在 <code>param$boundary</code>）；<code>gammaPar = TRUE</code>；未收敛</li>
-      <li>ASReml 默认 <code>maxit = 13</code>、<code>workspace = "128mb"</code>，两性状 GBLUP 不够用</li>
+      <li><code>workspace = "auto"</code>：按个体数 &times; 性状数估算；固定的大值（如 30Gb）会拖慢每次拟合</li>
+      <li>模型内部矩阵叫 <code>relmat</code>：组分名为 <code>vm(id, relmat)</code>；<code>random</code> 中写 <code>vm(dam, ginv)</code></li>
       <li>每个模型一行进度：状态、迭代、用时、预计剩余（关闭 ASReml 迭代输出：<code>asreml_trace = FALSE</code>）</li>
       <li><code>max_update = 2</code> &rarr; <code>update()</code>；仍不收敛：<code>nonconv = "skip"</code>（跳过其交叉验证）或 <code>"keep"</code></li>
       <li>出错、未收敛 &rarr; 记 <code>status</code> 和 <code>$log</code>，循环继续；status &ne; ok 的行不进 <code>summary</code></li>

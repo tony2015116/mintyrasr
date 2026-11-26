@@ -17,16 +17,16 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 
 ```text
 asreml(value ~ <fixed>,
-       random   = ~ vm(id, ginv) + <random>,
-       residual = ~ idv(units), dense = ~ vm(id, ginv), ...)
+       random   = ~ vm(id, relmat) + <random>,
+       residual = ~ idv(units), dense = ~ vm(id, relmat), ...)
 ```
 
 **Two traits** (`value1` + `value2`, or `traits = c("a", "b")`):
 
 ```text
 asreml(cbind(value1, value2) ~ trait + trait:<fixed>,
-       random   = ~ <genetic_cov>(trait):vm(id, ginv) + <random_cov>(trait):<random>,
-       residual = ~ units:<residual_cov>(trait), dense = ~ <genetic_cov>(trait):vm(id, ginv), ...)
+       random   = ~ <genetic_cov>(trait):vm(id, relmat) + <random_cov>(trait):<random>,
+       residual = ~ units:<residual_cov>(trait), dense = ~ <genetic_cov>(trait):vm(id, relmat), ...)
 ```
 
 | argument | values | default |
@@ -79,16 +79,22 @@ Each row of `summary(fit)$varcomp` is matched to `names(fit$vparameters)`
 
 | name (examples) | term | role | kind |
 |---|---|---|---|
-| `vm(id, ginv)` | `vm(id, ginv)` | genetic | var |
+| `vm(id, relmat)` | `vm(id, relmat)` | genetic | var |
 | `ide(id)`, `litter` | itself | random | var |
 | `units!units` | `units` | residual | var |
 | `units!R` after `units!units` (idv), `units:trait!R` | | | scale = 1, not used |
-| `trait:vm(id, ginv)!trait_adg:adg` | `trait:vm(id, ginv)` | genetic | var |
-| `trait:vm(id, ginv)!trait_bf:adg` | | genetic | cov |
+| `trait:vm(id, relmat)!trait_adg:adg` | `trait:vm(id, relmat)` | genetic | var |
+| `trait:vm(id, relmat)!trait_bf:adg` | | genetic | cov |
 | `trait:litter!trait_adg` | `trait:litter` | random | var (idh) |
 | `...!trait!bf:!trait!adg.cor`, `...!trait!cor` | | | cor (corgh, corh, corv) |
 | `...!trait!var` | | | var shared by both traits (corv) |
 | `fa(...)`, `rr(...)` terms | | | not interpreted (warning) |
+
+Inside the model the relationship matrix is called `relmat`, so components
+read `vm(id, relmat)`. (With the name `ginv`, ASReml-R 4.2 crashes for an
+`ainverse()` matrix in a formula built inside a function.) In `random` you can
+still write `vm(dam, ginv)`; output names such as `prop_vm_dam_ginv` keep
+`ginv`.
 
 Trait names are found as whole words in the name, so any column name works.
 The `vc_index` table of the result shows the classification - look at it
@@ -133,7 +139,7 @@ res$param[, c("h2", "h2_se", "rep", "rep_se")]
 
 Models with more than one genetic term (e.g. maternal `str()` models) and
 `fa()` / `rr()` structures need their own formulas: the automatic ones only
-use the term `vm(<id>, ginv)`.
+use the term `vm(<id>, relmat)`.
 
 ## Tests
 

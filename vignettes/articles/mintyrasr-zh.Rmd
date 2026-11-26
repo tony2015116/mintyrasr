@@ -165,7 +165,7 @@ Done in 31.2 min | param: 4 ok, 0 not converged, 0 failed | cv: ok 60 | 1 log en
 其他提示：
 
 - 不保存模型对象，折数很多时内存也不会爆。
-- 两性状 GBLUP 需要比 ASReml 默认（`maxit = 13`、`workspace = "128mb"`）更大的设置；mintyrasr 默认 `maxit = 100`、`workspace = "30Gb"`。
+- `workspace = "auto"` 按个体数和性状数估算 ASReml 的工作空间。ASReml 每次拟合都会预留整个工作空间，固定的大值（如 `"30Gb"`）会拖慢每次拟合，在 32 GB 内存的电脑上还可能耗尽内存。`maxit = 100`（ASReml 默认 13）。
 - `na_x = "include"`（默认，与常见脚本一致）把缺失协变量当作 0，数值协变量请先中心化；ASReml 自身默认是 `"fail"`。
 - 其他 `asreml()` 参数：`asreml_args = list(ai.sing = TRUE)`。
 - 长时间运行时让电脑保持唤醒：电脑休眠（或在线许可证等待）表现为长时间停顿，而不是拟合慢。

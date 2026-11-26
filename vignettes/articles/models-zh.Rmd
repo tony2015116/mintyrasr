@@ -16,16 +16,16 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 
 ```text
 asreml(value ~ <fixed>,
-       random   = ~ vm(id, ginv) + <random>,
-       residual = ~ idv(units), dense = ~ vm(id, ginv), ...)
+       random   = ~ vm(id, relmat) + <random>,
+       residual = ~ idv(units), dense = ~ vm(id, relmat), ...)
 ```
 
 **两性状**（`value1` + `value2`，或 `traits = c("a", "b")`）：
 
 ```text
 asreml(cbind(value1, value2) ~ trait + trait:<fixed>,
-       random   = ~ <genetic_cov>(trait):vm(id, ginv) + <random_cov>(trait):<random>,
-       residual = ~ units:<residual_cov>(trait), dense = ~ <genetic_cov>(trait):vm(id, ginv), ...)
+       random   = ~ <genetic_cov>(trait):vm(id, relmat) + <random_cov>(trait):<random>,
+       residual = ~ units:<residual_cov>(trait), dense = ~ <genetic_cov>(trait):vm(id, relmat), ...)
 ```
 
 | 参数 | 取值 | 默认 |
@@ -73,16 +73,18 @@ asr_gblup(param, cv, ginv, fixed = ~ hhys, traits = c("bfs", "nls"),
 
 | 名字（示例） | 所属项 | 角色 | 类型 |
 |---|---|---|---|
-| `vm(id, ginv)` | `vm(id, ginv)` | genetic | var |
+| `vm(id, relmat)` | `vm(id, relmat)` | genetic | var |
 | `ide(id)`、`litter` | 本身 | random | var |
 | `units!units` | `units` | residual | var |
 | idv 中 `units!units` 之后的 `units!R`、`units:trait!R` | | | 固定为 1 的尺度参数，不使用 |
-| `trait:vm(id, ginv)!trait_adg:adg` | `trait:vm(id, ginv)` | genetic | var |
-| `trait:vm(id, ginv)!trait_bf:adg` | | genetic | cov |
+| `trait:vm(id, relmat)!trait_adg:adg` | `trait:vm(id, relmat)` | genetic | var |
+| `trait:vm(id, relmat)!trait_bf:adg` | | genetic | cov |
 | `trait:litter!trait_adg` | `trait:litter` | random | var（idh） |
 | `...!trait!bf:!trait!adg.cor`、`...!trait!cor` | | | cor（corgh、corh、corv） |
 | `...!trait!var` | | | 两性状共用的方差（corv） |
 | `fa(...)`、`rr(...)` 项 | | | 不解析（给出警告） |
+
+模型内部关系矩阵叫 `relmat`，所以组分名是 `vm(id, relmat)`。（叫 `ginv` 时，ASReml-R 4.2 在函数内构建的公式中使用 `ainverse()` 矩阵会崩溃。）在 `random` 中仍可写 `vm(dam, ginv)`；`prop_vm_dam_ginv` 等输出名保留 `ginv`。
 
 性状名在组分名中按完整单词匹配，任何列名都可以。结果中的 `vc_index` 表列出了分类，新模型第一次运行后请看一眼。
 
@@ -118,7 +120,7 @@ res$vc_index
 res$param[, c("h2", "h2_se", "rep", "rep_se")]
 ```
 
-有多个遗传项的模型（如母体效应的 `str()` 模型）以及 `fa()` / `rr()` 结构需要自己写公式：自动公式只使用 `vm(<id>, ginv)` 这一项。
+有多个遗传项的模型（如母体效应的 `str()` 模型）以及 `fa()` / `rr()` 结构需要自己写公式：自动公式只使用 `vm(<id>, relmat)` 这一项。
 
 ## 检验
 

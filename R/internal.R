@@ -33,23 +33,23 @@ NULL
 # ... in the formula / calling environment, and update() works.
 # spec: type, fixed, random, id, genetic_cov, random_cov, residual_cov,
 #       dense, na_x, workspace, max_update, asreml_args
-.asr_fit <- function(d, spec, ginv, maxit, vc = NULL, start_values = FALSE,
+.asr_fit <- function(d, spec, relmat, maxit, vc = NULL, start_values = FALSE,
                      genetic_cov = spec$genetic_cov, random_cov = spec$random_cov,
                      residual_cov = spec$residual_cov, check_converge = TRUE) {
   id <- spec$id
   d  <- .asr_df(d, id)
   ft <- attr(stats::terms(spec$fixed), "term.labels")
-  rt <- if (is.null(spec$random)) character(0) else attr(stats::terms(spec$random), "term.labels")
+  rt <- .random_terms(spec$random)
   env <- environment()
   if (spec$type == "st") {
     fx <- paste(spec$resp, "~", if (length(ft)) paste(ft, collapse = " + ") else "1")
-    gt <- sprintf("vm(%s, ginv)", id)
+    gt <- sprintf("vm(%s, relmat)", id)
     rd <- paste("~", paste(c(gt, rt), collapse = " + "))
     rs <- "~ idv(units)"
   } else {
     fx <- paste0("cbind(", paste(spec$resp, collapse = ", "), ") ~ trait",
                 if (length(ft)) paste0("+ ", paste0("trait:", ft, collapse = " + ")) else "")
-    gt <- sprintf("%s(trait):vm(%s, ginv)", genetic_cov, id)
+    gt <- sprintf("%s(trait):vm(%s, relmat)", genetic_cov, id)
     ot <- if (length(rt)) paste0(random_cov, "(trait):", rt) else character(0)
     rd <- paste("~", paste(c(gt, ot), collapse = " + "))
     rs <- sprintf("~ units:%s(trait)", residual_cov)
@@ -143,9 +143,19 @@ NULL
   tab
 }
 
-# "trait:vm(dam, ginv)" -> "vm_dam_ginv", "ide(id)" -> "ide_id", "litter" -> "litter"
+# Terms of `random`. The relationship matrix is called `relmat` inside the model:
+# with the name `ginv`, ASReml-R 4.2 crashes when a ginv-class matrix from
+# ainverse() is the vm() source of a formula built inside a function. Users
+# write vm(dam, ginv) (or relmat); both are mapped to relmat.
+.random_terms <- function(random) {
+  if (is.null(random)) return(character(0))
+  gsub("\\bginv\\b", "relmat", attr(stats::terms(random), "term.labels"))
+}
+
+# "trait:vm(dam, relmat)" -> "vm_dam_ginv", "ide(id)" -> "ide_id", "litter" -> "litter"
 .clean_term <- function(t) {
   t <- sub("^trait:", "", t)
+  t <- gsub("\\brelmat\\b", "ginv", t)          # output names keep the user's "ginv"
   t <- gsub("[^A-Za-z0-9]+", "_", t)
   gsub("^_+|_+$", "", t)
 }
@@ -163,8 +173,18 @@ NULL
   TRUE
 }
 
+# Workspace for asreml(): the dense part (individuals x traits)^2 in doubles,
+# about 3 working copies, plus room for the sparse part; at least 512 MB.
+.auto_workspace <- function(ginv, n_traits, dense) {
+  n <- length(.ginv_ids(ginv))
+  if (!n && is.matrix(ginv)) n <- nrow(ginv)
+  mb <- if (dense) 8 * (n * n_traits)^2 * 3 / 2^20 else 8 * n * n_traits * 400 / 2^20
+  mb <- max(512, ceiling(mb * 1.5 / 256) * 256)
+  if (mb >= 1024) sprintf("%dgb", ceiling(mb / 1024)) else sprintf("%dmb", mb)
+}
+
 # Regex for the genomic term vm(<id>, ginv) in component / coefficient names
-.gpat <- function(id) paste0("vm\\(", id, ",\\s*ginv\\)")
+.gpat <- function(id) paste0("vm\\(", id, ",\\s*relmat\\)")
 
 # Map every row of summary(fit)$varcomp (= V1, V2, ... in vpredict) to its
 # term, role (genetic / residual / random) and kind (var / cov / cor) for
@@ -323,11 +343,13 @@ NULL
 
 # vm() treats a matrix as an inverse only with attr(, "INVERSE") = TRUE
 .check_ginv <- function(ginv) {
-  inv <- attr(ginv, "INVERSE")
-  if (!isTRUE(inv))
-    warning("`ginv` has no attribute INVERSE = TRUE, so vm() treats it as a relationship ",
-            "matrix (G), not its inverse. Use G.inverse(..., sparseform = TRUE)$Ginv.sparse or ",
-            "set attr(ginv, \"INVERSE\") <- TRUE.", call. = FALSE)
+  # ainverse() marks its result with class "ginv" (no INVERSE attribute);
+  # other inverses need attr(, "INVERSE") = TRUE
+  if (!isTRUE(attr(ginv, "INVERSE")) && !inherits(ginv, "ginv"))
+    warning("`ginv` has neither class \"ginv\" (ainverse()) nor attr(, \"INVERSE\") = TRUE, so vm() ",
+            "treats it as a relationship matrix, not its inverse. Use ainverse(), ",
+            "G.inverse(..., sparseform = TRUE)$Ginv.sparse, or set attr(ginv, \"INVERSE\") <- TRUE.",
+            call. = FALSE)
   invisible(NULL)
 }
 

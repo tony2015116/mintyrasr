@@ -28,7 +28,7 @@ asr_gblup(
   na_x = c("include", "fail", "omit"),
   dense = "auto",
   maxit = 100L,
-  workspace = "30Gb",
+  workspace = "auto",
   max_update = 2L,
   nonconv = c("skip", "keep"),
   asreml_args = list(),
@@ -137,9 +137,14 @@ matrix - centre numeric covariates first; ASReml's own default is \code{"fail"}.
 yes for a (nearly) full inverse such as G^-1 or H^-1, no for a sparse
 one such as A^-1 from \code{ainverse()}, where \code{dense} would cost much memory.}
 
-\item{maxit, workspace}{Passed to \code{asreml()} (maxit is 1 for \code{cv_vc = "fixed"}).
-ASReml's own defaults are 13 and \code{"128mb"}; two-trait GBLUP usually
-needs more.}
+\item{maxit}{Passed to \code{asreml()} (1 for \code{cv_vc = "fixed"}). ASReml's own
+default is 13; two-trait GBLUP usually needs more.}
+
+\item{workspace}{Passed to \code{asreml()}. \code{"auto"} (default): estimated from the
+size of the dense part (individuals x traits when the relationship term
+is in \code{dense}), at least \code{"512mb"}. ASReml reserves the whole workspace
+for every fit, so a large fixed value (e.g. \code{"30Gb"}) slows every fit
+down and can exhaust the memory of the computer.}
 
 \item{max_update}{Number of \code{update()} calls (continue iterating from the
 current estimates) on a fit that has not converged; recorded in

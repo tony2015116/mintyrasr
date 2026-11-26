@@ -38,7 +38,7 @@ res  <- asr_gblup(nest, ginv = ginv, fixed = ~ parity + hys, random = ~ ide(id))
 res$param[, .(h2, h2_se, prop_ide_id, rep, rep_se)]
 ```
 
-`ide(id)` uses the same levels as `vm(id, ginv)` but without relationships.
+`ide(id)` uses the same levels as the genetic term but without relationships.
 
 **Cross-validation with repeated records**: all records of one animal must be
 in the same fold. `cv_scenarios(..., id = "id")` does this; `nest_cv()` splits
@@ -81,7 +81,8 @@ asr_gblup(nest, ginv = ainv, fixed = ~ sex + hys, random = ~ vm(dam, ginv) + ide
 
 Inside `random` the relationship matrix is always called `ginv`, whatever
 object you pass (`ainv` above). `vm(dam, ginv)` is not taken as the direct
-genetic term: `h2`, the GEBVs and the reliabilities use `vm(id, ginv)` only.
+genetic term: `h2`, the GEBVs and the reliabilities use the direct genetic
+term `vm(id, relmat)` only (inside the model the matrix is called `relmat`).
 
 **M4 - covariance between direct and maternal effects** needs
 `str(~ vm(id, ainv) + vm(dam, ainv), ~ us(2):vm(id, ainv))`, which replaces

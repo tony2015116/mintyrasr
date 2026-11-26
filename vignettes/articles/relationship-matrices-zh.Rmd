@@ -10,7 +10,7 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 
 [English version](relationship-matrices.html)
 
-mintyrasr 的所有函数都通过参数 `ginv` 接收关系逆矩阵，并放进 `vm(id, ginv)`。模型用到哪些信息，只取决于你传入的矩阵：
+mintyrasr 的所有函数都通过参数 `ginv` 接收关系逆矩阵，并放进 `vm(id, relmat)`（模型内部称为 `relmat`）。模型用到哪些信息，只取决于你传入的矩阵：
 
 | 方法 | 矩阵 | 来源 | 有预测值的个体 |
 |---|---|---|---|

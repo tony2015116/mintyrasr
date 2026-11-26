@@ -28,6 +28,10 @@ asreml <- function(fixed, random, residual, dense = NULL, na.action, data, G.par
   rtxt <- deparse(random)
   gname <- sub(".*vm\\(id, ([^)]+)\\).*", "\\1", rtxt)
   ginv <- get(gname, envir = environment(random))
+  # real ASReml-R 4.2 aborts R here (exit 1033) when a ginv-class matrix from
+  # ainverse() is the vm() source under the name "ginv" in a function's formula
+  if (gname == "ginv" && inherits(ginv, "ginv") && !identical(environment(random), globalenv()))
+    stop("mock: ASReml-R 4.2 would crash (ginv-class matrix named 'ginv')")
   mt <- grepl("cbind", deparse(fixed[[2]]))
   diagG <- grepl("(diag|idh)\\(trait\\):vm", rtxt)
   rn <- if (mt) all.vars(fixed[[2]]) else NULL

@@ -1,3 +1,19 @@
+# mintyrasr 0.5.2
+
+Found with real ASReml-R 4.2.0.481 (pedigree BLUP crashed R):
+
+* **Crash fixed.** ASReml-R 4.2 aborts R (exit code 1033) when an `ainverse()`
+  matrix (class `ginv`) is the `vm()` source under the name `ginv` in a formula
+  built inside a function. Inside the model the matrix is now called
+  `relmat`: components read `vm(id, relmat)`. In `random` you can still write
+  `vm(dam, ginv)`; output names such as `prop_vm_dam_ginv` are unchanged.
+* `workspace = "auto"` (new default, was `"30Gb"`): sized from individuals x
+  traits. ASReml reserves the whole workspace for every fit: with 30Gb one
+  fit took 31 s instead of 3-6 s, and it can exhaust the memory of a 32 GB
+  computer.
+* `ainverse()` results (class `ginv`, no `INVERSE` attribute) are recognised
+  as inverses without a warning.
+
 # mintyrasr 0.5.1
 
 * `asr_compare()` is now exported (0.5.0 documented it but did not export it).

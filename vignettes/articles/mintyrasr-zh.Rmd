@@ -130,7 +130,7 @@ asr_gblup(all_nest5, all_cv5, ginv, fixed = ~ hhys, traits = c("bfs", "nls"),
 - `accuracy`（准确性）= pa / sqrt(h2)，h2 用全数据估计值（Dekkers 2007）；
 - `slope` = b(y ~ GEBV)，等于 1 表示 GEBV 既没有膨胀也没有压缩。
 
-可靠性低于 `min_rel`（默认 0.05）的 GEBV 不参与计算；`neg_to_na = TRUE`（默认）时，负值在汇总前设为 `NA`。
+可靠性低于 `min_rel`（默认 0.05）的 GEBV 不参与计算；剩下的个体少于 `min_n`（默认 10）时，该折的 PA、准确性和回归系数为 `NA`；`neg_to_na = TRUE`（默认）时，负值在汇总前设为 `NA`。
 
 ## 6. 交叉验证中的方差组分
 

@@ -77,6 +77,10 @@ vpredict <- function(object, transform) {
 lrt <- function(object, ..., boundary = TRUE) {
   if (boundary) stop("mock: rg test must use boundary = FALSE")
   o <- list(...)[[1]]; lr <- 2 * (object$loglik - o$loglik)
+  if (isTRUE(getOption("mock.lrt_df0"))) {
+    warning("2 vs 1: same number of parameters.")
+    return(data.frame(df = 0, `LR-statistic` = lr, `Pr(Chisq)` = 0, check.names = FALSE, row.names = "test"))
+  }
   data.frame(df = 1, `LR-statistic` = lr, `Pr(Chisq)` = stats::pchisq(lr, 1, lower.tail = FALSE),
              check.names = FALSE, row.names = "test")
 }

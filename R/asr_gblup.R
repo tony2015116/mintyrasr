@@ -72,10 +72,16 @@
 #'   F = 0. For GBLUP, `F = diag(G) - 1` is common.
 #' @param min_rel GEBVs with reliability below this value are set to `NA`
 #'   before computing PA / accuracy. Use `-Inf` to keep all.
+#' @param min_n Minimum number of validation individuals with a usable GEBV
+#'   (after `min_rel`) for PA, accuracy and slope of a fold; fewer gives `NA`
+#'   (`n` still shows the number). With a low h2 the reliability filter can
+#'   leave only a handful of individuals, whose PA and slope are noise.
 #' @param neg_to_na Set negative PA / accuracy / slope to `NA` before the
 #'   summary (the behaviour of the original scripts).
 #' @param test_rg Two-trait models only: LRT of rg = 0 (`idh(trait)` genetic
-#'   structure, other structures unchanged, `boundary = FALSE`).
+#'   structure, other structures unchanged, `boundary = FALSE`). If both
+#'   models end up with the same number of free parameters (df = 0, e.g. a
+#'   restrained covariance), `rg_p` is `NA` with a warning.
 #' @param test_rp Two-trait models only: LRT of *all* covariances = 0
 #'   (`idh` for the genetic, extra random and residual terms; `df` = number
 #'   of covariance / correlation parameters). This tests whether the traits
@@ -100,8 +106,9 @@
 #' @param verbose Print progress.
 #'
 #' @return A list of class `asr_gblup` with `varcomp`, `vc_index`, `param`,
-#'   `accuracy` (one row per fold and trait, with `cv_converge` and the number
-#'   of iterations `cv_iter` of the fold's fit), `summary` and, if `keep_pred`,
+#'   `accuracy` (one row per fold and trait, with `cv_converge` and `cv_iter`,
+#'   the length of the fold fit's iteration history: about the number of
+#'   REML iterations; 2 for fixed variances), `summary` and, if `keep_pred`,
 #'   `pred`. Fitted model objects are not kept, which keeps memory use low.
 #'
 #' @seealso [asr_scenarios()] to run several scenarios from
@@ -122,7 +129,7 @@
 asr_gblup <- function(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL,
                       genetic_cov = "us", random_cov = "us", residual_cov = "us",
                       cv_vc = c("fixed", "warm", "estimate"), vpredict = NULL,
-                      inbreeding = NULL, min_rel = 0.05, neg_to_na = TRUE,
+                      inbreeding = NULL, min_rel = 0.05, min_n = 10L, neg_to_na = TRUE,
                       test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = c("include", "fail", "omit"),
                       dense = TRUE, maxit = 100L, workspace = "30Gb", max_update = 0L,
                       asreml_args = list(), on_error = c("warn", "stop"),
@@ -289,7 +296,7 @@ asr_gblup <- function(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", tr
         rm(fit); gc(verbose = FALSE)
       }
     }
-    acc_rows[[j]] <- cbind(meta[rep(1L, length(resp))], .accuracy(pred, resp, tn, h2_list[[i]], va),
+    acc_rows[[j]] <- cbind(meta[rep(1L, length(resp))], .accuracy(pred, resp, tn, h2_list[[i]], va, min_n),
                            cv_converge = conv, cv_iter = iter)
     if (keep_pred && !is.null(pred)) {
       pred[, trait := tn[match(trait, resp)]]

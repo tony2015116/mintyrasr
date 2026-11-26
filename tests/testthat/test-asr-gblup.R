@@ -77,8 +77,22 @@ test_that("LRT via lrt() gives rg_p; fixed-variance CV fits are quiet", {
                                    fixed = ~ hhys, verbose = FALSE))
   expect_true(is.finite(r$param$rg_p))
   expect_true(all(c("cv_converge", "cv_iter") %in% names(r$accuracy)))
-  expect_true(all(r$accuracy$cv_iter == 1L))
+  expect_true(all(r$accuracy$cv_iter >= 1L))
   r2 <- asr_gblup(sc$mt_mp$param, sc$mt_mp$cv[1:2, ], s$ginv, fixed = ~ hhys,
                   cv_vc = "estimate", verbose = FALSE)
   expect_true(all(r2$accuracy$cv_converge))
+})
+
+test_that("an LRT with df = 0 gives NA, not p = 0; min_n drops tiny folds", {
+  skip_if_no_mock()
+  s <- sim_data()
+  sc <- mintyr::cv_scenarios(s$pheno, cols = c("adg", "bf"), id = "id", group = "test_herd",
+                             v = 3, seed = 1, scenarios = "mt_mp", out_type = "df")
+  old <- options(mock.lrt_df0 = TRUE); on.exit(options(old))
+  expect_warning(r <- asr_gblup(sc$mt_mp$param, sc$mt_mp$cv[1, ], s$ginv, verbose = FALSE),
+                 "df = 0")
+  expect_true(is.na(r$param$rg_p))
+  options(old)
+  r2 <- asr_gblup(sc$mt_mp$param, sc$mt_mp$cv[1, ], s$ginv, min_n = 1e6, verbose = FALSE)
+  expect_true(all(is.na(r2$accuracy$pa)) && all(r2$accuracy$n > 0))
 })

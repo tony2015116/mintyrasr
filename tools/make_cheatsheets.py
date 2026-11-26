@@ -6,7 +6,7 @@ The CSS and the small R highlighter are shared with the mintyr cheatsheet
 """
 import pathlib
 
-VERSION = "0.3.1"
+VERSION = "0.3.2"
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 CSS = (ROOT / "tools" / "cheatsheet.css").read_text(encoding="utf-8")
 
@@ -160,7 +160,7 @@ inbreeding &lt;- data.frame(id = rownames(G), F = diag(G) - 1)</code></pre>
     <p>One workbook per scenario: <code>&lt;dir&gt;/&lt;scenario&gt;_&lt;tag&gt;.xlsx</code>. <code>"mt_bt"</code>: diag residual, no rp.</p>
   </div>
   <div class="fn">
-    <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, min_rel = 0.05, neg_to_na = TRUE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = TRUE, maxit = 100, workspace = "30Gb", max_update = 0, asreml_args = list(), on_error = "warn", keep_pred = TRUE, path = NULL, verbose = TRUE)</div>
+    <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, min_rel = 0.05, min_n = 10, neg_to_na = TRUE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = TRUE, maxit = 100, workspace = "30Gb", max_update = 0, asreml_args = list(), on_error = "warn", keep_pred = TRUE, path = NULL, verbose = TRUE)</div>
     <pre><code>res &lt;- asr_scenarios(sc, ginv, fixed = ~ hhys,
                      inbreeding = inbreeding, dir = "results")
 st &lt;- asr_gblup(sc$st_sp$param, sc$st_sp$cv, ginv,
@@ -236,7 +236,7 @@ asr_gblup(..., random = ~ ide(id),
     </table>
     <table>
       <tr><th>measure</th><th>definition</th></tr>
-      <tr><td><code>rel</code></td><td>1 &minus; PEV / ((1 + F) Va), Va of the fold; &lt; <code>min_rel</code> dropped</td></tr>
+      <tr><td><code>rel</code></td><td>1 &minus; PEV / ((1 + F) Va), Va of the fold; &lt; <code>min_rel</code> dropped; fold needs &ge; <code>min_n</code> = 10 left</td></tr>
       <tr><td><code>pa</code></td><td>r(y, GEBV)</td></tr>
       <tr><td><code>accuracy</code></td><td>pa / &radic;h2, full-data h2</td></tr>
       <tr><td><code>slope</code></td><td>b(y ~ GEBV), ideally 1</td></tr>
@@ -336,7 +336,7 @@ inbreeding &lt;- data.frame(id = rownames(G), F = diag(G) - 1)</code></pre>
     <p>每个场景一个工作簿：<code>&lt;dir&gt;/&lt;场景&gt;_&lt;tag&gt;.xlsx</code>。<code>"mt_bt"</code>：diag 残差，不算 rp。</p>
   </div>
   <div class="fn">
-    <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, min_rel = 0.05, neg_to_na = TRUE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = TRUE, maxit = 100, workspace = "30Gb", max_update = 0, asreml_args = list(), on_error = "warn", keep_pred = TRUE, path = NULL, verbose = TRUE)</div>
+    <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, min_rel = 0.05, min_n = 10, neg_to_na = TRUE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = TRUE, maxit = 100, workspace = "30Gb", max_update = 0, asreml_args = list(), on_error = "warn", keep_pred = TRUE, path = NULL, verbose = TRUE)</div>
     <pre><code>res &lt;- asr_scenarios(sc, ginv, fixed = ~ hhys,
                      inbreeding = inbreeding, dir = "results")
 st &lt;- asr_gblup(sc$st_sp$param, sc$st_sp$cv, ginv,
@@ -412,7 +412,7 @@ asr_gblup(..., random = ~ ide(id),
     </table>
     <table>
       <tr><th>指标</th><th>定义</th></tr>
-      <tr><td><code>rel</code></td><td>1 &minus; PEV / ((1 + F) Va)，Va 取当折；低于 <code>min_rel</code> 的不用</td></tr>
+      <tr><td><code>rel</code></td><td>1 &minus; PEV / ((1 + F) Va)，Va 取当折；低于 <code>min_rel</code> 的不用；每折至少剩 <code>min_n</code> = 10 个</td></tr>
       <tr><td><code>pa</code></td><td>r(y, GEBV)，预测能力</td></tr>
       <tr><td><code>accuracy</code></td><td>pa / &radic;h2，h2 用全数据估计值</td></tr>
       <tr><td><code>slope</code></td><td>b(y ~ GEBV)，理想值 1</td></tr>

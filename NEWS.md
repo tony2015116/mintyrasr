@@ -1,3 +1,19 @@
+# mintyrasr 0.3.2
+
+From the second validation run with ASReml-R 4.2.0.481:
+
+* An LRT where both models have the same number of free parameters (df = 0,
+  e.g. a covariance restrained at a bound) gives `rg_p = NA` with a warning,
+  instead of a misleading p = 0.
+* New `min_n = 10`: a fold needs at least `min_n` validation individuals with
+  a usable GEBV (after `min_rel`) for PA, accuracy and slope. With a low h2
+  the reliability filter could leave 2-7 animals and PA / slope were noise.
+* `cv_iter` is documented as the length of the iteration history (2 for
+  fixed variances).
+* Confirmed on real ASReml-R: `rg_p` equals `lrt(full, idh, boundary = FALSE)`;
+  fixed-variance CV fits give no warnings; `cv_vc = "warm"` needs about half
+  the iterations of `"estimate"` and gives the same results.
+
 # mintyrasr 0.3.1
 
 Fixes found by running the validation script with ASReml-R 4.2.0.481:

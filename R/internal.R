@@ -104,10 +104,21 @@ NULL
     warning(sprintf("[%s] no lrt() / lrt.asreml() in this ASReml-R version.", lab), call. = FALSE)
     return(NULL)
   }
-  tryCatch(as.data.frame(fn(full, reduced, boundary = FALSE)), error = function(e) {
+  lr <- tryCatch(withCallingHandlers(as.data.frame(fn(full, reduced, boundary = FALSE)),
+    warning = function(w) {              # reported below with more context
+      if (grepl("same number of parameters", conditionMessage(w))) invokeRestart("muffleWarning")
+    }), error = function(e) {
     warning(sprintf("[%s] LRT failed: %s", lab, conditionMessage(e)), call. = FALSE)
     NULL
   })
+  # df = 0: both models have the same number of free parameters (e.g. the
+  # covariance was restrained or fixed at a bound), so the test is not valid
+  if (!is.null(lr) && !isTRUE(lr[[1L]][1L] > 0)) {
+    warning(sprintf("[%s] LRT not valid: df = %s (a parameter is restrained or at a bound); p set to NA.",
+                    lab, format(lr[[1L]][1L])), call. = FALSE)
+    return(NULL)
+  }
+  lr
 }
 
 # Start-value table from start.values = TRUE, with Value filled in by
@@ -295,14 +306,14 @@ NULL
 
 # Predictive ability PA = r(y, GEBV); accuracy = PA / sqrt(h2) with the
 # full-data h2 (Dekkers 2007); slope b(y ~ GEBV), ideally close to 1.
-.accuracy <- function(pred, resp, tn, h2, va) {
+.accuracy <- function(pred, resp, tn, h2, va, min_n = 10L) {
   res <- lapply(resp, function(r) {
     na <- list(n = 0L, pa = NA_real_, slope = NA_real_,
                n_obs = if (is.null(pred)) NA_integer_ else sum(pred$trait == r & !is.na(pred$obs)))
     if (is.null(pred)) return(na)
     p  <- pred[trait == r & !is.na(obs) & !is.na(gebv)]
     n  <- nrow(p)
-    if (n < 3L || stats::var(p$gebv) == 0) return(utils::modifyList(na, list(n = n)))
+    if (n < max(3L, min_n) || stats::var(p$gebv) == 0) return(utils::modifyList(na, list(n = n)))
     list(n = n, pa = stats::cor(p$obs, p$gebv),
          slope = unname(stats::coef(stats::lm(obs ~ gebv, data = p))[2L]), n_obs = na$n_obs)
   })

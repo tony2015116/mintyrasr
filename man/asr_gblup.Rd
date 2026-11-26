@@ -19,6 +19,7 @@ asr_gblup(
   vpredict = NULL,
   inbreeding = NULL,
   min_rel = 0.05,
+  min_n = 10L,
   neg_to_na = TRUE,
   test_rg = TRUE,
   test_rp = FALSE,
@@ -85,11 +86,18 @@ F = 0. For GBLUP, \code{F = diag(G) - 1} is common.}
 \item{min_rel}{GEBVs with reliability below this value are set to \code{NA}
 before computing PA / accuracy. Use \code{-Inf} to keep all.}
 
+\item{min_n}{Minimum number of validation individuals with a usable GEBV
+(after \code{min_rel}) for PA, accuracy and slope of a fold; fewer gives \code{NA}
+(\code{n} still shows the number). With a low h2 the reliability filter can
+leave only a handful of individuals, whose PA and slope are noise.}
+
 \item{neg_to_na}{Set negative PA / accuracy / slope to \code{NA} before the
 summary (the behaviour of the original scripts).}
 
 \item{test_rg}{Two-trait models only: LRT of rg = 0 (\code{idh(trait)} genetic
-structure, other structures unchanged, \code{boundary = FALSE}).}
+structure, other structures unchanged, \code{boundary = FALSE}). If both
+models end up with the same number of free parameters (df = 0, e.g. a
+restrained covariance), \code{rg_p} is \code{NA} with a warning.}
 
 \item{test_rp}{Two-trait models only: LRT of \emph{all} covariances = 0
 (\code{idh} for the genetic, extra random and residual terms; \code{df} = number
@@ -126,8 +134,9 @@ results, the loop continues. \code{"stop"}: stop at the first failure.}
 }
 \value{
 A list of class \code{asr_gblup} with \code{varcomp}, \code{vc_index}, \code{param},
-\code{accuracy} (one row per fold and trait, with \code{cv_converge} and the number
-of iterations \code{cv_iter} of the fold's fit), \code{summary} and, if \code{keep_pred},
+\code{accuracy} (one row per fold and trait, with \code{cv_converge} and \code{cv_iter},
+the length of the fold fit's iteration history: about the number of
+REML iterations; 2 for fixed variances), \code{summary} and, if \code{keep_pred},
 \code{pred}. Fitted model objects are not kept, which keeps memory use low.
 }
 \description{

@@ -1,6 +1,6 @@
 Package: mintyrasr
 Title: Run 'mintyr' GBLUP Cross-Validation Scenarios Directly in 'ASReml-R'
-Version: 0.3.1
+Version: 0.3.2
 Authors@R: person("Guo Meng", email = "tony2015116@163.com", role = c("aut", "cre", "cph"))
 Description: Fits single- and two-trait GBLUP models with 'ASReml-R' to the
     nested parameter-estimation and cross-validation data built by

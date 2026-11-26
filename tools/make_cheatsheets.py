@@ -6,7 +6,7 @@ The CSS and the small R highlighter are shared with the mintyr cheatsheet
 """
 import pathlib
 
-VERSION = "0.3.2"
+VERSION = "0.4.0"
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 CSS = (ROOT / "tools" / "cheatsheet.css").read_text(encoding="utf-8")
 
@@ -160,7 +160,7 @@ inbreeding &lt;- data.frame(id = rownames(G), F = diag(G) - 1)</code></pre>
     <p>One workbook per scenario: <code>&lt;dir&gt;/&lt;scenario&gt;_&lt;tag&gt;.xlsx</code>. <code>"mt_bt"</code>: diag residual, no rp.</p>
   </div>
   <div class="fn">
-    <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, min_rel = 0.05, min_n = 10, neg_to_na = TRUE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = TRUE, maxit = 100, workspace = "30Gb", max_update = 0, asreml_args = list(), on_error = "warn", keep_pred = TRUE, path = NULL, verbose = TRUE)</div>
+    <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, cv_min_rel = -Inf, min_rel = 0.05, min_n = 10, neg_to_na = FALSE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = TRUE, maxit = 100, workspace = "30Gb", max_update = 2, nonconv = "skip", asreml_args = list(), asreml_trace = FALSE, on_error = "warn", keep_pred = TRUE, keep_gebv = TRUE, path = NULL, verbose = TRUE)</div>
     <pre><code>res &lt;- asr_scenarios(sc, ginv, fixed = ~ hhys,
                      inbreeding = inbreeding, dir = "results")
 st &lt;- asr_gblup(sc$st_sp$param, sc$st_sp$cv, ginv,
@@ -236,7 +236,7 @@ asr_gblup(..., random = ~ ide(id),
     </table>
     <table>
       <tr><th>measure</th><th>definition</th></tr>
-      <tr><td><code>rel</code></td><td>1 &minus; PEV / ((1 + F) Va), Va of the fold; &lt; <code>min_rel</code> dropped; fold needs &ge; <code>min_n</code> = 10 left</td></tr>
+      <tr><td><code>rel</code></td><td>1 &minus; PEV / ((1 + F) Va), Va of the fold; <b>not filtered</b> in CV (<code>cv_min_rel = -Inf</code>); fold needs &ge; <code>min_n</code> = 10</td></tr>
       <tr><td><code>pa</code></td><td>r(y, GEBV)</td></tr>
       <tr><td><code>accuracy</code></td><td>pa / &radic;h2, full-data h2</td></tr>
       <tr><td><code>slope</code></td><td>b(y ~ GEBV), ideally 1</td></tr>
@@ -252,9 +252,11 @@ asr_gblup(..., random = ~ ide(id),
       <tr><td><code>varcomp</code></td><td>summary(fit)$varcomp + <code>V</code></td></tr>
       <tr><td><code>vc_index</code></td><td>V &rarr; term, role, kind, traits, used</td></tr>
       <tr><td><code>param</code></td><td>h2, rg, rp (+ SE), <code>formulas</code>, converge, loglik, boundary, tests</td></tr>
-      <tr><td><code>accuracy</code></td><td>rep &times; fold &times; trait: n, pa, accuracy, slope, va, h2_full</td></tr>
+      <tr><td><code>accuracy</code></td><td>rep &times; fold &times; trait: status, n, pa, accuracy, slope, va, cv_iter</td></tr>
       <tr><td><code>summary</code></td><td>pa / accuracy / slope: n, mean, sd, se</td></tr>
       <tr><td><code>pred</code></td><td>validation: obs, gebv, pev, inb, rel</td></tr>
+      <tr><td><code>gebv</code></td><td>all individuals (full data): gebv, pev, rel, <code>reliable</code> = rel &ge; <code>min_rel</code></td></tr>
+      <tr><td><code>log</code></td><td>errors, non-convergence, boundary, invalid LRT</td></tr>
     </table>
   </div>
 </section>
@@ -265,8 +267,10 @@ asr_gblup(..., random = ~ ide(id),
     <ul>
       <li>warnings: no <code>INVERSE</code> attribute; IDs not in <code>ginv</code>; components at the boundary (<code>B</code>, also <code>param$boundary</code>); <code>gammaPar = TRUE</code>; no convergence</li>
       <li>ASReml defaults <code>maxit = 13</code>, <code>workspace = "128mb"</code> are too small for two-trait GBLUP</li>
-      <li><code>max_update = 2</code> &rarr; <code>update()</code> on non-converged fits</li>
-      <li><code>on_error = "warn"</code>: a failing fit gives <code>NA</code>, the loop goes on</li>
+      <li>one progress line per fit: status, iterations, time, ~time left (ASReml monitor off: <code>asreml_trace = FALSE</code>)</li>
+      <li><code>max_update = 2</code> &rarr; <code>update()</code>; still not converged: <code>nonconv = "skip"</code> (CV rows skipped) or <code>"keep"</code></li>
+      <li>errors &amp; non-convergence &rarr; <code>status</code> + <code>$log</code>, the loop goes on; rows with status &ne; ok are not in <code>summary</code></li>
+      <li>keep the computer awake: sleep shows up as a long pause</li>
       <li>models are not kept &rarr; low memory</li>
       <li><code>asreml_args = list(ai.sing = TRUE)</code> for other <code>asreml()</code> arguments</li>
     </ul>
@@ -336,7 +340,7 @@ inbreeding &lt;- data.frame(id = rownames(G), F = diag(G) - 1)</code></pre>
     <p>每个场景一个工作簿：<code>&lt;dir&gt;/&lt;场景&gt;_&lt;tag&gt;.xlsx</code>。<code>"mt_bt"</code>：diag 残差，不算 rp。</p>
   </div>
   <div class="fn">
-    <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, min_rel = 0.05, min_n = 10, neg_to_na = TRUE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = TRUE, maxit = 100, workspace = "30Gb", max_update = 0, asreml_args = list(), on_error = "warn", keep_pred = TRUE, path = NULL, verbose = TRUE)</div>
+    <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, cv_min_rel = -Inf, min_rel = 0.05, min_n = 10, neg_to_na = FALSE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = TRUE, maxit = 100, workspace = "30Gb", max_update = 2, nonconv = "skip", asreml_args = list(), asreml_trace = FALSE, on_error = "warn", keep_pred = TRUE, keep_gebv = TRUE, path = NULL, verbose = TRUE)</div>
     <pre><code>res &lt;- asr_scenarios(sc, ginv, fixed = ~ hhys,
                      inbreeding = inbreeding, dir = "results")
 st &lt;- asr_gblup(sc$st_sp$param, sc$st_sp$cv, ginv,
@@ -412,7 +416,7 @@ asr_gblup(..., random = ~ ide(id),
     </table>
     <table>
       <tr><th>指标</th><th>定义</th></tr>
-      <tr><td><code>rel</code></td><td>1 &minus; PEV / ((1 + F) Va)，Va 取当折；低于 <code>min_rel</code> 的不用；每折至少剩 <code>min_n</code> = 10 个</td></tr>
+      <tr><td><code>rel</code></td><td>1 &minus; PEV / ((1 + F) Va)，Va 取当折；交叉验证中<b>不过滤</b>（<code>cv_min_rel = -Inf</code>）；每折至少 <code>min_n</code> = 10 个</td></tr>
       <tr><td><code>pa</code></td><td>r(y, GEBV)，预测能力</td></tr>
       <tr><td><code>accuracy</code></td><td>pa / &radic;h2，h2 用全数据估计值</td></tr>
       <tr><td><code>slope</code></td><td>b(y ~ GEBV)，理想值 1</td></tr>
@@ -428,9 +432,11 @@ asr_gblup(..., random = ~ ide(id),
       <tr><td><code>varcomp</code></td><td>summary(fit)$varcomp + <code>V</code></td></tr>
       <tr><td><code>vc_index</code></td><td>V &rarr; 所属项、角色、类型、性状、是否使用</td></tr>
       <tr><td><code>param</code></td><td>h2、rg、rp（含 SE）、<code>formulas</code>、converge、loglik、boundary、检验</td></tr>
-      <tr><td><code>accuracy</code></td><td>重复 &times; 折 &times; 性状：n、pa、accuracy、slope、va、h2_full</td></tr>
+      <tr><td><code>accuracy</code></td><td>重复 &times; 折 &times; 性状：status、n、pa、accuracy、slope、va、cv_iter</td></tr>
       <tr><td><code>summary</code></td><td>pa / accuracy / slope：n、mean、sd、se</td></tr>
       <tr><td><code>pred</code></td><td>验证个体：obs、gebv、pev、inb、rel</td></tr>
+      <tr><td><code>gebv</code></td><td>全数据所有个体：gebv、pev、rel、<code>reliable</code> = rel &ge; <code>min_rel</code></td></tr>
+      <tr><td><code>log</code></td><td>出错、未收敛、边界、LRT 无效</td></tr>
     </table>
   </div>
 </section>
@@ -441,8 +447,10 @@ asr_gblup(..., random = ~ ide(id),
     <ul>
       <li>警告：ginv 无 <code>INVERSE</code> 属性；个体不在 <code>ginv</code> 中；组分在边界上（<code>B</code>，也记在 <code>param$boundary</code>）；<code>gammaPar = TRUE</code>；未收敛</li>
       <li>ASReml 默认 <code>maxit = 13</code>、<code>workspace = "128mb"</code>，两性状 GBLUP 不够用</li>
-      <li><code>max_update = 2</code> &rarr; 对未收敛模型调用 <code>update()</code></li>
-      <li><code>on_error = "warn"</code>：某次拟合失败结果为 <code>NA</code>，循环继续</li>
+      <li>每个模型一行进度：状态、迭代、用时、预计剩余（关闭 ASReml 迭代输出：<code>asreml_trace = FALSE</code>）</li>
+      <li><code>max_update = 2</code> &rarr; <code>update()</code>；仍不收敛：<code>nonconv = "skip"</code>（跳过其交叉验证）或 <code>"keep"</code></li>
+      <li>出错、未收敛 &rarr; 记 <code>status</code> 和 <code>$log</code>，循环继续；status &ne; ok 的行不进 <code>summary</code></li>
+      <li>长时间运行请保持电脑唤醒：休眠表现为长时间停顿</li>
       <li>不保存模型对象 &rarr; 内存占用低</li>
       <li>其他 <code>asreml()</code> 参数：<code>asreml_args = list(ai.sing = TRUE)</code></li>
     </ul>

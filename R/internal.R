@@ -66,22 +66,29 @@ NULL
   if (!is.null(vc)) { cl$G.param <- quote(vc); cl$R.param <- quote(vc) }
   for (nm in names(spec$asreml_args)) cl[[nm]] <- spec$asreml_args[[nm]]
   if (start_values) { cl$start.values <- TRUE; return(eval(cl)) }
-  if (!check_converge) {
-    # all variances fixed, maxit = 1: one iteration solves the mixed model
-    # equations, so ASReml's "not converged" warnings are expected here
-    return(withCallingHandlers(eval(cl), warning = function(w) {
-      if (grepl("not converged|changed by more than", conditionMessage(w)))
-        invokeRestart("muffleWarning")
-    }))
-  }
-  fit <- eval(cl)
+  # ASReml's own convergence messages are handled here (fit$converge,
+  # update()); the caller records the outcome
+  quiet <- function(expr) withCallingHandlers(expr, warning = function(w) {
+    if (grepl("not converged|changed by more than", conditionMessage(w)))
+      invokeRestart("muffleWarning")
+  })
+  # all variances fixed, maxit = 1: one iteration solves the mixed model equations
+  if (!check_converge) return(quiet(eval(cl)))
+  fit <- quiet(eval(cl))
   k <- 0L
   while (!isTRUE(fit$converge) && k < spec$max_update) {
-    fit <- stats::update(fit); k <- k + 1L
+    fit <- quiet(stats::update(fit)); k <- k + 1L
   }
-  if (!isTRUE(fit$converge))
-    warning("ASReml did not converge (", deparse(fx), ").", call. = FALSE)
+  attr(fit, "n_update") <- k
   fit
+}
+
+# Seconds -> "12s" / "3.4 min" / "1.2 h"
+.fmt_time <- function(sec) {
+  sec <- as.numeric(sec)
+  if (!is.finite(sec)) return("?")
+  if (sec < 90) sprintf("%.0fs", sec) else if (sec < 5400) sprintf("%.1f min", sec / 60)
+  else sprintf("%.1f h", sec / 3600)
 }
 
 # Number of REML iterations of a fit (rows of the iteration history), NA if unknown
@@ -282,25 +289,33 @@ NULL
   if (is.null(ids)) NULL else as.character(ids)
 }
 
-# GEBV, PEV and reliability of the validation individuals
-.validate <- function(fit, val, id, resp, va, Ftab, min_rel) {
+# GEBV, PEV and reliability of every individual of the genomic term
+.gebv_table <- function(fit, id, resp, va, Ftab) {
   cr <- as.data.frame(summary(fit, coef = TRUE)$coef.random)
   rn <- rownames(cr)
-  g  <- grepl(paste0("^(trait_[^:]+:)?", .gpat(id), "_"), rn)   # genomic term only
+  pre <- paste0("^(trait_[^:]+:)?", .gpat(id), "_")
+  g  <- grepl(pre, rn)                                    # genomic term only
   cr <- cr[g, , drop = FALSE]; rn <- rn[g]
-  tr <- if (length(resp) == 1L) rep(resp, length(rn))
-        else sub("^trait_([^:]+):.*$", "\\1", rn)
-  ids <- sub(paste0("^(trait_[^:]+:)?", .gpat(id), "_"), "", rn)   # IDs may contain "_"
-  gebv <- data.table::data.table(id = ids, trait = tr,
-                                 gebv = cr$solution, pev = cr$std.error^2)
+  tr <- if (length(resp) == 1L) rep(resp, length(rn)) else sub("^trait_([^:]+):.*$", "\\1", rn)
+  out <- data.table::data.table(id = sub(pre, "", rn),     # IDs may contain "_"
+                                trait = tr, gebv = cr$solution, pev = cr$std.error^2)
+  out[, inb := if (is.null(Ftab)) 0 else Ftab$F[match(id, Ftab$id)]]
+  out[, rel := 1 - pev / ((1 + inb) * va[trait])]
+  out
+}
+
+# GEBVs of the validation individuals joined to their records. Validation
+# individuals have no own record in the training set, so a low reliability is
+# expected; by default (cv_min_rel = -Inf) all of them are kept, as a filter
+# would bias PA towards well-connected individuals.
+.validate <- function(fit, val, id, resp, va, Ftab, cv_min_rel = -Inf) {
+  gebv <- .gebv_table(fit, id, resp, va, Ftab)
   v <- data.table::as.data.table(val)
   obs <- data.table::melt(
     data.table::data.table(id = as.character(v[[id]]), v[, resp, with = FALSE]),
     id.vars = "id", variable.name = "trait", value.name = "obs", variable.factor = FALSE)
   out <- gebv[obs, on = c("id", "trait")]
-  out[, inb := if (is.null(Ftab)) 0 else Ftab$F[match(id, Ftab$id)]]
-  out[, rel := 1 - pev / ((1 + inb) * va[trait])]
-  out[is.na(rel) | rel < min_rel, gebv := NA_real_]
+  if (is.finite(cv_min_rel)) out[is.na(rel) | rel < cv_min_rel, gebv := NA_real_]
   out[, c("id", "trait", "obs", "gebv", "pev", "inb", "rel"), with = FALSE]
 }
 
@@ -366,4 +381,21 @@ NULL
 }
 
 utils::globalVariables(c(".pi", "trait", "obs", "gebv", "pev", "inb", "rel", "id",
-                         "value", "pa", "accuracy", "slope", "n_obs", "V", "."))
+                         "value", "pa", "accuracy", "slope", "n_obs", "V", "status", "reliable", "."))
+
+# Write the result list: one sheet per element; tables beyond Excel's row
+# limit (e.g. GEBVs of many individuals x traits) go to <path>_<name>.csv
+.write_results <- function(out, path, verbose = TRUE) {
+  if (!requireNamespace("writexl", quietly = TRUE))
+    stop("Package 'writexl' is needed to write `path`.", call. = FALSE)
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  big <- vapply(out, nrow, integer(1L)) > 1048575L
+  for (nm in names(out)[big]) {
+    csv <- sub("\\.xlsx$", paste0("_", nm, ".csv"), path)
+    data.table::fwrite(out[[nm]], csv)
+    if (verbose) message("Written: ", csv, " (too many rows for Excel)")
+  }
+  writexl::write_xlsx(lapply(out[!big], as.data.frame), path)
+  if (verbose) message("Written: ", path)
+  invisible(path)
+}

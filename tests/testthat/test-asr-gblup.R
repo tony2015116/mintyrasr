@@ -63,9 +63,10 @@ test_that("warnings for a matrix without INVERSE and for boundary components", {
   g <- s$ginv; attr(g, "INVERSE") <- NULL
   expect_warning(asr_gblup(sc$mt_mp$param, sc$mt_mp$cv[1, ], g, verbose = FALSE), "INVERSE")
   old <- options(mock.boundary = TRUE); on.exit(options(old))
-  expect_warning(r <- asr_gblup(sc$mt_mp$param, sc$mt_mp$cv[1, ], s$ginv, random = ~ litter,
-                                random_cov = "idh", verbose = FALSE), "boundary")
+  r <- asr_gblup(sc$mt_mp$param, sc$mt_mp$cv[1, ], s$ginv, random = ~ litter,
+                 random_cov = "idh", verbose = FALSE)
   expect_match(r$param$boundary, "litter")
+  expect_true("boundary" %in% r$log$type)
 })
 
 test_that("LRT via lrt() gives rg_p; fixed-variance CV fits are quiet", {
@@ -89,10 +90,83 @@ test_that("an LRT with df = 0 gives NA, not p = 0; min_n drops tiny folds", {
   sc <- mintyr::cv_scenarios(s$pheno, cols = c("adg", "bf"), id = "id", group = "test_herd",
                              v = 3, seed = 1, scenarios = "mt_mp", out_type = "df")
   old <- options(mock.lrt_df0 = TRUE); on.exit(options(old))
-  expect_warning(r <- asr_gblup(sc$mt_mp$param, sc$mt_mp$cv[1, ], s$ginv, verbose = FALSE),
-                 "df = 0")
+  r <- asr_gblup(sc$mt_mp$param, sc$mt_mp$cv[1, ], s$ginv, verbose = FALSE)
   expect_true(is.na(r$param$rg_p))
+  expect_true(any(grepl("df = 0", r$log$message)))
   options(old)
   r2 <- asr_gblup(sc$mt_mp$param, sc$mt_mp$cv[1, ], s$ginv, min_n = 1e6, verbose = FALSE)
   expect_true(all(is.na(r2$accuracy$pa)) && all(r2$accuracy$n > 0))
+})
+
+mt_setup <- function() {
+  s <- sim_data()
+  sc <- mintyr::cv_scenarios(s$pheno, cols = c("adg", "bf"), id = "id", group = "test_herd",
+                             v = 3, seed = 1, scenarios = "mt_mp", out_type = "df")
+  list(s = s, sc = sc)
+}
+
+test_that("no reliability filter in CV by default; min_rel flags the final GEBVs", {
+  skip_if_no_mock()
+  x <- mt_setup()
+  r <- asr_gblup(x$sc$mt_mp$param, x$sc$mt_mp$cv[1:2, ], x$s$ginv, inbreeding = x$s$F,
+                 verbose = FALSE)
+  expect_false(anyNA(r$pred$gebv))                       # nobody dropped by default
+  r2 <- asr_gblup(x$sc$mt_mp$param, x$sc$mt_mp$cv[1:2, ], x$s$ginv, inbreeding = x$s$F,
+                  cv_min_rel = 0.5, verbose = FALSE)
+  expect_true(any(r2$pred$rel < 0.5))
+  expect_true(all(is.na(r2$pred$gebv[r2$pred$rel < 0.5])))
+  expect_equal(nrow(r$gebv), nrow(x$s$ginv) * 2L)          # all individuals x 2 traits
+  expect_equal(r$gebv$reliable, r$gebv$rel >= 0.05)
+  expect_setequal(unique(r$gebv$trait), c("adg", "bf"))
+})
+
+test_that("update() rescues a non-converged fit", {
+  skip_if_no_mock()
+  x <- mt_setup()
+  old <- options(mock.nonconv = TRUE, mock.update_fixes = TRUE); on.exit(options(old))
+  r <- asr_gblup(x$sc$mt_mp$param, x$sc$mt_mp$cv[1, ], x$s$ginv, verbose = FALSE)
+  expect_true(r$param$converge)
+  expect_equal(r$param$updates, 1L)
+  expect_equal(unique(r$accuracy$status), "ok")
+})
+
+test_that("non-converged fits are skipped and logged, or kept", {
+  skip_if_no_mock()
+  x <- mt_setup()
+  old <- options(mock.nonconv = TRUE); on.exit(options(old))
+  expect_warning(r <- asr_gblup(x$sc$mt_mp$param, x$sc$mt_mp$cv[1:2, ], x$s$ginv,
+                                verbose = FALSE), "see `\\$log`")
+  expect_equal(r$param$status, "not_converged")
+  expect_equal(r$param$updates, 2L)
+  expect_true(all(r$accuracy$status == "param_not_converged"))
+  expect_true(all(is.na(r$accuracy$pa)))
+  expect_true("not_converged" %in% r$log$type)
+  expect_true(nrow(r$summary) == 0L || all(r$summary$n == 0L))
+  expect_warning(k <- asr_gblup(x$sc$mt_mp$param, x$sc$mt_mp$cv[1:2, ], x$s$ginv,
+                                nonconv = "keep", verbose = FALSE))
+  expect_equal(k$param$status, "not_converged_kept")
+  expect_true(all(k$accuracy$status == "ok"))
+
+  old2 <- options(mock.nonconv = TRUE)
+  cvx <- suppressWarnings(asr_gblup(x$sc$mt_mp$param, x$sc$mt_mp$cv[1, ], x$s$ginv,
+                                    nonconv = "keep", cv_vc = "estimate", verbose = FALSE))
+  expect_true(all(cvx$accuracy$cv_updates == 2L))
+})
+
+test_that("a failing fit is logged and the loop goes on", {
+  skip_if_no_mock()
+  x <- mt_setup()
+  cvt <- x$sc$mt_mp$cv[1:2, ]
+  cvt$train[[2]]$id <- NULL                     # makes this fold fail
+  expect_warning(r <- asr_gblup(x$sc$mt_mp$param, cvt, x$s$ginv, verbose = FALSE), "log")
+  expect_equal(sort(unique(r$accuracy$status)), c("failed", "ok"))
+  expect_true("error" %in% r$log$type)
+  expect_error(asr_gblup(x$sc$mt_mp$param, cvt, x$s$ginv, on_error = "stop", verbose = FALSE))
+})
+
+test_that("progress lines", {
+  skip_if_no_mock()
+  x <- mt_setup()
+  expect_message(asr_gblup(x$sc$mt_mp$param, x$sc$mt_mp$cv[1, ], x$s$ginv),
+                 "\\[cv 1/1 +100%\\].*left")
 })

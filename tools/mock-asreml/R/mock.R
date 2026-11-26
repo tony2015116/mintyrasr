@@ -59,7 +59,7 @@ asreml <- function(fixed, random, residual, dense = NULL, na.action, data, G.par
   vp <- setNames(comp, nm)
   if (isTRUE(getOption("mock.shuffle"))) { vc <- vc[rev(seq_len(nrow(vc))), ] }   # varcomp order != vparameters
   if (isTRUE(getOption("mock.boundary")) && mt) vc$bound[grepl("litter", rownames(vc))] <- "B"
-  structure(list(converge = TRUE, vc = vc, cr = cr, vparameters = vp,
+  structure(list(converge = !isTRUE(getOption("mock.nonconv")) || isTRUE(start.values), vc = vc, cr = cr, vparameters = vp,
                  trace = matrix(0, 2, if (!is.null(G.param) && all(G.param$Constraint == "F")) 1 else 5), loglik = -100 - diagG * 3), class = "asreml")
 }
 summary.asreml <- function(object, coef = FALSE, ...) {
@@ -67,7 +67,12 @@ summary.asreml <- function(object, coef = FALSE, ...) {
   if (coef) out$coef.random <- as.matrix(object$cr)
   out
 }
-update.asreml <- function(object, ...) object
+update.asreml <- function(object, ...) {
+  object$n_upd <- if (is.null(object$n_upd)) 1L else object$n_upd + 1L
+  if (isTRUE(getOption("mock.update_fixes"))) object$converge <- TRUE
+  else warning("Log-likelihood not converged")
+  object
+}
 vpredict <- function(object, transform) {
   V <- as.list(unname(object$vparameters)); names(V) <- paste0("V", seq_along(V))
   est <- eval(transform[[3]], V)

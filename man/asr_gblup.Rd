@@ -18,9 +18,10 @@ asr_gblup(
   cv_vc = c("fixed", "warm", "estimate"),
   vpredict = NULL,
   inbreeding = NULL,
+  cv_min_rel = -Inf,
   min_rel = 0.05,
   min_n = 10L,
-  neg_to_na = TRUE,
+  neg_to_na = FALSE,
   test_rg = TRUE,
   test_rp = FALSE,
   rp = TRUE,
@@ -28,10 +29,13 @@ asr_gblup(
   dense = TRUE,
   maxit = 100L,
   workspace = "30Gb",
-  max_update = 0L,
+  max_update = 2L,
+  nonconv = c("skip", "keep"),
   asreml_args = list(),
+  asreml_trace = FALSE,
   on_error = c("warn", "stop"),
   keep_pred = TRUE,
+  keep_gebv = TRUE,
   path = NULL,
   verbose = TRUE
 )
@@ -83,16 +87,22 @@ the \code{vc_index} table of a first run: they depend on the model.}
 is the ID and second column F, or a named numeric vector. \code{NULL} uses
 F = 0. For GBLUP, \code{F = diag(G) - 1} is common.}
 
-\item{min_rel}{GEBVs with reliability below this value are set to \code{NA}
-before computing PA / accuracy. Use \code{-Inf} to keep all.}
+\item{cv_min_rel}{Reliability filter for the validation individuals in
+cross-validation. Default \code{-Inf}: none. Validation individuals have no
+own record, so low reliabilities are expected; a filter keeps only the
+best-connected individuals, biases PA and shrinks the sample.}
 
-\item{min_n}{Minimum number of validation individuals with a usable GEBV
-(after \code{min_rel}) for PA, accuracy and slope of a fold; fewer gives \code{NA}
+\item{min_rel}{Reliability threshold for the final GEBVs of the full-data
+fit (\verb{$gebv}): sets \code{reliable = rel >= min_rel}; no rows are dropped.}
+
+\item{min_n}{Minimum number of validation individuals with a GEBV and a
+record for PA, accuracy and slope of a fold; fewer gives \code{NA}
 (\code{n} still shows the number). With a low h2 the reliability filter can
 leave only a handful of individuals, whose PA and slope are noise.}
 
 \item{neg_to_na}{Set negative PA / accuracy / slope to \code{NA} before the
-summary (the behaviour of the original scripts).}
+summary. Default \code{FALSE}: dropping negative values biases the mean
+upwards; \code{TRUE} reproduces the original scripts.}
 
 \item{test_rg}{Two-trait models only: LRT of rg = 0 (\code{idh(trait)} genetic
 structure, other structures unchanged, \code{boundary = FALSE}). If both
@@ -118,26 +128,53 @@ matrix - centre numeric covariates first; ASReml's own default is \code{"fail"}.
 ASReml's own defaults are 13 and \code{"128mb"}; two-trait GBLUP usually
 needs more.}
 
-\item{max_update}{Number of \code{update()} calls on a fit that has not converged.}
+\item{max_update}{Number of \code{update()} calls (continue iterating from the
+current estimates) on a fit that has not converged; recorded in
+\code{param$updates} and \code{accuracy$cv_updates}.}
+
+\item{nonconv}{What to do with a fit that has still not converged:
+\code{"skip"} (default) - a parameter fit is reported with
+\code{status = "not_converged"} and its CV rows are skipped, a CV fit gives \code{NA}
+for that fold; \code{"keep"} - use it anyway. Always recorded in \verb{$log}.}
 
 \item{asreml_args}{Named list of further \code{asreml()} arguments, e.g.
 \code{list(ai.sing = TRUE)}.}
 
-\item{on_error}{\code{"warn"} (default): a failing fit gives a warning and \code{NA}
-results, the loop continues. \code{"stop"}: stop at the first failure.}
+\item{asreml_trace}{Show ASReml's iteration monitor. Default \code{FALSE}: the
+progress lines of mintyrasr are shown instead.}
+
+\item{on_error}{\code{"warn"} (default): a failing fit is recorded in \verb{$log},
+gives \code{NA} results and the loop continues (one warning at the end).
+\code{"stop"}: stop at the first failure.}
 
 \item{keep_pred}{Return the validation predictions (\code{pred}).}
+
+\item{keep_gebv}{Return the GEBVs of all individuals from the full-data
+fits (\code{gebv}: gebv, pev, inb (F), rel, reliable).}
 
 \item{path}{Optional \code{.xlsx} file to write the results to.}
 
 \item{verbose}{Print progress.}
 }
 \value{
-A list of class \code{asr_gblup} with \code{varcomp}, \code{vc_index}, \code{param},
-\code{accuracy} (one row per fold and trait, with \code{cv_converge} and \code{cv_iter},
-the length of the fold fit's iteration history: about the number of
-REML iterations; 2 for fixed variances), \code{summary} and, if \code{keep_pred},
-\code{pred}. Fitted model objects are not kept, which keeps memory use low.
+A list of class \code{asr_gblup}:
+\itemize{
+\item \code{varcomp}, \code{vc_index}: variance components and which \code{V} is which;
+\item \code{param}: h2, rg, rp (+ SE), \code{formulas}, \code{status}, \code{converge}, \code{updates},
+\code{iterations}, \code{loglik}, \code{boundary}, tests;
+\item \code{accuracy}: one row per fold and trait: \code{status}, \code{n}, \code{pa}, \code{accuracy},
+\code{slope}, \code{va}, \code{h2_full}, \code{cv_converge}, \code{cv_updates}, \code{cv_iter} (length
+of the iteration history: about the number of REML iterations, 2 for
+fixed variances);
+\item \code{summary}: n, mean, sd, se over the folds with \code{status == "ok"};
+\item \code{pred} (if \code{keep_pred}): validation individuals;
+\item \code{gebv} (if \code{keep_gebv}): all individuals of the full-data fits;
+\item \code{log}: every error, non-convergence, boundary estimate and invalid LRT.
+}
+
+A \code{status} other than \code{"ok"} (\code{failed}, \code{not_converged}, \code{param_failed},
+\code{param_not_converged}, \code{no_start_values}) marks rows left out of
+\code{summary}. Fitted model objects are not kept, which keeps memory use low.
 }
 \description{
 \code{asr_gblup()} runs the whole GBLUP workflow for one scenario directly in R,
@@ -149,14 +186,23 @@ correlations plus an LRT of rg = 0 (\code{idh(trait)} vs the full genetic
 structure, \code{boundary = FALSE});
 \item refits the model to every training set in \code{cv}, with the variance
 components handled as set by \code{cv_vc};
-\item predicts GEBVs of the validation individuals, computes their
-reliability \code{1 - PEV / ((1 + F) * Va)}, drops GEBVs with reliability
-below \code{min_rel}, and returns per fold the predictive ability
+\item predicts GEBVs of the validation individuals (all of them: they have
+no own record, so a low reliability is expected and not filtered by
+default) and returns per fold the predictive ability
 \code{pa = r(y, GEBV)}, the accuracy \code{pa / sqrt(h2)} (h2 from the full data,
 Dekkers 2007) and the slope \code{b(y ~ GEBV)};
-\item summarises them over folds (n, mean, sd, se) and, optionally, writes
-everything to one Excel workbook.
+\item summarises them over folds (n, mean, sd, se), returns the GEBVs of all
+individuals from the full-data fit with their reliability (flag
+\code{reliable = rel >= min_rel}) and, optionally, writes everything to one
+Excel workbook.
 }
+
+Long runs are safe: every error, non-convergence, boundary estimate and
+invalid LRT is recorded in \verb{$log} (with time, stage and label) instead of
+stopping the loop; fits that do not converge are first continued with
+\code{update()} (\code{max_update}), and are then skipped (\code{nonconv = "skip"}) or
+kept. A progress line per fit shows status, iterations, time and the
+estimated time left.
 
 h2, rg and rp are built from the \strong{names} of the variance components,
 not from fixed \code{V} positions, so they stay correct when random effects

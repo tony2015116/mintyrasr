@@ -1,4 +1,5 @@
 #' @import data.table
+#' @importFrom utils globalVariables
 NULL
 
 # Internal helpers for asr_gblup() ------------------------------------------

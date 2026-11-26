@@ -6,7 +6,7 @@ The CSS and the small R highlighter are shared with the mintyr cheatsheet
 """
 import pathlib
 
-VERSION = "0.5.0"
+VERSION = "0.5.1"
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 CSS = (ROOT / "tools" / "cheatsheet.css").read_text(encoding="utf-8")
 

@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">mintyrasr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.4.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.0</span>
       </span>
     </div>
 
@@ -40,12 +40,44 @@
       <a href="../articles/mintyrasr-zh.html">mintyrasr 入门</a>
     </li>
     <li class="divider"></li>
-    <li class="dropdown-header">Models and genetic parameters</li>
+    <li class="dropdown-header">Models and relationship matrices</li>
     <li>
       <a href="../articles/models.html">Models and genetic parameters</a>
     </li>
     <li>
       <a href="../articles/models-zh.html">模型与遗传参数</a>
+    </li>
+    <li>
+      <a href="../articles/relationship-matrices.html">Pedigree, genomic and single-step: A, G and H</a>
+    </li>
+    <li>
+      <a href="../articles/relationship-matrices-zh.html">系谱、基因组与一步法：A、G 和 H</a>
+    </li>
+    <li>
+      <a href="../articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G x E</a>
+    </li>
+    <li>
+      <a href="../articles/other-models-zh.html">动物模型之外：重复力、母体效应与基因型×环境互作</a>
+    </li>
+    <li class="divider"></li>
+    <li class="dropdown-header">Genetic parameters across populations</li>
+    <li>
+      <a href="../articles/parameters-by-group.html">Genetic parameters for each group</a>
+    </li>
+    <li>
+      <a href="../articles/parameters-by-group-zh.html">分组估计遗传参数</a>
+    </li>
+    <li>
+      <a href="../articles/correlations-between-traits.html">Correlations between traits in each population</a>
+    </li>
+    <li>
+      <a href="../articles/correlations-between-traits-zh.html">各群体中性状间的相关</a>
+    </li>
+    <li>
+      <a href="../articles/same-trait-across-groups.html">The same trait in different populations</a>
+    </li>
+    <li>
+      <a href="../articles/same-trait-across-groups-zh.html">同一性状在不同群体中</a>
     </li>
   </ul></li>
 <li class="dropdown">
@@ -91,6 +123,29 @@
       <small>Source: <a href="https://github.com/tony2015116/mintyrasr/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="page-header" data-toc-text="0.5.0" id="mintyrasr-050">mintyrasr 0.5.0<a class="anchor" aria-label="anchor" href="#mintyrasr-050"></a></h2>
+<div class="section level3">
+<h3 id="pedigree-genomic-and-single-step-0-5-0">Pedigree, genomic and single-step<a class="anchor" aria-label="anchor" href="#pedigree-genomic-and-single-step-0-5-0"></a></h3>
+<ul><li>
+<code>ginv</code> takes any inverse relationship matrix: A^-1 (<code>ainverse()</code>), G^-1 or H^-1. <code>dense = "auto"</code> (new default) puts the term in <code>dense</code> only for a (nearly) full inverse, not for a sparse A^-1. With <code>ainverse()</code> and <code>inbreeding = NULL</code>, F is taken from its <code>inbreeding</code> attribute.</li>
+<li>New <code><a href="../reference/asr_compare.html">asr_compare()</a></code>: the same scenarios with several matrices (e.g. ABLUP, GBLUP, ssGBLUP) on the same folds, stacked with a <code>method</code> column.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="other-models-0-5-0">Other models<a class="anchor" aria-label="anchor" href="#other-models-0-5-0"></a></h3>
+<ul><li>Only <code>vm(&lt;id&gt;, ginv)</code> itself is the direct genetic term, so <code>vm(dam, ginv)</code> (maternal genetic) and <code>vm(id, ginv):herd</code> (G x E) can be added in <code>random</code>.</li>
+<li>Every extra random term is reported as <code>prop_&lt;term&gt;</code> (its share of the phenotypic variance, e.g. c^2, pe^2, m^2); <code>rep</code> (repeatability) with <code>ide(&lt;id&gt;)</code>; <code>rB_&lt;X&gt;</code> (type-B genetic correlation) with <code>vm(&lt;id&gt;, ginv):X</code>.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="parameters-only-0-5-0">Parameters only<a class="anchor" aria-label="anchor" href="#parameters-only-0-5-0"></a></h3>
+<ul><li>
+<code>cv = NULL</code> (new default): genetic parameters without cross-validation, e.g. for every group of <code>w2l_nest(by = )</code> or every trait pair of <code><a href="https://tony2015116.github.io/mintyr/reference/c2p_nest.html" class="external-link">c2p_nest()</a></code>.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="documentation-0-5-0">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-5-0"></a></h3>
+<ul><li>New articles (English and Chinese): pedigree, genomic and single-step; repeatability, maternal effects and G x E; genetic parameters for each group; correlations between traits in each population; the same trait in different populations.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="page-header" data-toc-text="0.4.0" id="mintyrasr-040">mintyrasr 0.4.0<a class="anchor" aria-label="anchor" href="#mintyrasr-040"></a></h2>
 <div class="section level3">

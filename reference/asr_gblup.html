@@ -56,7 +56,7 @@ two-trait model (layout of mintyr::w2l_nest() / mintyr::c2p_nest())."><meta prop
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">mintyrasr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.4.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.0</span>
       </span>
     </div>
 
@@ -79,12 +79,44 @@ two-trait model (layout of mintyr::w2l_nest() / mintyr::c2p_nest())."><meta prop
       <a href="../articles/mintyrasr-zh.html">mintyrasr 入门</a>
     </li>
     <li class="divider"></li>
-    <li class="dropdown-header">Models and genetic parameters</li>
+    <li class="dropdown-header">Models and relationship matrices</li>
     <li>
       <a href="../articles/models.html">Models and genetic parameters</a>
     </li>
     <li>
       <a href="../articles/models-zh.html">模型与遗传参数</a>
+    </li>
+    <li>
+      <a href="../articles/relationship-matrices.html">Pedigree, genomic and single-step: A, G and H</a>
+    </li>
+    <li>
+      <a href="../articles/relationship-matrices-zh.html">系谱、基因组与一步法：A、G 和 H</a>
+    </li>
+    <li>
+      <a href="../articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G x E</a>
+    </li>
+    <li>
+      <a href="../articles/other-models-zh.html">动物模型之外：重复力、母体效应与基因型×环境互作</a>
+    </li>
+    <li class="divider"></li>
+    <li class="dropdown-header">Genetic parameters across populations</li>
+    <li>
+      <a href="../articles/parameters-by-group.html">Genetic parameters for each group</a>
+    </li>
+    <li>
+      <a href="../articles/parameters-by-group-zh.html">分组估计遗传参数</a>
+    </li>
+    <li>
+      <a href="../articles/correlations-between-traits.html">Correlations between traits in each population</a>
+    </li>
+    <li>
+      <a href="../articles/correlations-between-traits-zh.html">各群体中性状间的相关</a>
+    </li>
+    <li>
+      <a href="../articles/same-trait-across-groups.html">The same trait in different populations</a>
+    </li>
+    <li>
+      <a href="../articles/same-trait-across-groups-zh.html">同一性状在不同群体中</a>
     </li>
   </ul></li>
 <li class="dropdown">
@@ -174,7 +206,7 @@ two-trait model (layout of <code><a href="https://tony2015116.github.io/mintyr/r
     <div id="ref-usage">
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">asr_gblup</span><span class="op">(</span></span>
 <span>  <span class="va">param</span>,</span>
-<span>  <span class="va">cv</span>,</span>
+<span>  cv <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">ginv</span>,</span>
 <span>  fixed <span class="op">=</span> <span class="op">~</span><span class="fl">1</span>,</span>
 <span>  random <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -194,7 +226,7 @@ two-trait model (layout of <code><a href="https://tony2015116.github.io/mintyr/r
 <span>  test_rp <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  rp <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  na_x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"include"</span>, <span class="st">"fail"</span>, <span class="st">"omit"</span><span class="op">)</span>,</span>
-<span>  dense <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  dense <span class="op">=</span> <span class="st">"auto"</span>,</span>
 <span>  maxit <span class="op">=</span> <span class="fl">100L</span>,</span>
 <span>  workspace <span class="op">=</span> <span class="st">"30Gb"</span>,</span>
 <span>  max_update <span class="op">=</span> <span class="fl">2L</span>,</span>
@@ -221,14 +253,20 @@ list-column <code>data</code> (e.g. <code>cv_scenarios(...)$st_sp$param</code>).
 <dt id="arg-cv">cv<a class="anchor" aria-label="anchor" href="#arg-cv"></a></dt>
 <dd><p>Cross-validation table with list-columns <code>train</code> and <code>validate</code>
 (e.g. <code>cv_scenarios(...)$st_sp$cv</code> or the output of <code><a href="https://tony2015116.github.io/mintyr/reference/nest_cv.html" class="external-link">mintyr::nest_cv()</a></code>).
+<code>NULL</code> (default): genetic parameters only, no cross-validation - e.g.
+for every group of <code><a href="https://tony2015116.github.io/mintyr/reference/w2l_nest.html" class="external-link">mintyr::w2l_nest()</a></code> or every trait pair of
+<code><a href="https://tony2015116.github.io/mintyr/reference/c2p_nest.html" class="external-link">mintyr::c2p_nest()</a></code>.
 Each row is matched to the row of <code>param</code> that shares its outer columns.</p></dd>
 
 
 <dt id="arg-ginv">ginv<a class="anchor" aria-label="anchor" href="#arg-ginv"></a></dt>
-<dd><p>Inverse genomic (or pedigree) relationship matrix as used by
-<code>vm()</code>, e.g. <code>G.inverse(G, sparseform = TRUE)$Ginv.sparse</code>. It must carry
-<code>attr(, "INVERSE") = TRUE</code>, otherwise <code>vm()</code> takes it as G itself
-(a warning is given).</p></dd>
+<dd><p>Inverse relationship matrix as used by <code>vm()</code>: A^-1 for
+pedigree BLUP (<code>ainverse(ped)</code>), G^-1 for GBLUP
+(<code>G.inverse(G, sparseform = TRUE)$Ginv.sparse</code>) or H^-1 for single-step
+GBLUP (<code>H.inverse(...)</code>). It must carry <code>attr(, "INVERSE") = TRUE</code>,
+otherwise <code>vm()</code> takes it as the relationship matrix itself (a warning is
+given). With <code>ainverse()</code>, F is taken from its <code>inbreeding</code> attribute when
+<code>inbreeding</code> is <code>NULL</code>.</p></dd>
 
 
 <dt id="arg-fixed">fixed<a class="anchor" aria-label="anchor" href="#arg-fixed"></a></dt>
@@ -238,8 +276,13 @@ two-trait models every term is nested in trait (<code>trait + trait:hhys</code>)
 
 <dt id="arg-random">random<a class="anchor" aria-label="anchor" href="#arg-random"></a></dt>
 <dd><p>Optional one-sided formula of further random effects, e.g.
-<code>~ ide(id)</code> (permanent environment, repeated records), <code>~ litter + pen</code>.
-In two-trait models each term gets the structure <code>random_cov</code>.</p></dd>
+<code>~ ide(id)</code> (permanent environment, repeated records), <code>~ litter + pen</code>,
+<code>~ vm(dam, ginv) + ide(dam)</code> (maternal genetic and permanent maternal
+environment), <code>~ vm(id, ginv):herd</code> (genotype x herd interaction). In
+two-trait models each term gets the structure <code>random_cov</code>. Each term is
+also reported as a proportion of the phenotypic variance
+(<code>prop_&lt;term&gt;</code>), with <code>rep</code> (repeatability) for <code>ide(&lt;id&gt;)</code> and
+<code>rB_&lt;X&gt;</code> (type-B genetic correlation) for <code>vm(&lt;id&gt;, ginv):X</code>.</p></dd>
 
 
 <dt id="arg-id">id<a class="anchor" aria-label="anchor" href="#arg-id"></a></dt>
@@ -333,7 +376,9 @@ matrix - centre numeric covariates first; ASReml's own default is <code>"fail"</
 
 
 <dt id="arg-dense">dense<a class="anchor" aria-label="anchor" href="#arg-dense"></a></dt>
-<dd><p>Put the genomic term in <code>dense</code> (faster for GBLUP).</p></dd>
+<dd><p>Put the relationship term in <code>dense</code>. <code>"auto"</code> (default):
+yes for a (nearly) full inverse such as G^-1 or H^-1, no for a sparse
+one such as A^-1 from <code>ainverse()</code>, where <code>dense</code> would cost much memory.</p></dd>
 
 
 <dt id="arg-maxit-workspace">maxit, workspace<a class="anchor" aria-label="anchor" href="#arg-maxit-workspace"></a></dt>

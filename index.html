@@ -40,7 +40,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">mintyrasr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.4.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.0</span>
       </span>
     </div>
 
@@ -65,12 +65,44 @@
       <a href="articles/mintyrasr-zh.html">mintyrasr 入门</a>
     </li>
     <li class="divider"></li>
-    <li class="dropdown-header">Models and genetic parameters</li>
+    <li class="dropdown-header">Models and relationship matrices</li>
     <li>
       <a href="articles/models.html">Models and genetic parameters</a>
     </li>
     <li>
       <a href="articles/models-zh.html">模型与遗传参数</a>
+    </li>
+    <li>
+      <a href="articles/relationship-matrices.html">Pedigree, genomic and single-step: A, G and H</a>
+    </li>
+    <li>
+      <a href="articles/relationship-matrices-zh.html">系谱、基因组与一步法：A、G 和 H</a>
+    </li>
+    <li>
+      <a href="articles/other-models.html">Beyond the animal model: repeatability, maternal effects and G x E</a>
+    </li>
+    <li>
+      <a href="articles/other-models-zh.html">动物模型之外：重复力、母体效应与基因型×环境互作</a>
+    </li>
+    <li class="divider"></li>
+    <li class="dropdown-header">Genetic parameters across populations</li>
+    <li>
+      <a href="articles/parameters-by-group.html">Genetic parameters for each group</a>
+    </li>
+    <li>
+      <a href="articles/parameters-by-group-zh.html">分组估计遗传参数</a>
+    </li>
+    <li>
+      <a href="articles/correlations-between-traits.html">Correlations between traits in each population</a>
+    </li>
+    <li>
+      <a href="articles/correlations-between-traits-zh.html">各群体中性状间的相关</a>
+    </li>
+    <li>
+      <a href="articles/same-trait-across-groups.html">The same trait in different populations</a>
+    </li>
+    <li>
+      <a href="articles/same-trait-across-groups-zh.html">同一性状在不同群体中</a>
     </li>
   </ul>
 </li>
@@ -144,6 +176,12 @@
 <li>
 <strong>Per fold</strong>: predictive ability <code>r(y, GEBV)</code>, accuracy <code>PA / sqrt(h2)</code>, slope <code>b(y ~ GEBV)</code> on all validation individuals (no reliability filter); final GEBVs with reliability <code>1 - PEV / ((1 + F) Va)</code>.</li>
 <li>
+<strong>Pedigree, genomic or single-step</strong>: pass A^-1, G^-1 or H^-1; compare them on the same folds with <code><a href="reference/asr_compare.html">asr_compare()</a></code>.</li>
+<li>
+<strong>More than the animal model</strong>: repeatability, litter, maternal genetic and environment effects, G x E, with their variance proportions.</li>
+<li>
+<strong>Parameters only</strong>: <code>cv = NULL</code> gives h2, rg, rp for every group or trait pair without cross-validation.</li>
+<li>
 <strong>Safe long runs</strong>: progress and time left, <code><a href="https://rdrr.io/r/stats/update.html" class="external-link">update()</a></code> for fits that have not converged, non-converged fits skipped and every problem recorded in <code>$log</code> without stopping the loop.</li>
 </ul>
 </div>
@@ -174,6 +212,11 @@
 <ul>
 <li><a href="https://tony2015116.github.io/mintyrasr/articles/mintyrasr.html">Get started</a></li>
 <li><a href="https://tony2015116.github.io/mintyrasr/articles/models.html">Models and genetic parameters</a></li>
+<li><a href="https://tony2015116.github.io/mintyrasr/articles/relationship-matrices.html">Pedigree, genomic and single-step</a></li>
+<li><a href="https://tony2015116.github.io/mintyrasr/articles/other-models.html">Repeatability, maternal effects and G x E</a></li>
+<li><a href="https://tony2015116.github.io/mintyrasr/articles/parameters-by-group.html">Genetic parameters for each group</a></li>
+<li><a href="https://tony2015116.github.io/mintyrasr/articles/correlations-between-traits.html">Correlations between traits in each population</a></li>
+<li><a href="https://tony2015116.github.io/mintyrasr/articles/same-trait-across-groups.html">The same trait in different populations</a></li>
 <li><a href="https://tony2015116.github.io/mintyrasr/cheatsheet.html">Cheatsheet</a></li>
 </ul>
 </div>
@@ -187,9 +230,17 @@
 <li><p><strong>检验正确</strong>：rg = 0 用 <code>idh(trait)</code> 对照、<code>boundary = FALSE</code>；可选所有协方差的联合检验。</p></li>
 <li><p><strong>交叉验证中方差组分三种处理</strong>：固定为全数据估计值（快）、以全数据为初值重估、每折完全重估（无信息泄漏）。</p></li>
 <li><p><strong>每折输出</strong>：在全部验证个体上（不按可靠性过滤）计算预测能力 <code>r(y, GEBV)</code>、准确性 <code>PA / sqrt(h2)</code>、回归系数 <code>b(y ~ GEBV)</code>；最终 GEBV 附可靠性 <code>1 - PEV / ((1 + F) Va)</code>。</p></li>
+<li><p><strong>系谱、基因组或一步法</strong>：传入 A⁻¹、G⁻¹ 或 H⁻¹；用 <code><a href="reference/asr_compare.html">asr_compare()</a></code> 在同一套分折上比较。</p></li>
+<li><p><strong>不止动物模型</strong>：重复力、窝效应、母体遗传与母体环境效应、基因型×环境互作，并给出各方差比例。</p></li>
+<li><p><strong>只估计参数</strong>：<code>cv = NULL</code> 时，不做交叉验证，直接给出每个群体或每对性状的 h2、rg、rp。</p></li>
 <li><p><strong>安全的长时间运行</strong>：显示进度和剩余时间；未收敛模型自动 <code><a href="https://rdrr.io/r/stats/update.html" class="external-link">update()</a></code>；仍不收敛则跳过，所有问题记入 <code>$log</code>，循环不中断。</p></li>
 <li><p><a href="https://tony2015116.github.io/mintyrasr/articles/mintyrasr-zh.html">入门</a></p></li>
 <li><p><a href="https://tony2015116.github.io/mintyrasr/articles/models-zh.html">模型与遗传参数</a></p></li>
+<li><p><a href="https://tony2015116.github.io/mintyrasr/articles/relationship-matrices-zh.html">系谱、基因组与一步法</a></p></li>
+<li><p><a href="https://tony2015116.github.io/mintyrasr/articles/other-models-zh.html">重复力、母体效应与基因型×环境互作</a></p></li>
+<li><p><a href="https://tony2015116.github.io/mintyrasr/articles/parameters-by-group-zh.html">分组估计遗传参数</a></p></li>
+<li><p><a href="https://tony2015116.github.io/mintyrasr/articles/correlations-between-traits-zh.html">各群体中性状间的相关</a></p></li>
+<li><p><a href="https://tony2015116.github.io/mintyrasr/articles/same-trait-across-groups-zh.html">同一性状在不同群体中</a></p></li>
 <li><p><a href="https://tony2015116.github.io/mintyrasr/cheatsheet-zh.html">速查表</a></p></li>
 </ul>
 </div>

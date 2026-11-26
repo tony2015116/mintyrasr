@@ -2,11 +2,21 @@ pandoc: 3.8.3
 pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
+  articles/correlations-between-traits-zh: correlations-between-traits-zh.html
+  articles/correlations-between-traits: correlations-between-traits.html
   articles/mintyrasr-zh: mintyrasr-zh.html
   mintyrasr: mintyrasr.html
   articles/models-zh: models-zh.html
   articles/models: models.html
-last_built: 2026-11-26T02:11Z
+  articles/other-models-zh: other-models-zh.html
+  articles/other-models: other-models.html
+  articles/parameters-by-group-zh: parameters-by-group-zh.html
+  articles/parameters-by-group: parameters-by-group.html
+  articles/relationship-matrices-zh: relationship-matrices-zh.html
+  articles/relationship-matrices: relationship-matrices.html
+  articles/same-trait-across-groups-zh: same-trait-across-groups-zh.html
+  articles/same-trait-across-groups: same-trait-across-groups.html
+last_built: 2026-11-26T02:31Z
 urls:
   reference: https://tony2015116.github.io/mintyrasr/reference
   article: https://tony2015116.github.io/mintyrasr/articles

@@ -38,11 +38,11 @@ diag residual, no rp.
 **[asr_gblup](https://tony2015116.github.io/mintyrasr/reference/asr_gblup.md)**(param,
 cv, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL,
 genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc =
-"fixed", vpredict = NULL, inbreeding = NULL, min_rel = 0.05, neg_to_na =
-TRUE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include",
-dense = TRUE, maxit = 100, workspace = "30Gb", max_update = 0,
-asreml_args = list(), on_error = "warn", keep_pred = TRUE, path = NULL,
-verbose = TRUE)
+"fixed", vpredict = NULL, inbreeding = NULL, min_rel = 0.05, min_n = 10,
+neg_to_na = TRUE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x =
+"include", dense = TRUE, maxit = 100, workspace = "30Gb", max_update =
+0, asreml_args = list(), on_error = "warn", keep_pred = TRUE, path =
+NULL, verbose = TRUE)
 
     res <- asr_scenarios(sc, ginv, fixed = ~ hhys,
                          inbreeding = inbreeding, dir = "results")
@@ -115,12 +115,12 @@ rp = 0 alone.
 | `"warm"` | re-estimated, starting from full-data values |
 | `"estimate"` | re-estimated from defaults — no leakage, slowest |
 
-| measure    | definition                                                   |
-|------------|--------------------------------------------------------------|
-| `rel`      | 1 − PEV / ((1 + F) Va), Va of the fold; \< `min_rel` dropped |
-| `pa`       | r(y, GEBV)                                                   |
-| `accuracy` | pa / √h2, full-data h2                                       |
-| `slope`    | b(y ~ GEBV), ideally 1                                       |
+| measure | definition |
+|----|----|
+| `rel` | 1 − PEV / ((1 + F) Va), Va of the fold; \< `min_rel` dropped; fold needs ≥ `min_n` = 10 left |
+| `pa` | r(y, GEBV) |
+| `accuracy` | pa / √h2, full-data h2 |
+| `slope` | b(y ~ GEBV), ideally 1 |
 
 ## Output one sheet each
 

@@ -219,7 +219,7 @@ footer { margin-top: 8px; color: var(--muted); font-size: 12.5px; display: flex;
 <header class="top">
   <div></div>
   <div>
-    <h1>mintyrasr cheatsheet <span class="ver">v0.3.1</span></h1>
+    <h1>mintyrasr cheatsheet <span class="ver">v0.3.2</span></h1>
     <p>GBLUP parameter estimation and cross-validation with <code>ASReml-R</code>, directly on the nested data built by <code>mintyr</code>: genetic parameters that follow the model, correct LRTs, PA / accuracy / slope per fold.</p>
   </div>
   <nav class="links">
@@ -285,7 +285,7 @@ inbreeding &lt;- data.frame(id = rownames(G), F = diag(G) - 1)</code></pre>
     <p>One workbook per scenario: <code>&lt;dir&gt;/&lt;scenario&gt;_&lt;tag&gt;.xlsx</code>. <code>"mt_bt"</code>: diag residual, no rp.</p>
   </div>
   <div class="fn">
-    <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, min_rel = 0.05, neg_to_na = TRUE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = TRUE, maxit = 100, workspace = "30Gb", max_update = 0, asreml_args = list(), on_error = "warn", keep_pred = TRUE, path = NULL, verbose = TRUE)</div>
+    <div class="sig"><b><a href="reference/asr_gblup.html">asr_gblup</a></b>(param, cv, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL, genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc = "fixed", vpredict = NULL, inbreeding = NULL, min_rel = 0.05, min_n = 10, neg_to_na = TRUE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include", dense = TRUE, maxit = 100, workspace = "30Gb", max_update = 0, asreml_args = list(), on_error = "warn", keep_pred = TRUE, path = NULL, verbose = TRUE)</div>
     <pre><code>res &lt;- asr_scenarios(sc, ginv, fixed = ~ hhys,
                      inbreeding = inbreeding, dir = "results")
 st &lt;- asr_gblup(sc$st_sp$param, sc$st_sp$cv, ginv,
@@ -361,7 +361,7 @@ asr_gblup(..., random = ~ ide(id),
     </table>
     <table>
       <tr><th>measure</th><th>definition</th></tr>
-      <tr><td><code>rel</code></td><td>1 &minus; PEV / ((1 + F) Va), Va of the fold; &lt; <code>min_rel</code> dropped</td></tr>
+      <tr><td><code>rel</code></td><td>1 &minus; PEV / ((1 + F) Va), Va of the fold; &lt; <code>min_rel</code> dropped; fold needs &ge; <code>min_n</code> = 10 left</td></tr>
       <tr><td><code>pa</code></td><td>r(y, GEBV)</td></tr>
       <tr><td><code>accuracy</code></td><td>pa / &radic;h2, full-data h2</td></tr>
       <tr><td><code>slope</code></td><td>b(y ~ GEBV), ideally 1</td></tr>
@@ -401,7 +401,7 @@ asr_gblup(..., random = ~ ide(id),
 </main>
 
 <footer>
-  <span>mintyrasr 0.3.1 &middot; MIT &middot; Guo Meng</span>
+  <span>mintyrasr 0.3.2 &middot; MIT &middot; Guo Meng</span>
   <span><a href="https://tony2015116.github.io/mintyrasr/">tony2015116.github.io/mintyrasr</a> &middot; <a href="https://tony2015116.github.io/mintyr/">mintyr</a> &middot; <a href="https://github.com/tony2015116/mintyrasr/issues">Issues</a></span>
 </footer>
 </div>

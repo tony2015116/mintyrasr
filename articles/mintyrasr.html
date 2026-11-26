@@ -23,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mintyrasr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -333,7 +333,9 @@ individuals;</li>
 of the GEBVs.</li>
 </ul>
 <p>GEBVs with reliability below <code>min_rel</code> (default 0.05) are
-left out, and with <code>neg_to_na = TRUE</code> (default) negative
+left out; a fold needs at least <code>min_n</code> (default 10)
+remaining individuals, otherwise its PA, accuracy and slope are
+<code>NA</code>. With <code>neg_to_na = TRUE</code> (default) negative
 values are set to <code>NA</code> before the summary.</p>
 </div>
 <div class="section level2">

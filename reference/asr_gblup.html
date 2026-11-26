@@ -69,7 +69,7 @@ two-trait model (layout of mintyr::w2l_nest() / mintyr::c2p_nest())."></head><bo
 
     <a class="navbar-brand me-2" href="../index.html">mintyrasr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -162,6 +162,7 @@ two-trait model (layout of <code><a href="https://tony2015116.github.io/mintyr/r
 <span>  vpredict <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  inbreeding <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  min_rel <span class="op">=</span> <span class="fl">0.05</span>,</span>
+<span>  min_n <span class="op">=</span> <span class="fl">10L</span>,</span>
 <span>  neg_to_na <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  test_rg <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  test_rp <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -256,6 +257,13 @@ F = 0. For GBLUP, <code>F = diag(G) - 1</code> is common.</p></dd>
 before computing PA / accuracy. Use <code>-Inf</code> to keep all.</p></dd>
 
 
+<dt id="arg-min-n">min_n<a class="anchor" aria-label="anchor" href="#arg-min-n"></a></dt>
+<dd><p>Minimum number of validation individuals with a usable GEBV
+(after <code>min_rel</code>) for PA, accuracy and slope of a fold; fewer gives <code>NA</code>
+(<code>n</code> still shows the number). With a low h2 the reliability filter can
+leave only a handful of individuals, whose PA and slope are noise.</p></dd>
+
+
 <dt id="arg-neg-to-na">neg_to_na<a class="anchor" aria-label="anchor" href="#arg-neg-to-na"></a></dt>
 <dd><p>Set negative PA / accuracy / slope to <code>NA</code> before the
 summary (the behaviour of the original scripts).</p></dd>
@@ -263,7 +271,9 @@ summary (the behaviour of the original scripts).</p></dd>
 
 <dt id="arg-test-rg">test_rg<a class="anchor" aria-label="anchor" href="#arg-test-rg"></a></dt>
 <dd><p>Two-trait models only: LRT of rg = 0 (<code>idh(trait)</code> genetic
-structure, other structures unchanged, <code>boundary = FALSE</code>).</p></dd>
+structure, other structures unchanged, <code>boundary = FALSE</code>). If both
+models end up with the same number of free parameters (df = 0, e.g. a
+restrained covariance), <code>rg_p</code> is <code>NA</code> with a warning.</p></dd>
 
 
 <dt id="arg-test-rp">test_rp<a class="anchor" aria-label="anchor" href="#arg-test-rp"></a></dt>
@@ -324,8 +334,9 @@ results, the loop continues. <code>"stop"</code>: stop at the first failure.</p>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A list of class <code>asr_gblup</code> with <code>varcomp</code>, <code>vc_index</code>, <code>param</code>,
-<code>accuracy</code> (one row per fold and trait, with <code>cv_converge</code> and the number
-of iterations <code>cv_iter</code> of the fold's fit), <code>summary</code> and, if <code>keep_pred</code>,
+<code>accuracy</code> (one row per fold and trait, with <code>cv_converge</code> and <code>cv_iter</code>,
+the length of the fold fit's iteration history: about the number of
+REML iterations; 2 for fixed variances), <code>summary</code> and, if <code>keep_pred</code>,
 <code>pred</code>. Fitted model objects are not kept, which keeps memory use low.</p>
     </div>
     <div class="section level2">

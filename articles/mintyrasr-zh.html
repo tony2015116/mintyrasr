@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mintyrasr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -318,7 +318,9 @@ residual）、类型（var / cov / cor）、性状、是否使用</td>
 既没有膨胀也没有压缩。</li>
 </ul>
 <p>可靠性低于 <code>min_rel</code>（默认 0.05）的 GEBV
-不参与计算；<code>neg_to_na = TRUE</code>（默认）时，负值在汇总前设为
+不参与计算；剩下的个体少于 <code>min_n</code>（默认 10）时，该折的
+PA、准确性和回归系数为
+<code>NA</code>；<code>neg_to_na = TRUE</code>（默认）时，负值在汇总前设为
 <code>NA</code>。</p>
 </div>
 <div class="section level2">

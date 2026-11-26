@@ -153,9 +153,10 @@ Each result is a list; every element becomes one sheet of the workbook.
 - `accuracy` = pa / sqrt(h2), with h2 from the full data (Dekkers 2007);
 - `slope` = b(y ~ GEBV); 1 means no inflation or deflation of the GEBVs.
 
-GEBVs with reliability below `min_rel` (default 0.05) are left out, and
-with `neg_to_na = TRUE` (default) negative values are set to `NA` before
-the summary.
+GEBVs with reliability below `min_rel` (default 0.05) are left out; a
+fold needs at least `min_n` (default 10) remaining individuals,
+otherwise its PA, accuracy and slope are `NA`. With `neg_to_na = TRUE`
+(default) negative values are set to `NA` before the summary.
 
 ## 6. Variance components in cross-validation
 

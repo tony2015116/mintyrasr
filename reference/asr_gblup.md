@@ -59,6 +59,7 @@ asr_gblup(
   vpredict = NULL,
   inbreeding = NULL,
   min_rel = 0.05,
+  min_n = 10L,
   neg_to_na = TRUE,
   test_rg = TRUE,
   test_rp = FALSE,
@@ -152,6 +153,13 @@ asr_gblup(
   GEBVs with reliability below this value are set to `NA` before
   computing PA / accuracy. Use `-Inf` to keep all.
 
+- min_n:
+
+  Minimum number of validation individuals with a usable GEBV (after
+  `min_rel`) for PA, accuracy and slope of a fold; fewer gives `NA` (`n`
+  still shows the number). With a low h2 the reliability filter can
+  leave only a handful of individuals, whose PA and slope are noise.
+
 - neg_to_na:
 
   Set negative PA / accuracy / slope to `NA` before the summary (the
@@ -160,7 +168,9 @@ asr_gblup(
 - test_rg:
 
   Two-trait models only: LRT of rg = 0 (`idh(trait)` genetic structure,
-  other structures unchanged, `boundary = FALSE`).
+  other structures unchanged, `boundary = FALSE`). If both models end up
+  with the same number of free parameters (df = 0, e.g. a restrained
+  covariance), `rg_p` is `NA` with a warning.
 
 - test_rp:
 
@@ -220,8 +230,9 @@ asr_gblup(
 ## Value
 
 A list of class `asr_gblup` with `varcomp`, `vc_index`, `param`,
-`accuracy` (one row per fold and trait, with `cv_converge` and the
-number of iterations `cv_iter` of the fold's fit), `summary` and, if
+`accuracy` (one row per fold and trait, with `cv_converge` and
+`cv_iter`, the length of the fold fit's iteration history: about the
+number of REML iterations; 2 for fixed variances), `summary` and, if
 `keep_pred`, `pred`. Fitted model objects are not kept, which keeps
 memory use low.
 

@@ -38,11 +38,11 @@ ginv, scenarios = c("st_sp", "st_mp", "mt_sp", "mt_mp"), dir = ".", tag
 **[asr_gblup](https://tony2015116.github.io/mintyrasr/reference/asr_gblup.md)**(param,
 cv, ginv, fixed = ~ 1, random = NULL, id = "id", traits = NULL,
 genetic_cov = "us", random_cov = "us", residual_cov = "us", cv_vc =
-"fixed", vpredict = NULL, inbreeding = NULL, min_rel = 0.05, neg_to_na =
-TRUE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x = "include",
-dense = TRUE, maxit = 100, workspace = "30Gb", max_update = 0,
-asreml_args = list(), on_error = "warn", keep_pred = TRUE, path = NULL,
-verbose = TRUE)
+"fixed", vpredict = NULL, inbreeding = NULL, min_rel = 0.05, min_n = 10,
+neg_to_na = TRUE, test_rg = TRUE, test_rp = FALSE, rp = TRUE, na_x =
+"include", dense = TRUE, maxit = 100, workspace = "30Gb", max_update =
+0, asreml_args = list(), on_error = "warn", keep_pred = TRUE, path =
+NULL, verbose = TRUE)
 
     res <- asr_scenarios(sc, ginv, fixed = ~ hhys,
                          inbreeding = inbreeding, dir = "results")
@@ -113,12 +113,12 @@ fa() / rr() 以及多个遗传项（母体效应 `str()`）：在 `vpredict`
 | `"warm"` | 以全数据值为初值重新估计 |
 | `"estimate"` | 从默认初值重新估计 — 无泄漏，最慢 |
 
-| 指标       | 定义                                                     |
-|------------|----------------------------------------------------------|
-| `rel`      | 1 − PEV / ((1 + F) Va)，Va 取当折；低于 `min_rel` 的不用 |
-| `pa`       | r(y, GEBV)，预测能力                                     |
-| `accuracy` | pa / √h2，h2 用全数据估计值                              |
-| `slope`    | b(y ~ GEBV)，理想值 1                                    |
+| 指标 | 定义 |
+|----|----|
+| `rel` | 1 − PEV / ((1 + F) Va)，Va 取当折；低于 `min_rel` 的不用；每折至少剩 `min_n` = 10 个 |
+| `pa` | r(y, GEBV)，预测能力 |
+| `accuracy` | pa / √h2，h2 用全数据估计值 |
+| `slope` | b(y ~ GEBV)，理想值 1 |
 
 ## 输出 每个元素一张表
 

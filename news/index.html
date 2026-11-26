@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">mintyrasr</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -50,6 +50,15 @@
       <small>Source: <a href="https://github.com/tony2015116/mintyrasr/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.2" id="mintyrasr-032">mintyrasr 0.3.2<a class="anchor" aria-label="anchor" href="#mintyrasr-032"></a></h2>
+<p>From the second validation run with ASReml-R 4.2.0.481:</p>
+<ul><li>An LRT where both models have the same number of free parameters (df = 0, e.g. a covariance restrained at a bound) gives <code>rg_p = NA</code> with a warning, instead of a misleading p = 0.</li>
+<li>New <code>min_n = 10</code>: a fold needs at least <code>min_n</code> validation individuals with a usable GEBV (after <code>min_rel</code>) for PA, accuracy and slope. With a low h2 the reliability filter could leave 2-7 animals and PA / slope were noise.</li>
+<li>
+<code>cv_iter</code> is documented as the length of the iteration history (2 for fixed variances).</li>
+<li>Confirmed on real ASReml-R: <code>rg_p</code> equals <code>lrt(full, idh, boundary = FALSE)</code>; fixed-variance CV fits give no warnings; <code>cv_vc = "warm"</code> needs about half the iterations of <code>"estimate"</code> and gives the same results.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.3.1" id="mintyrasr-031">mintyrasr 0.3.1<a class="anchor" aria-label="anchor" href="#mintyrasr-031"></a></h2>
 <p>Fixes found by running the validation script with ASReml-R 4.2.0.481:</p>

@@ -56,7 +56,7 @@ two-trait model (layout of mintyr::w2l_nest() / mintyr::c2p_nest())."><meta prop
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">mintyrasr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.3</span>
       </span>
     </div>
 
@@ -278,7 +278,8 @@ two-trait models every term is nested in trait (<code>trait + trait:hhys</code>)
 <dd><p>Optional one-sided formula of further random effects, e.g.
 <code>~ ide(id)</code> (permanent environment, repeated records), <code>~ litter + pen</code>,
 <code>~ vm(dam, ginv) + ide(dam)</code> (maternal genetic and permanent maternal
-environment), <code>~ vm(id, ginv):herd</code> (genotype x herd interaction). In
+environment), <code>~ vm(id, ginv):herd</code> (genotype x herd interaction; the
+factor is given the variance structure <code>idv(herd)</code> ASReml needs). In
 two-trait models each term gets the structure <code>random_cov</code>. Each term is
 also reported as a proportion of the phenotypic variance
 (<code>prop_&lt;term&gt;</code>), with <code>rep</code> (repeatability) for <code>ide(&lt;id&gt;)</code> and

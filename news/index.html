@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">mintyrasr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.3</span>
       </span>
     </div>
 
@@ -123,6 +123,11 @@
       <small>Source: <a href="https://github.com/tony2015116/mintyrasr/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="page-header" data-toc-text="0.5.3" id="mintyrasr-053">mintyrasr 0.5.3<a class="anchor" aria-label="anchor" href="#mintyrasr-053"></a></h2>
+<ul><li>G x E: ASReml-R rejects <code>vm(id, ginv):herd</code> (“Direct product with vm() must be a variance structure”). mintyrasr now writes it as <code>vm(id, relmat):idv(herd)</code>; <code>rB_herd</code> and <code>prop_vm_id_ginv_herd</code> keep their names.</li>
+<li>Confirmed on ASReml-R 4.2.0.481 (round 4): pedigree BLUP with <code>ainverse()</code> (F from its <code>inbreeding</code> attribute, <code>dense = FALSE</code>, 512mb workspace), single-step with <code>H.inverse()</code>, maternal, repeatability, parameters-only mode, <code><a href="../reference/asr_compare.html">asr_compare()</a></code>; h2, m2, c2 and rep identical to hand-written <code>vpredict()</code> formulas.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="page-header" data-toc-text="0.5.2" id="mintyrasr-052">mintyrasr 0.5.2<a class="anchor" aria-label="anchor" href="#mintyrasr-052"></a></h2>
 <p>Found with real ASReml-R 4.2.0.481 (pedigree BLUP crashed R):</p>

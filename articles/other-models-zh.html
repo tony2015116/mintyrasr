@@ -39,7 +39,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">mintyrasr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.5.3</span>
       </span>
     </div>
 
@@ -294,6 +294,10 @@
 <span><span class="va">res</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/asr_gblup.html">asr_gblup</a></span><span class="op">(</span><span class="va">nest</span>, ginv <span class="op">=</span> <span class="va">ginv</span>, fixed <span class="op">=</span> <span class="op">~</span> <span class="va">hhys</span>,</span>
 <span>                  random <span class="op">=</span> <span class="op">~</span> <span class="fu">vm</span><span class="op">(</span><span class="va">id</span>, <span class="va">ginv</span><span class="op">)</span><span class="op">:</span><span class="va">test_herd</span><span class="op">)</span></span>
 <span><span class="va">res</span><span class="op">$</span><span class="va">param</span><span class="op">[</span>, <span class="fu">.</span><span class="op">(</span><span class="va">h2</span>, <span class="va">prop_vm_id_ginv_test_herd</span>, <span class="va">rB_test_herd</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
+<p>ASReml 要求与 <code>vm()</code> 做直积的因子带方差结构；mintyrasr
+会把 <code>vm(id, ginv):test_herd</code> 自动写成
+<code>vm(id, relmat):idv(test_herd)</code>（也可以自己写上
+<code>idv()</code>）。</p>
 <p><code>rB_test_herd</code> = Va / (Va + V_GxE)
 即场间遗传相关。<code>h2</code> 的 Vp = Va + V_GxE +
 Ve；单个场内的遗传力为 (Va + V_GxE) / Vp，可用 <code>vpredict</code>
